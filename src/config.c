@@ -33,7 +33,7 @@ static int use_stdwin;
 #endif
 
 /*ARGSUSED*/
-void
+
 initargs(p_argc, p_argv)
        int *p_argc;
        char ***p_argv;
@@ -73,12 +73,12 @@ initargs(p_argc, p_argv)
 #endif
 }
 
-void
+
 initcalls()
 {
 }
 
-void
+
 donecalls()
 {
 #ifdef USE_STDWIN

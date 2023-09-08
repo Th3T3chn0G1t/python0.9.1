@@ -31,7 +31,7 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #endif
 #endif
 
-#ifdef __STD_C__
+#ifdef __STDC__
 #define ANY void
 #define HAVE_STDLIB
 #endif

@@ -179,7 +179,6 @@ metacompile(n)
        return gr;
 }
 
-static
 compile_rule(gr, n)
        nfagrammar *gr;
        node *n;
@@ -195,12 +194,13 @@ compile_rule(gr, n)
        REQ(n, COLON);
        n++;
        REQ(n, RHS);
+       void compile_rhs();
        compile_rhs(&gr->gr_ll, nf, n, &nf->nf_start, &nf->nf_finish);
        n++;
        REQ(n, NEWLINE);
 }
 
-static
+void
 compile_rhs(ll, nf, n, pa, pb)
        labellist *ll;
        nfa *nf;
@@ -237,7 +237,6 @@ compile_rhs(ll, nf, n, pa, pb)
        }
 }
 
-static
 compile_alt(ll, nf, n, pa, pb)
        labellist *ll;
        nfa *nf;
@@ -252,7 +251,8 @@ compile_alt(ll, nf, n, pa, pb)
        REQN(i, 1);
        n = n->n_child;
        REQ(n, ITEM);
-       compile_item(ll, nf, n, pa, pb);
+       void compile_item();
+	   compile_item(ll, nf, n, pa, pb);
        --i;
        n++;
        for (; --i >= 0; n++) {
@@ -268,7 +268,7 @@ compile_alt(ll, nf, n, pa, pb)
        }
 }
 
-static
+void
 compile_item(ll, nf, n, pa, pb)
        labellist *ll;
        nfa *nf;
@@ -309,7 +309,6 @@ compile_item(ll, nf, n, pa, pb)
        }
 }
 
-static
 compile_atom(ll, nf, n, pa, pb)
        labellist *ll;
        nfa *nf;
@@ -526,7 +525,6 @@ makedfa(gr, nf, d)
        /* XXX cleanup */
 }
 
-static
 printssdfa(xx_nstates, xx_state, nbits, ll, msg)
        int xx_nstates;
        ss_state *xx_state;
@@ -607,7 +605,6 @@ renamestates(xx_nstates, xx_state, from, to)
        }
 }
 
-static
 simplify(xx_nstates, xx_state)
        int xx_nstates;
        ss_state *xx_state;
@@ -639,7 +636,6 @@ simplify(xx_nstates, xx_state)
 
 /* Convert the DFA into a grammar that can be used by our parser */
 
-static
 convert(d, xx_nstates, xx_state)
        dfa *d;
        int xx_nstates;

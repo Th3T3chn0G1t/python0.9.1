@@ -41,7 +41,7 @@ typedef struct {
        object  *x_attr;        /* Attributes dictionary */
 } xxobject;
 
-extern typeobject Xxtype;      /* Really static, forward */
+typeobject Xxtype;      /* Really static, forward */
 
 #define is_xxobject(v)         ((v)->ob_type == &Xxtype)
 
@@ -115,7 +115,7 @@ xx_setattr(xp, name, v)
                return dictinsert(xp->x_attr, name, v);
 }
 
-static typeobject Xxtype = {
+typeobject Xxtype = {
        OB_HEAD_INIT(&Typetype)
        0,                      /*ob_size*/
        "xx",                 /*tp_name*/
