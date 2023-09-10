@@ -31,6 +31,7 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 typedef struct {
        OB_HEAD
        char *m_name;
+       unsigned m_heap_name;
        method m_meth;
        object *m_self;
 } methodobject;
@@ -80,8 +81,10 @@ static void
 meth_dealloc(m)
        methodobject *m;
 {
-       if (m->m_self != NULL)
+       if (m->m_self != NULL) {
+		       if(m->m_heap_name) free(m->m_name);
                DECREF(m->m_self);
+	   }
        free((char *)m);
 }
 

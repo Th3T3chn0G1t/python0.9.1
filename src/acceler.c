@@ -117,7 +117,7 @@ fixstate(g, d, s)
                        accel[lbl] = a->a_arrow;
        }
        while (nl > 0 && accel[nl-1] == -1)
-               nl--;
+		   nl--;
        for (k = 0; k < nl && accel[k] == -1;)
                k++;
        if (k < nl) {

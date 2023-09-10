@@ -93,6 +93,7 @@ sys_exit(self, args)
        object *args;
 {
        int sts;
+	   DECREF(sysdict);
        if (!getintarg(args, &sts))
                return NULL;
        goaway(sts);

@@ -557,3 +557,9 @@ initbuiltin()
        initerrors();
        (void) dictinsert(builtin_dict, "None", None);
 }
+
+void
+donebuiltin()
+{
+	DECREF(builtin_dict);
+}
