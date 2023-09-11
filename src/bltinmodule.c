@@ -558,6 +558,9 @@ initbuiltin()
        (void) dictinsert(builtin_dict, "None", None);
 }
 
+extern void
+donebuiltin();
+
 void
 donebuiltin()
 {
