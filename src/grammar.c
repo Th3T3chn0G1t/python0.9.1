@@ -84,6 +84,7 @@ addstate(d)
        s = &d->d_state[d->d_nstates++];
        s->s_narcs = 0;
        s->s_arc = NULL;
+       s->s_accel = NULL;
        return s - d->d_state;
 }
 

@@ -52,8 +52,7 @@ addaccelerators(g)
        printf("Adding parser accellerators ...\n");
 #endif
        d = g->g_dfa;
-       for (i = g->g_ndfas; --i >= 0; d++)
-               fixdfa(g, d);
+       for (i = g->g_ndfas; --i >= 0; d++) fixdfa(g, d);
        g->g_accel = 1;
 #ifdef DEBUG
        printf("Done.\n");
@@ -68,8 +67,18 @@ fixdfa(g, d)
        state *s;
        int j;
        s = d->d_state;
-       for (j = 0; j < d->d_nstates; j++, s++)
-               fixstate(g, d, s);
+       for (j = 0; j < d->d_nstates; j++, s++) fixstate(g, d, s);
+}
+
+static int** freelist = 0;
+static int freelist_len = 0;
+
+extern void
+freeaccel()
+{
+       int i;
+       for(i = 0; i < freelist_len; ++i) free(freelist[i]);
+       free(freelist);
 }
 
 static void
@@ -123,10 +132,12 @@ fixstate(g, d, s)
        if (k < nl) {
                int i;
                s->s_accel = NEW(int, nl-k);
-               if (s->s_accel == NULL) {
+               freelist = realloc(freelist, sizeof(int*) * ++freelist_len);
+               if (s->s_accel == NULL || freelist == NULL) {
                        fprintf(stderr, "no mem to add parser accelerators\n");
                        exit(1);
                }
+               freelist[freelist_len - 1] = s->s_accel;
                s->s_lower = k;
                s->s_upper = nl;
                for (i = 0; k < nl; i++, k++)

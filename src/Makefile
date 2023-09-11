@@ -500,6 +500,6 @@ glmodule.c:    cstubs cgen
 # distributed Makefile because the files themselves are distributed.
 # Turn them on if you want to hack the grammar.
 
-#graminit.c graminit.h:        Grammar python_gen
-#	python_gen Grammar
+graminit.c graminit.h:        Grammar python_gen
+	-./python_gen Grammar
 

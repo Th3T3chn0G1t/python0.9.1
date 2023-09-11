@@ -587,6 +587,14 @@ dict_getattr(dp, name)
        return findmethod(dict_methods, (object *)dp, name);
 }
 
+extern void
+donedict();
+
+void
+donedict() {
+	DECREF(dummy);
+}
+
 typeobject Dicttype = {
        OB_HEAD_INIT(&Typetype)
        0,

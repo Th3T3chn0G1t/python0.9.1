@@ -54,12 +54,24 @@ Data members:
 #endif
 
 static object *sysdict;
+static object *sysin, *sysout, *syserr;
 
 object *
 sysget(name)
        char *name;
 {
        return dictlookup(sysdict, name);
+}
+
+extern void
+donesys();
+
+void
+donesys() {
+	DECREF(sysin);
+	DECREF(sysout);
+	DECREF(syserr);
+	DECREF(sysdict);
 }
 
 FILE *
@@ -105,8 +117,6 @@ static struct methodlist sys_methods[] = {
        {"exit",      sys_exit},
        {NULL,          NULL}           /* sentinel */
 };
-
-static object *sysin, *sysout, *syserr;
 
 void
 initsys()

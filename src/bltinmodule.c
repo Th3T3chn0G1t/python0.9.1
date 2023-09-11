@@ -547,6 +547,21 @@ initerrors()
                newstdexception("KeyboardInterrupt", "keyboard interrupt");
 }
 
+extern void
+doneerrors();
+
+void
+doneerrors()
+{
+	DECREF(RuntimeError);
+	DECREF(EOFError);
+	DECREF(TypeError);
+	DECREF(MemoryError);
+	DECREF(NameError);
+	DECREF(SystemError);
+	DECREF(KeyboardInterrupt);
+}
+
 void
 initbuiltin()
 {

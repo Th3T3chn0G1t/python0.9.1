@@ -2,3 +2,4 @@
 *.a
 
 src/python
+src/python_gen
