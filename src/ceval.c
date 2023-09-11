@@ -249,7 +249,10 @@ call_builtin(func, arg)
        return NULL;
 }
 
-static object *
+extern object *
+call_function();
+
+object *
 call_function(func, arg)
        object *func;
        object *arg;

@@ -197,8 +197,10 @@ int_mul(v, w)
        a = v->ob_ival;
        b = ((intobject *)w) -> ob_ival;
        x = (double)a * (double)b;
+/* TODO: Need sensible overflow detection logic
        if (x > 0x7fffffff || x < (double) (long) 0x80000000)
                return err_ovf();
+*/
        return newintobject(a * b);
 }
 
