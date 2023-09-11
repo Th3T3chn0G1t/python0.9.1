@@ -37,13 +37,15 @@ typedef struct {
 } methodobject;
 
 object *
-newmethodobject(name, meth, self)
+newmethodobject(name, meth, self, heapname)
        char *name; /* static string */
        method meth;
        object *self;
+	   unsigned int heapname;
 {
        methodobject *op = NEWOBJ(methodobject, &Methodtype);
        if (op != NULL) {
+               op->m_heap_name = heapname;
                op->m_name = name;
                op->m_meth = meth;
                if (self != NULL)
@@ -81,8 +83,8 @@ static void
 meth_dealloc(m)
        methodobject *m;
 {
+       if(m->m_heap_name) free(m->m_name);
        if (m->m_self != NULL) {
-		       if(m->m_heap_name) free(m->m_name);
                DECREF(m->m_self);
 	   }
        free((char *)m);
@@ -143,7 +145,7 @@ findmethod(ml, op, name)
 {
        for (; ml->ml_name != NULL; ml++) {
                if (strcmp(name, ml->ml_name) == 0)
-                       return newmethodobject(ml->ml_name, ml->ml_meth, op);
+                       return newmethodobject(ml->ml_name, ml->ml_meth, op, 0);
        }
        err_setstr(NameError, name);
        return NULL;

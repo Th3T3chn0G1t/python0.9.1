@@ -139,7 +139,7 @@ parsetok(tok, g, start, n_ret)
                        ret = E_NOMEM;
                        break;
                }
-               strncpy(str, a, len);
+               strncpy(str, a < tok->buf ? tok->buf : a, len);
                str[len] = '\0';
                ret = addtoken(ps, (int)type, str, tok->lineno);
                if (ret != E_OK) {

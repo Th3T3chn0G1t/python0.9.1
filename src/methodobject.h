@@ -30,7 +30,7 @@ extern typeobject Methodtype;
 
 typedef object *(*method) FPROTO((object *, object *));
 
-extern object *newmethodobject PROTO((char *, method, object *));
+extern object *newmethodobject PROTO((char *, method, object *, unsigned int));
 extern method getmethod PROTO((object *));
 extern object *getself PROTO((object *));
 
