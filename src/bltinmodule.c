@@ -34,6 +34,7 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #include "import.h"
 #include "pythonrun.h"
 #include "compile.h" /* For ceval.h */
+#include "frameobject.h"
 #include "ceval.h"
 #include "modsupport.h"
 
