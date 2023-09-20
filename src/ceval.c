@@ -51,7 +51,7 @@ prtrace(v, str)
 }
 #endif
 
-static frameobject *current_frame;
+frameobject *current_frame;
 
 object *
 getlocals()

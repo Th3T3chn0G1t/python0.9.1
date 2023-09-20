@@ -35,6 +35,7 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #include "errcode.h"
 #include "sysmodule.h"
 #include "compile.h"
+#include "frameobject.h"
 #include "ceval.h"
 #include "pythonrun.h"
 #include "import.h"

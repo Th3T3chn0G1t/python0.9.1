@@ -25,6 +25,8 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 /* Interface to execute compiled code */
 /* This header depends on "compile.h" */
 
+extern frameobject *current_frame;
+
 object *eval_code PROTO((codeobject *, object *, object *, object *));
 
 object *getglobals PROTO((void));
