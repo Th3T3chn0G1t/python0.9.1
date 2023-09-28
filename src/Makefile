@@ -383,10 +383,9 @@ python:                libpython.a $(OBJECTS) $(LIBDEPS) Makefile
 	$(CC) $(CFLAGS) $(OBJECTS) $(LIBS) -o python
 
 libpython.a:   $(LIBOBJECTS)
-	-rm -f @lib
-	ar cr @lib $(LIBOBJECTS)
-	$(RANLIB) @lib
-	mv @lib libpython.a
+	-rm -f libpython.a
+	ar cr libpython.a $(LIBOBJECTS)
+	$(RANLIB) libpython.a
 
 python_gen:    $(GENOBJECTS) $(RL_LIBDEPS)
 	$(CC) $(CFLAGS) $(GENOBJECTS) $(RL_LIBS) -o python_gen

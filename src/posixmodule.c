@@ -187,7 +187,11 @@ posix_chmod(self, args)
        object *self;
        object *args;
 {
+#ifdef _WINDOWS
        extern int chmod PROTO((const char *, int));
+#else
+	extern int chmod PROTO((const char *, mode_t));
+#endif
        return posix_strint(args, chmod);
 }
 
@@ -257,7 +261,7 @@ posix_mkdir(self, args)
        object *args;
 {
 #ifndef _WINDOWS
-       extern int mkdir PROTO((const char *, int));
+       extern int mkdir PROTO((const char *, mode_t));
 #endif
        return posix_strint(args, mkdir);
 }
