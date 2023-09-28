@@ -1,5 +1,6 @@
 *.o
 *.a
+*.exe
 
 src/python
 src/python_gen
