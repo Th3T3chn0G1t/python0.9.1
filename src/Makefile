@@ -501,5 +501,8 @@ glmodule.c:    cstubs cgen
 # Turn them on if you want to hack the grammar.
 
 graminit.c graminit.h:        Grammar python_gen
-	-./python_gen Grammar
-
+ifdef WINDOWS
+	-$(CROSS_TOOL) ./python_gen.exe Grammar
+else
+	-$(CROSS_TOOL) ./python_gen Grammar
+endif
