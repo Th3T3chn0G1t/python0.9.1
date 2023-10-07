@@ -384,7 +384,7 @@ python:                libpython.a $(OBJECTS) $(LIBDEPS) Makefile
 
 libpython.a:   $(LIBOBJECTS)
 	-rm -f libpython.a
-	ar cr libpython.a $(LIBOBJECTS)
+	$(AR) cr libpython.a $(LIBOBJECTS)
 	$(RANLIB) libpython.a
 
 python_gen:    $(GENOBJECTS) $(RL_LIBDEPS)
