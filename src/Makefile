@@ -382,6 +382,9 @@ GENSOURCES=    acceler.c fgetsintr.c grammar1.c \
 python:                libpython.a $(OBJECTS) $(LIBDEPS) Makefile
 	$(CC) $(CFLAGS) $(OBJECTS) $(LIBS) -o python
 
+$(LIBOBJECTS): graminit.h
+$(OBJECTS): graminit.h
+
 libpython.a:   $(LIBOBJECTS)
 	-rm -f libpython.a
 	$(AR) cr libpython.a $(LIBOBJECTS)
