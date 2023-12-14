@@ -49,70 +49,70 @@ char *askfile PROTO((void));
 
 int
 main(argc, argv)
-       int argc;
-       char **argv;
+		int argc;
+		char **argv;
 {
-       grammar *g;
-       node *n;
-       FILE *fp;
-       char *filename;
+	grammar *g;
+	node *n;
+	FILE *fp;
+	char *filename;
 
 #ifdef THINK_C
-       filename = askfile();
+	filename = askfile();
 #else
-       if (argc != 2) {
-               fprintf(stderr, "usage: %s grammar\n", argv[0]);
-               exit(2);
-       }
-       filename = argv[1];
+	if (argc != 4) {
+		fprintf(stderr, "usage: %s grammar outsource outheader\n", argv[0]);
+		exit(2);
+	}
+	filename = argv[1];
 #endif
-       g = getgrammar(filename);
-       fp = fopen("graminit.c", "w");
-       if (fp == NULL) {
-               perror("graminit.c");
-               exit(1);
-       }
-       printf("Writing graminit.c ...\n");
-       printgrammar(g, fp);
-       fclose(fp);
-       fp = fopen("graminit.h", "w");
-       if (fp == NULL) {
-               perror("graminit.h");
-               exit(1);
-       }
-       printf("Writing graminit.h ...\n");
-       printnonterminals(g, fp);
-       fclose(fp);
-       exit(0);
+	g = getgrammar(filename);
+	fp = fopen(argv[2], "w");
+	if (fp == NULL) {
+		perror("graminit.c");
+		exit(1);
+	}
+	printf("Writing graminit.c ...\n");
+	printgrammar(g, fp);
+	fclose(fp);
+	fp = fopen(argv[3], "w");
+	if (fp == NULL) {
+		perror("graminit.h");
+		exit(1);
+	}
+	printf("Writing graminit.h ...\n");
+	printnonterminals(g, fp);
+	fclose(fp);
+	exit(0);
 }
 
 grammar *
 getgrammar(filename)
-       char *filename;
+		char *filename;
 {
-       FILE *fp;
-       node *n;
-       grammar *g0, *g;
+	FILE *fp;
+	node *n;
+	grammar *g0, *g;
 
-       fp = fopen(filename, "r");
-       if (fp == NULL) {
-               perror(filename);
-               exit(1);
-       }
-       g0 = meta_grammar();
-       n = NULL;
-       parsefile(fp, filename, g0, g0->g_start, (char *)NULL, (char *)NULL, &n);
-       fclose(fp);
-       if (n == NULL) {
-               fprintf(stderr, "Parsing error.\n");
-               exit(1);
-       }
-       g = pgen(n);
-       if (g == NULL) {
-               printf("Bad grammar.\n");
-               exit(1);
-       }
-       return g;
+	fp = fopen(filename, "r");
+	if (fp == NULL) {
+		perror(filename);
+		exit(1);
+	}
+	g0 = meta_grammar();
+	n = NULL;
+	parsefile(fp, filename, g0, g0->g_start, (char *)NULL, (char *)NULL, &n);
+	fclose(fp);
+	if (n == NULL) {
+		fprintf(stderr, "Parsing error.\n");
+		exit(1);
+	}
+	g = pgen(n);
+	if (g == NULL) {
+		printf("Bad grammar.\n");
+		exit(1);
+	}
+	return g;
 }
 
 #ifdef THINK_C
@@ -137,10 +137,10 @@ askfile()
 
 void
 fatal(msg)
-       char *msg;
+		char *msg;
 {
-       fprintf(stderr, "pgen: FATAL ERROR: %s\n", msg);
-       exit(1);
+	fprintf(stderr, "pgen: FATAL ERROR: %s\n", msg);
+	exit(1);
 }
 
 /* XXX TO DO:

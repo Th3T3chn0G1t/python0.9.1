@@ -3,6 +3,6 @@
 *.exe
 
 src/python
-src/python_gen
+src/pgenmain
 
 src/graminit*
