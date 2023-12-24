@@ -40,7 +40,7 @@ addfirstsets(g)
        int i;
        dfa *d;
 
-       printf("Adding FIRST sets ...\n");
+	   fprintf(stderr, "Adding FIRST sets ...\n");
        for (i = 0; i < g->g_ndfas; i++) {
                d = &g->g_dfa[i];
                if (d->d_first == NULL)

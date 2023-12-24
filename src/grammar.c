@@ -160,7 +160,7 @@ translatelabels(g)
 {
        int i;
 
-       printf("Translating labels ...\n");
+	   fprintf(stderr, "Translating labels ...\n");
        /* Don't translate EMPTY */
        for (i = EMPTY+1; i < g->g_ll.ll_nlabels; i++)
                translabel(g, &g->g_ll.ll_label[i]);

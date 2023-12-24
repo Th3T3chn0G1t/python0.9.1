@@ -72,7 +72,7 @@ main(argc, argv)
 		perror("graminit.c");
 		exit(1);
 	}
-	printf("Writing graminit.c ...\n");
+	fprintf(stderr, "Writing graminit.c ...\n");
 	printgrammar(g, fp);
 	fclose(fp);
 	fp = fopen(argv[3], "w");
@@ -80,7 +80,7 @@ main(argc, argv)
 		perror("graminit.h");
 		exit(1);
 	}
-	printf("Writing graminit.h ...\n");
+	fprintf(stderr, "Writing graminit.h ...\n");
 	printnonterminals(g, fp);
 	fclose(fp);
 	exit(0);
