@@ -24,6 +24,8 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 /* Python interpreter main program */
 
+#ifdef AGA_SCRIPT_H
+
 #include "patchlevel.h"
 
 #include "allobjects.h"
@@ -48,9 +50,7 @@ extern grammar gram; /* From graminit.c */
 int debugging; /* Needed by parser.c */
 #endif
 
-main(argc, argv)
-       int argc;
-       char **argv;
+int main(int argc, char **argv)
 {
        char *filename = NULL;
        FILE *fp = stdin;
@@ -439,3 +439,5 @@ isatty(fd)
 */
 
 /* "Floccinaucinihilipilification" */
+
+#endif

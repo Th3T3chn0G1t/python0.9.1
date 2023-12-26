@@ -1,3 +1,5 @@
+#ifndef _MSC_VER
+
 /***********************************************************
 Copyright 1991 by Stichting Mathematisch Centrum, Amsterdam, The
 Netherlands.
@@ -613,3 +615,5 @@ initaudio()
 {
        initmodule("audio", audio_methods);
 }
+
+#endif

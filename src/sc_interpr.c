@@ -1,3 +1,5 @@
+#ifndef _MSC_VER
+
 /***********************************************************
 Copyright 1991 by Stichting Mathematisch Centrum, Amsterdam, The
 Netherlands.
@@ -1350,3 +1352,5 @@ struct sc_ProcessBlock sc_pb;
        UnInit(self, &sc_pb);
        return returnobject;
 }
+
+#endif

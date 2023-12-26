@@ -22,6 +22,9 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 ******************************************************************/
 
+#ifndef _NODE_H
+#define _NODE_H
+
 /* Parse tree node interface */
 
 typedef struct _node {
@@ -56,3 +59,5 @@ extern void freetree PROTO((node *n));
 
 extern void listtree PROTO((node *));
 extern void listnode PROTO((FILE *, node *));
+
+#endif

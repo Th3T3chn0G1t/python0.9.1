@@ -1,3 +1,5 @@
+#ifndef _MSC_VER
+
 /***********************************************************
 Copyright 1991 by Stichting Mathematisch Centrum, Amsterdam, The
 Netherlands.
@@ -1088,3 +1090,5 @@ initpanel()
        pnl_block = 0;
        initmodule("pnl", module_methods);
 }
+
+#endif

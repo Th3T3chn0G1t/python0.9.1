@@ -1,3 +1,5 @@
+#ifndef _MSC_VER
+
 /***********************************************************
 Copyright 1991 by Stichting Mathematisch Centrum, Amsterdam, The
 Netherlands.
@@ -772,3 +774,5 @@ static struct methodlist cap_methods[] = {
        {"tod_settime",               cap_tod_settime},
        {NULL,                  NULL}                   /* Sentinel */
 };
+
+#endif

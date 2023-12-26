@@ -1,3 +1,5 @@
+#ifndef _MSC_VER
+
 /***********************************************************
 Copyright 1991 by Stichting Mathematisch Centrum, Amsterdam, The
 Netherlands.
@@ -143,3 +145,5 @@ err_scerrset(sc_errno, value, instr)
        DECREF(t);
        return -1;
 }
+
+#endif

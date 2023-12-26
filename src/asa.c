@@ -1,3 +1,5 @@
+#ifndef _MSC_VER
+
 /***********************************************************
 Copyright 1991 by Stichting Mathematisch Centrum, Amsterdam, The
 Netherlands.
@@ -492,3 +494,5 @@ go(str)
 }
 
 #endif /* MAIN */
+
+#endif

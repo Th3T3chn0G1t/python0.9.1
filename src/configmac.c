@@ -1,3 +1,5 @@
+#ifndef _MSC_VER
+
 /***********************************************************
 Copyright 1991 by Stichting Mathematisch Centrum, Amsterdam, The
 Netherlands.
@@ -107,3 +109,5 @@ struct {
 #endif
        {0,             0}              /* Sentinel */
 };
+
+#endif

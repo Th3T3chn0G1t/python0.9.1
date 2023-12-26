@@ -1,3 +1,5 @@
+#ifndef _MSC_VER
+
 /***********************************************************
 Copyright 1991 by Stichting Mathematisch Centrum, Amsterdam, The
 Netherlands.
@@ -244,3 +246,5 @@ initmac()
        if (MacError == NULL || dictinsert(d, "error", MacError) != 0)
                fatal("can't define mac.error");
 }
+
+#endif

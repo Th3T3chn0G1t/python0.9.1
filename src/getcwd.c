@@ -1,3 +1,5 @@
+#ifndef _MSC_VER
+
 /***********************************************************
 Copyright 1991 by Stichting Mathematisch Centrum, Amsterdam, The
 Netherlands.
@@ -98,5 +100,7 @@ getcwd(buf, size)
        *p = '\0';
        return buf;
 }
+
+#endif
 
 #endif

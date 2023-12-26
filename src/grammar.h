@@ -22,6 +22,9 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 ******************************************************************/
 
+#ifndef _GRAMMAR_H
+#define _GRAMMAR_H
+
 /* Grammar interface */
 
 #include "bitset.h" /* Sigh... */
@@ -103,3 +106,5 @@ void addaccellerators PROTO((grammar *g));
 
 void printgrammar PROTO((grammar *g, FILE *fp));
 void printnonterminals PROTO((grammar *g, FILE *fp));
+
+#endif

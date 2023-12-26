@@ -239,7 +239,9 @@ extern long ref_total;
                DELREF(op)
 #else
 #define NEWREF(op) ((op)->ob_refcnt = 1)
+#undef INCREF
 #define INCREF(op) ((op)->ob_refcnt++)
+#undef DECREF
 #define DECREF(op) \
        if (--(op)->ob_refcnt > 0) \
                ; \

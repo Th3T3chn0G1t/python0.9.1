@@ -1,3 +1,5 @@
+#ifndef _MSC_VER
+
 /***********************************************************
 Copyright 1991 by Stichting Mathematisch Centrum, Amsterdam, The
 Netherlands.
@@ -1695,3 +1697,5 @@ initstdwin()
        }
        initmodule("stdwin", stdwin_methods);
 }
+
+#endif

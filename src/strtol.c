@@ -1,3 +1,5 @@
+#ifndef _MSC_VER
+
 /***********************************************************
 Copyright 1991 by Stichting Mathematisch Centrum, Amsterdam, The
 Netherlands.
@@ -120,3 +122,5 @@ int            base;
        *ptr = str;
     return minus ? -result : result;
 }
+
+#endif

@@ -33,8 +33,11 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #include <signal.h>
 #include <setjmp.h>
 
-#ifdef __STDC__
+#if defined(__STDC__) || defined(_MSC_VER)
 #include <time.h>
+#ifdef _MSC_VER
+#include <direct.h>
+#endif
 #else /* !__STDC__ */
 typedef unsigned long time_t;
 extern time_t time();
@@ -81,7 +84,11 @@ time_sleep(self, args)
        sigsave = signal(SIGINT, SIG_IGN);
        if (sigsave != (SIGTYPE (*)()) SIG_IGN)
                signal(SIGINT, sleep_catcher);
-       sleep(secs);
+#ifdef _MSC_VER
+	   _sleep(secs);
+#else
+	   sleep(secs);
+#endif
        signal(SIGINT, sigsave);
        INCREF(None);
        return None;

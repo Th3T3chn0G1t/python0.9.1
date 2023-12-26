@@ -22,6 +22,9 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 ******************************************************************/
 
+#ifndef _PARSER_H
+#define _PARSER_H
+
 /* Parser interface */
 
 #define MAXSTACK 100
@@ -48,3 +51,5 @@ parser_state *newparser PROTO((struct _grammar *g, int start));
 void delparser PROTO((parser_state *ps));
 int addtoken PROTO((parser_state *ps, int type, char *str, int lineno));
 void addaccelerators PROTO((grammar *g));
+
+#endif

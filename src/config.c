@@ -24,6 +24,8 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 /* Configurable Python configuration file */
 
+#ifdef AGA_SCRIPT_H
+
 #include <stdio.h>
 
 #ifdef USE_STDWIN
@@ -178,3 +180,5 @@ struct {
 
        {0,             0}              /* Sentinel */
 };
+
+#endif

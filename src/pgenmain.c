@@ -32,6 +32,8 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
    Error messages and status info during the generation process are
    written to stdout, or sometimes to stderr. */
 
+#ifndef AF_BUILD
+
 #include "pgenheaders.h"
 #include "grammar.h"
 #include "node.h"
@@ -146,3 +148,5 @@ fatal(msg)
 /* XXX TO DO:
    - check for duplicate definitions of names (instead of fatal err)
 */
+
+#endif

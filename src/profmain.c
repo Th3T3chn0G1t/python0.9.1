@@ -1,3 +1,5 @@
+#ifndef _MSC_VER
+
 /***********************************************************
 Copyright 1991 by Stichting Mathematisch Centrum, Amsterdam, The
 Netherlands.
@@ -131,3 +133,5 @@ askgo(prompt)
        fprintf(stderr, "%s: hit return when ready: ", prompt);
        fgets(buf, sizeof buf, stdin);
 }
+
+#endif

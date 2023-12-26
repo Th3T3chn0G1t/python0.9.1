@@ -29,6 +29,7 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #include <setjmp.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#ifndef _MSC_VER
 #include <sys/time.h>
 #ifdef SYSV
 #include <dirent.h>
@@ -36,13 +37,16 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #else
 #include <sys/dir.h>
 #endif
+#else
+#include <direct.h>
+#endif
 
 #include "allobjects.h"
 #include "modsupport.h"
 
 extern char *strerror PROTO((int));
 
-#ifdef AMOEBA
+#if defined(AMOEBA) || defined(_MSC_VER)
 #define NO_LSTAT
 #endif
 
@@ -220,6 +224,7 @@ posix_link(self, args)
 }
 #endif
 
+#ifndef _MSC_VER
 static object *
 posix_listdir(self, args)
        object *self;
@@ -254,6 +259,7 @@ posix_listdir(self, args)
        closedir(dirp);
        return d;
 }
+#endif
 
 static object *
 posix_mkdir(self, args)
@@ -399,7 +405,9 @@ static struct methodlist posix_methods[] = {
 #ifndef _WINDOWS
        {"link",      posix_link},
 #endif
+#ifndef _MSC_VER
        {"listdir",   posix_listdir},
+#endif
        {"mkdir",     posix_mkdir},
        {"rename",    posix_rename},
        {"rmdir",     posix_rmdir},
