@@ -31,14 +31,14 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #include <sys/stat.h>
 #ifndef _MSC_VER
 #include <sys/time.h>
+#endif
 #ifdef SYSV
 #include <dirent.h>
 #define direct dirent
 #else
+#ifndef _MSC_VER
 #include <sys/dir.h>
 #endif
-#else
-#include <direct.h>
 #endif
 
 #include "allobjects.h"
