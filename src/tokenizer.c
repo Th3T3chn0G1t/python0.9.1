@@ -371,7 +371,7 @@ tok_get(tok, p_start, p_end)
        /* Skip spaces */
        do {
                c = tok_nextc(tok);
-       } while (c == ' ' || c == '\t');
+       } while (c == ' ' || c == '\t' || c == '\r');
 
        /* Set start of current token */
        *p_start = tok->cur - 1;

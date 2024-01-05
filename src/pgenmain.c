@@ -111,7 +111,7 @@ getgrammar(filename)
 	}
 	g = pgen(n);
 	if (g == NULL) {
-		printf("Bad grammar.\n");
+		fprintf(stderr, "Bad grammar.\n");
 		exit(1);
 	}
 	return g;
