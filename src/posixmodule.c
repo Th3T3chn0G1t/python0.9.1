@@ -261,6 +261,13 @@ posix_listdir(self, args)
 }
 #endif
 
+#ifdef _WINDOWS
+static int winmkdir(const char* path, int mode) {
+	(void) mode;
+	return mkdir(path);
+}
+#endif
+
 static object *
 posix_mkdir(self, args)
        object *self;
@@ -268,8 +275,10 @@ posix_mkdir(self, args)
 {
 #ifndef _WINDOWS
        extern int mkdir PROTO((const char *, mode_t));
-#endif
        return posix_strint(args, mkdir);
+#else
+	return posix_strint(args, winmkdir);
+#endif
 }
 
 static object *

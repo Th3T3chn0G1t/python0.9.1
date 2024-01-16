@@ -272,6 +272,7 @@ extern object NoObject; /* Don't use this directly */
 
 #define None (&NoObject)
 
+static void pyobject_free(object* p) { free(p); }
 
 /*
 123456789-123456789-123456789-123456789-123456789-123456789-123456789-12

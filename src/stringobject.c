@@ -281,7 +281,7 @@ typeobject Stringtype = {
        "string",
        sizeof(stringobject),
        sizeof(char),
-       free,           /*tp_dealloc*/
+       pyobject_free,  /*tp_dealloc*/
        stringprint,    /*tp_print*/
        0,              /*tp_getattr*/
        0,              /*tp_setattr*/
