@@ -160,7 +160,7 @@ tb_displayline(fp, filename, lineno)
        int i;
        if (filename[0] == '<' && filename[strlen(filename)-1] == '>')
                return;
-       xfp = fopen(filename, "r");
+       xfp = pyopen_r(filename);
        if (xfp == NULL) {
                fprintf(fp, "    (cannot open \"%s\")\n", filename);
                return;
@@ -177,7 +177,7 @@ tb_displayline(fp, filename, lineno)
                if (strchr(p, '\n') == NULL)
                        fprintf(fp, "\n");
        }
-       fclose(xfp);
+		pyclose(xfp);
 }
 
 static void

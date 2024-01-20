@@ -395,7 +395,7 @@ tok_get(tok, p_start, p_end)
        }
 
        /* Check for EOF and errors now */
-       if (c == EOF)
+       if (c == EOF || c == 0xFF)
                return tok->done == E_EOF ? ENDMARKER : ERRORTOKEN;
 
        /* Identifier (most frequent token!) */

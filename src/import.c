@@ -96,7 +96,7 @@ open_module(name, suffix, namebuf)
        if (path == NULL || !is_listobject(path)) {
                strcpy(namebuf, name);
                strcat(namebuf, suffix);
-               fp = fopen(namebuf, "r");
+               fp = pyopen_r(namebuf);
        }
        else {
                int npath = getlistsize(path);
@@ -113,7 +113,7 @@ open_module(name, suffix, namebuf)
                                namebuf[len++] = SEP;
                        strcpy(namebuf+len, name);
                        strcat(namebuf, suffix);
-                       fp = fopen(namebuf, "r");
+                       fp = pyopen_r(namebuf);
                        if (fp != NULL)
                                break;
                }
@@ -142,7 +142,7 @@ get_module(m, name, m_ret)
                return NULL;
        }
        err = parse_file(fp, namebuf, file_input, &n);
-       fclose(fp);
+       pyclose(fp);
        if (err != E_DONE) {
                err_input(err);
                return NULL;
