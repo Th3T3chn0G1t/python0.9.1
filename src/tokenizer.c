@@ -494,6 +494,7 @@ tok_get(tok, p_start, p_end)
        /* Line continuation */
        if (c == '\\') {
                c = tok_nextc(tok);
+               if (c == '\r') c = tok_nextc(tok);
                if (c != '\n') {
                        tok->done = E_TOKEN;
                        return ERRORTOKEN;
