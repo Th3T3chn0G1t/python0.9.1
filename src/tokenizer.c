@@ -257,7 +257,7 @@ tok_backup(tok, c)
        register struct tok_state *tok;
        register int c;
 {
-       if (c != EOF) {
+       if (c != EOF && c != 0xFF) {
                if (--tok->cur < tok->buf) {
                        fprintf(stderr, "tok_backup: begin of buffer\n");
                        abort();
@@ -367,6 +367,15 @@ tok_get(tok, p_start, p_end)
                }
        }
 
+	   /*
+	    * NOTE(agapatch): This is a bit of a janky way to fix files following
+	    * 				  Scripts in packs. This may make unexpected EOF cause
+	    * 				  Crashes or unstable script engine state.
+	    */
+       if (c == EOF || c == 0xFF) {
+              return ENDMARKER;
+       }
+
  again:
        /* Skip spaces */
        do {
@@ -391,7 +400,7 @@ tok_get(tok, p_start, p_end)
                }
                do {
                        c = tok_nextc(tok);
-               } while (c != EOF && c != '\n');
+               } while (c != EOF && c != 0xFF && c != '\n');
        }
 
        /* Check for EOF and errors now */
@@ -471,14 +480,14 @@ tok_get(tok, p_start, p_end)
        if (c == '\'') {
                for (;;) {
                        c = tok_nextc(tok);
-                       if (c == '\n' || c == EOF) {
+                       if (c == '\n' || c == EOF || c == 0xFF) {
                                tok->done = E_TOKEN;
                                return ERRORTOKEN;
                        }
                        if (c == '\\') {
                                c = tok_nextc(tok);
                                *p_end = tok->cur;
-                               if (c == '\n' || c == EOF) {
+                               if (c == '\n' || c == EOF || c == 0xFF) {
                                        tok->done = E_TOKEN;
                                        return ERRORTOKEN;
                                }
