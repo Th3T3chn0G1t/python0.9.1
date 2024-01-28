@@ -191,7 +191,7 @@ posix_chmod(self, args)
        object *self;
        object *args;
 {
-#ifdef _WINDOWS
+#ifdef _WIN32
        extern int chmod PROTO((const char *, int));
 #else
 	extern int chmod PROTO((const char *, mode_t));
@@ -213,7 +213,7 @@ posix_getcwd(self, args)
        return newstringobject(buf);
 }
 
-#ifndef _WINDOWS
+#ifndef _WIN32
 static object *
 posix_link(self, args)
        object *self;
@@ -261,7 +261,7 @@ posix_listdir(self, args)
 }
 #endif
 
-#ifdef _WINDOWS
+#ifdef _WIN32
 static int winmkdir(const char* path, int mode) {
 	(void) mode;
 	return mkdir(path);
@@ -273,7 +273,7 @@ posix_mkdir(self, args)
        object *self;
        object *args;
 {
-#ifndef _WINDOWS
+#ifndef _WIN32
        extern int mkdir PROTO((const char *, mode_t));
        return posix_strint(args, mkdir);
 #else
@@ -344,7 +344,7 @@ posix_unlink(self, args)
        return posix_1str(args, unlink);
 }
 
-#ifndef _WINDOWS
+#ifndef _WIN32
 static object *
 posix_utimes(self, args)
        object *self;
@@ -411,7 +411,7 @@ static struct methodlist posix_methods[] = {
        {"chdir",     posix_chdir},
        {"chmod",     posix_chmod},
        {"getcwd",    posix_getcwd},
-#ifndef _WINDOWS
+#ifndef _WIN32
        {"link",      posix_link},
 #endif
 #ifndef _MSC_VER
@@ -424,7 +424,7 @@ static struct methodlist posix_methods[] = {
        {"system",    posix_system},
        {"umask",     posix_umask},
        {"unlink",    posix_unlink},
-#ifndef _WINDOWS
+#ifndef _WIN32
        {"utimes",    posix_utimes},
 #endif
 #ifndef NO_LSTAT
