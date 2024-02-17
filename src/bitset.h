@@ -24,9 +24,9 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 /* Bitset interface */
 
-#define BYTE           char
+#define PY_BYTE           char
 
-typedef BYTE *bitset;
+typedef PY_BYTE *bitset;
 
 bitset newbitset PROTO((int nbits));
 void delbitset PROTO((bitset bs));
@@ -35,7 +35,7 @@ int addbit PROTO((bitset bs, int ibit)); /* Returns 0 if already set */
 int samebitset PROTO((bitset bs1, bitset bs2, int nbits));
 void mergebitset PROTO((bitset bs1, bitset bs2, int nbits));
 
-#define BITSPERBYTE    (8*sizeof(BYTE))
+#define BITSPERBYTE    (8*sizeof(PY_BYTE))
 #define NBYTES(nbits)  (((nbits) + BITSPERBYTE - 1) / BITSPERBYTE)
 
 #define BIT2BYTE(ibit) ((ibit) / BITSPERBYTE)

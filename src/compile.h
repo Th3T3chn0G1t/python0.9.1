@@ -22,6 +22,9 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 ******************************************************************/
 
+#ifndef PY_COMPILE_H
+#define PY_COMPILE_H
+
 /* Definitions for compiled intermediate code */
 
 
@@ -45,3 +48,5 @@ extern typeobject Codetype;
 
 /* Public interface */
 codeobject *compile PROTO((struct _node *, char *));
+
+#endif

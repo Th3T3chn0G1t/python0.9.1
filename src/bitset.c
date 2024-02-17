@@ -32,7 +32,7 @@ newbitset(nbits)
        int nbits;
 {
        int nbytes = NBYTES(nbits);
-       bitset ss = NEW(BYTE, nbytes);
+       bitset ss = NEW(PY_BYTE, nbytes);
 
        if (ss == NULL)
                fatal("no mem for bitset");
@@ -56,7 +56,7 @@ addbit(ss, ibit)
        int ibit;
 {
        int ibyte = BIT2BYTE(ibit);
-       BYTE mask = BIT2MASK(ibit);
+       PY_BYTE mask = BIT2MASK(ibit);
 
        if (ss[ibyte] & mask)
                return 0; /* Bit already set */

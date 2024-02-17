@@ -22,6 +22,9 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 ******************************************************************/
 
+#ifndef PY_FRAMEOBJECT_H
+#define PY_FRAMEOBJECT_H
+
 /* Frame object interface */
 
 typedef struct {
@@ -78,3 +81,5 @@ frameobject * newframeobject PROTO(
 
 void setup_block PROTO((frameobject *, int, int, int));
 block *pop_block PROTO((frameobject *));
+
+#endif

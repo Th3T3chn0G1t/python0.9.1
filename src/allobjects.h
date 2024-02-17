@@ -24,6 +24,9 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 /* "allobjects.c" -- Source for precompiled header "allobjects.h" */
 
+#ifndef PY_ALLOBJECTS_H
+#define PY_ALLOBJECTS_H
+
 #include <stdio.h>
 #include <string.h>
 
@@ -48,3 +51,5 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #include "malloc.h"
 
 extern char *strdup PROTO((const char *));
+
+#endif
