@@ -518,7 +518,7 @@ tok_get(tok, p_start, p_end)
 }
 
 
-#ifdef DEBUG
+#ifdef _DEBUG
 
 void
 tok_dump(type, start, end)

@@ -22,7 +22,6 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 ******************************************************************/
 
-#define NDEBUG
 /* Object and type object interface */
 
 /*
@@ -75,7 +74,9 @@ whose size is determined when the object is allocated.
 #ifndef NDEBUG
 
 /* Turn on heavy reference debugging */
+/* TODO: Fix this
 #define TRACE_REFS
+ */
 
 /* Turn on reference counting */
 #define REF_DEBUG

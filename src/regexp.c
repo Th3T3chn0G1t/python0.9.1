@@ -760,7 +760,7 @@ STATIC int regtry();
 STATIC int regmatch();
 STATIC int regrepeat();
 
-#ifdef DEBUG
+#ifdef _DEBUG
 int regnarrate = 0;
 void regdump();
 STATIC char *regprop();
@@ -948,12 +948,12 @@ char *prog;
        extern char *strchr();
 
        scan = prog;
-#ifdef DEBUG
+#ifdef _DEBUG
        if (scan != NULL && regnarrate)
                fprintf(stderr, "%s(\n", regprop(scan));
 #endif
        while (scan != NULL) {
-#ifdef DEBUG
+#ifdef _DEBUG
                if (regnarrate)
                        fprintf(stderr, "%s...\n", regprop(scan));
 #endif
@@ -1225,7 +1225,7 @@ register char *p;
                return(p+offset);
 }
 
-#ifdef DEBUG
+#ifdef _DEBUG
 
 STATIC char *regprop();
 

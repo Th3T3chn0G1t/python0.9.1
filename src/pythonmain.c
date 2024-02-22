@@ -46,7 +46,7 @@ extern char *getpythonpath();
 
 extern grammar gram; /* From graminit.c */
 
-#ifdef DEBUG
+#ifdef _DEBUG
 int debugging; /* Needed by parser.c */
 #endif
 

@@ -252,13 +252,15 @@ UNREF(op)
        register object *op;
 {
        register object *p;
+	   int dbg;
        if (op->ob_refcnt < 0) {
                fprintf(stderr, "UNREF negative refcnt\n");
                abort();
        }
        for (p = refchain._ob_next; p != &refchain; p = p->_ob_next) {
                if (p == op)
-                       break;
+				   break;
+		   dbg++;
        }
        if (p == &refchain) { /* Not found */
                fprintf(stderr, "UNREF unknown object\n");

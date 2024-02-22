@@ -36,8 +36,7 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #include "parser.h"
 #include "errcode.h"
 
-
-#ifdef DEBUG
+#ifdef _DEBUG
 extern int debugging;
 #define D(x) if (!debugging); else x
 #else
@@ -78,7 +77,7 @@ s_push(s, d, parent)
        return 0;
 }
 
-#ifdef DEBUG
+#ifdef _DEBUG
 
 static void s_pop PROTO((stack *));
 
@@ -304,7 +303,7 @@ addtoken(ps, type, str, lineno)
 }
 
 
-#ifdef DEBUG
+#ifdef _DEBUG
 
 /* DEBUG OUTPUT */
 
