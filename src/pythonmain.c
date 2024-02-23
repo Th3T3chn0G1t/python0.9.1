@@ -346,6 +346,7 @@ void
 fatal(msg)
        char *msg;
 {
+	/* TODO: Hook all random python/libwww prints for sinking. */
        fprintf(stderr, "Fatal error: %s\n", msg);
        abort();
 }
