@@ -65,8 +65,8 @@ Don't forget to apply INCREF() when returning True or False!!!
 
 extern intobject FalseObject, TrueObject; /* Don't use these directly */
 
-#define False ((object *) &FalseObject)
-#define True ((object *) &TrueObject)
+#define PyFalse ((object *) &FalseObject)
+#define PyTrue ((object *) &TrueObject)
 
 /* Macro, trading safety for speed */
 #define GETINTVALUE(op) ((op)->ob_ival)

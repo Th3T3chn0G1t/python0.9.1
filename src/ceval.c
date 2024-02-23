@@ -222,7 +222,7 @@ not(v)
        object *v;
 {
        int outcome = testbool(v);
-       object *w = outcome == 0 ? True : False;
+       object *w = outcome == 0 ? PyTrue : PyFalse;
        INCREF(w);
        return w;
 }
@@ -538,7 +538,7 @@ cmp_outcome(op, v, w)
                /* XXX no default? (res is initialized to 0 though) */
                }
        }
-       v = res ? True : False;
+       v = res ? PyTrue : PyFalse;
        INCREF(v);
        return v;
 }
