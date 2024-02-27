@@ -382,7 +382,7 @@ dumpnfa(ll, nf)
 
 static int
 addclosure(ss, nf, istate)
-       bitset ss;
+       py_bitset_t ss;
        nfa *nf;
        int istate;
 {
@@ -400,13 +400,13 @@ addclosure(ss, nf, istate)
 }
 
 typedef struct _ss_arc {
-       bitset  sa_bitset;
+       py_bitset_t  sa_bitset;
        int     sa_arrow;
        int     sa_label;
 } ss_arc;
 
 typedef struct _ss_state {
-       bitset  ss_ss;
+       py_bitset_t  ss_ss;
        int     ss_narcs;
        ss_arc  *ss_arc;
        int     ss_deleted;
@@ -426,7 +426,7 @@ makedfa(gr, nf, d)
        dfa *d;
 {
        int nbits = nf->nf_nstates;
-       bitset ss;
+       py_bitset_t ss;
        int xx_nstates;
        ss_state *xx_state, *yy;
        ss_arc *zz;
@@ -445,7 +445,7 @@ makedfa(gr, nf, d)
        yy->ss_narcs = 0;
        yy->ss_arc = NULL;
        yy->ss_deleted = 0;
-       yy->ss_finish = testbit(ss, nf->nf_finish);
+       yy->ss_finish = PY_TESTBIT(ss, nf->nf_finish);
        if (yy->ss_finish)
                printf("Error: nonterminal '%s' may produce empty.\n",
                        nf->nf_name);
@@ -459,7 +459,7 @@ makedfa(gr, nf, d)
                ss = yy->ss_ss;
                /* For all its states... */
                for (ibit = 0; ibit < nf->nf_nstates; ++ibit) {
-                       if (!testbit(ss, ibit))
+                       if (!PY_TESTBIT(ss, ibit))
                                continue;
                        st = &nf->nf_state[ibit];
                        /* For all non-empty arcs from this state... */
@@ -505,7 +505,7 @@ makedfa(gr, nf, d)
                        yy->ss_narcs = 0;
                        yy->ss_arc = NULL;
                        yy->ss_deleted = 0;
-                       yy->ss_finish = testbit(yy->ss_ss, nf->nf_finish);
+                       yy->ss_finish = PY_TESTBIT(yy->ss_ss, nf->nf_finish);
                 done:  ;
                }
        }
@@ -546,7 +546,7 @@ printssdfa(xx_nstates, xx_state, nbits, ll, msg)
                        printf(" (finish)");
                printf(" { ");
                for (ibit = 0; ibit < nbits; ibit++) {
-                       if (testbit(yy->ss_ss, ibit))
+                       if (PY_TESTBIT(yy->ss_ss, ibit))
                                printf("%d ", ibit);
                }
                printf("}\n");

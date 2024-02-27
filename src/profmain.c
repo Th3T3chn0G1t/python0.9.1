@@ -27,14 +27,12 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #include <stdio.h>
 #include "string.h"
 
-#include "PROTO.h"
 #include "grammar.h"
 #include "node.h"
 #include "parsetok.h"
 #include "graminit.h"
 #include "tokenizer.h"
 #include "errcode.h"
-#include "malloc.h"
 
 extern int _profile;
 

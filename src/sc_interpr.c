@@ -32,7 +32,6 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 #include <ailamoeba.h>
 
-#include "PROTO.h"
 #include "sc_global.h"
 #include "object.h"
 #include "objimpl.h"

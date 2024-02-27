@@ -35,10 +35,10 @@ extern typeobject Dicttype;
 
 #define is_dictobject(op) ((op)->ob_type == &Dicttype)
 
-extern object *newdictobject PROTO((void));
-extern object *dictlookup PROTO((object *dp, char *key));
-extern int dictinsert PROTO((object *dp, char *key, object *item));
-extern int dictremove PROTO((object *dp, char *key));
-extern int getdictsize PROTO((object *dp));
-extern char *getdictkey PROTO((object *dp, int i));
-extern object *getdictkeys PROTO((object *dp));
+extern object *newdictobject (void);
+extern object *dictlookup (object *dp, char *key);
+extern int dictinsert (object *dp, char *key, object *item);
+extern int dictremove (object *dp, char *key);
+extern int getdictsize (object *dp);
+extern char *getdictkey (object *dp, int i);
+extern object *getdictkeys (object *dp);

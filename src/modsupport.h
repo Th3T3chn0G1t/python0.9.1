@@ -24,4 +24,4 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 /* Module support interface */
 
-extern object *initmodule PROTO((char *, struct methodlist *));
+extern object *initmodule (char *, struct methodlist *);

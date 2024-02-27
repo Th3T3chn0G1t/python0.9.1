@@ -59,8 +59,8 @@ calcfirstset(g, d)
        int nsyms;
        int *sym;
        int nbits;
-       static bitset dummy;
-       bitset result;
+       static py_bitset_t dummy;
+       py_bitset_t result;
        int type;
        dfa *d1;
        label *l0;
@@ -125,7 +125,7 @@ calcfirstset(g, d)
        if (debugging) {
                printf("FIRST set for '%s': {", d->d_name);
                for (i = 0; i < nbits; i++) {
-                       if (testbit(result, i))
+                       if (PY_TESTBIT(result, i))
                                printf(" %s", labelrepr(&l0[i]));
                }
                printf(" }\n");

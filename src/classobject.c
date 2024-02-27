@@ -61,7 +61,7 @@ class_dealloc(op)
        if (op->cl_bases != NULL)
                DECREF(op->cl_bases);
        DECREF(op->cl_methods);
-       free((ANY *)op);
+       free((void*)op);
 }
 
 static object *
@@ -146,7 +146,7 @@ classmember_dealloc(cm)
        DECREF(cm->cm_class);
        if (cm->cm_attr != NULL)
                DECREF(cm->cm_attr);
-       free((ANY *)cm);
+       free((void*)cm);
 }
 
 static object *
@@ -277,7 +277,7 @@ classmethod_dealloc(cm)
 {
        DECREF(cm->cm_func);
        DECREF(cm->cm_self);
-       free((ANY *)cm);
+       free((void*)cm);
 }
 
 typeobject Classmethodtype = {

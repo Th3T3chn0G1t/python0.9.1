@@ -27,9 +27,11 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 extern frameobject *current_frame;
 
-object *eval_code PROTO((codeobject *, object *, object *, object *));
+object *eval_code (codeobject *, object *, object *, object *);
 
-object *getglobals PROTO((void));
-object *getlocals PROTO((void));
+object *getglobals (void);
+object *getlocals (void);
 
-void printtraceback PROTO((FILE *));
+void flushline(void);
+
+void printtraceback (FILE *);

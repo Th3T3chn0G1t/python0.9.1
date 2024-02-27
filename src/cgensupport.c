@@ -26,7 +26,6 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 #include <stdio.h>
 
-#include "PROTO.h"
 #include "object.h"
 #include "intobject.h"
 #include "floatobject.h"

@@ -47,9 +47,9 @@ typedef struct {
        struct _node    *p_tree;        /* Top of parse tree */
 } parser_state;
 
-parser_state *newparser PROTO((struct _grammar *g, int start));
-void delparser PROTO((parser_state *ps));
-int addtoken PROTO((parser_state *ps, int type, char *str, int lineno));
-void addaccelerators PROTO((grammar *g));
+parser_state *newparser (struct _grammar *g, int start);
+void delparser (parser_state *ps);
+int addtoken(parser_state *ps, int type, char *str, int lineno);
+void addaccelerators(grammar* g);
 
 #endif

@@ -24,23 +24,26 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 /* Bitset interface */
 
-#define PY_BYTE           char
+#ifndef PY_BITSET_H
+#define PY_BITSET_H
 
-typedef PY_BYTE *bitset;
+typedef char py_byte_t;
+typedef py_byte_t* py_bitset_t;
 
-bitset newbitset PROTO((int nbits));
-void delbitset PROTO((bitset bs));
-/* int testbit PROTO((bitset bs, int ibit)); /* Now a macro, see below */
-int addbit PROTO((bitset bs, int ibit)); /* Returns 0 if already set */
-int samebitset PROTO((bitset bs1, bitset bs2, int nbits));
-void mergebitset PROTO((bitset bs1, bitset bs2, int nbits));
+py_bitset_t newbitset(int nbits);
+void delbitset(py_bitset_t bs);
+int addbit(py_bitset_t bs, int ibit); /* Returns 0 if already set */
+int samebitset(py_bitset_t bs1, py_bitset_t bs2, int nbits);
+void mergebitset(py_bitset_t bs1, py_bitset_t bs2, int nbits);
 
-#define BITSPERBYTE    (8*sizeof(PY_BYTE))
-#define NBYTES(nbits)  (((nbits) + BITSPERBYTE - 1) / BITSPERBYTE)
+#define PY_BITSPERBYTE (8 * sizeof(py_byte_t))
+#define PY_NBYTES(nbits) (((nbits) + PY_BITSPERBYTE - 1) / PY_BITSPERBYTE)
 
-#define BIT2BYTE(ibit) ((ibit) / BITSPERBYTE)
-#define BIT2SHIFT(ibit)        ((ibit) % BITSPERBYTE)
-#define BIT2MASK(ibit) (1 << BIT2SHIFT(ibit))
-#define BYTE2BIT(ibyte)        ((ibyte) * BITSPERBYTE)
+#define PY_BIT2BYTE(ibit) ((ibit) / PY_BITSPERBYTE)
+#define PY_BIT2SHIFT(ibit) ((ibit) % PY_BITSPERBYTE)
+#define PY_BIT2MASK(ibit) (1 << PY_BIT2SHIFT(ibit))
+#define PY_BYTE2BIT(ibyte) ((ibyte) * PY_BITSPERBYTE)
+#define PY_TESTBIT(ss, ibit) \
+	(((ss)[PY_BIT2BYTE(ibit)] & PY_BIT2MASK(ibit)) != 0)
 
-#define testbit(ss, ibit) (((ss)[BIT2BYTE(ibit)] & BIT2MASK(ibit)) != 0)
+#endif

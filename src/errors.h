@@ -24,12 +24,12 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 /* Error handling definitions */
 
-void err_set PROTO((object *));
-void err_setval PROTO((object *, object *));
-void err_setstr PROTO((object *, char *));
-int err_occurred PROTO((void));
-void err_get PROTO((object **, object **));
-void err_clear PROTO((void));
+void err_set (object *);
+void err_setval (object *, object *);
+void err_setstr (object *, char *);
+int err_occurred (void);
+void err_get (object **, object **);
+void err_clear (void);
 
 /* Predefined exceptions */
 
@@ -50,9 +50,11 @@ extern object *KeyboardInterrupt;
 
 /* Convenience functions */
 
-extern int err_badarg PROTO((void));
-extern object *err_nomem PROTO((void));
-extern object *err_errno PROTO((object *));
-extern void err_input PROTO((int));
+extern int err_badarg (void);
+extern object *err_nomem (void);
+extern object *err_errno (object *);
+extern void err_input (int);
 
-extern void err_badcall PROTO((void));
+extern void err_badcall (void);
+
+void fatal(char*);

@@ -29,16 +29,18 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #include <setjmp.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+
 #ifndef _MSC_VER
-#include <sys/time.h>
+# include <sys/time.h>
 #endif
-#ifdef SYSV
-#include <dirent.h>
-#define direct dirent
+
+#ifdef __has_include
+# if __has_include(<dirent.h>)
+#  include <dirent.h>
+#  define direct dirent
+# endif
 #else
-#ifndef _MSC_VER
-#include <sys/dir.h>
-#endif
+# include <sys/dir.h>
 #endif
 
 #include "allobjects.h"
@@ -46,7 +48,7 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 extern char *strerror PROTO((int));
 
-#if defined(AMOEBA) || defined(_MSC_VER)
+#if defined(AMOEBA) || defined(_WIN32)
 #define NO_LSTAT
 #endif
 

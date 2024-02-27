@@ -52,12 +52,12 @@ extern typeobject Stringtype;
 
 #define is_stringobject(op) ((op)->ob_type == &Stringtype)
 
-extern object *newsizedstringobject PROTO((char *, int));
-extern object *newstringobject PROTO((char *));
-extern unsigned int getstringsize PROTO((object *));
-extern char *getstringvalue PROTO((object *));
-extern void joinstring PROTO((object **, object *));
-extern int resizestring PROTO((object **, int));
+extern object *newsizedstringobject (char *, int);
+extern object *newstringobject (char *);
+extern unsigned int getstringsize (object *);
+extern char *getstringvalue (object *);
+extern void joinstring (object **, object *);
+extern int resizestring (object **, int);
 
 /* Macro, trading safety for speed */
 #define GETSTRINGVALUE(op) ((op)->ob_sval)

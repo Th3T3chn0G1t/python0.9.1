@@ -24,4 +24,9 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 /* Built-in module interface */
 
-extern object *getbuiltin PROTO((char *));
+#ifndef PY_BLTINMODULE_H
+#define PY_BLTINMODULE_H
+
+object* getbuiltin(char*);
+
+#endif

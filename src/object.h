@@ -126,30 +126,30 @@ method blocks.
 */
 
 typedef struct {
-       object *(*nb_add) FPROTO((object *, object *));
-       object *(*nb_subtract) FPROTO((object *, object *));
-       object *(*nb_multiply) FPROTO((object *, object *));
-       object *(*nb_divide) FPROTO((object *, object *));
-       object *(*nb_remainder) FPROTO((object *, object *));
-       object *(*nb_power) FPROTO((object *, object *));
-       object *(*nb_negative) FPROTO((object *));
-       object *(*nb_positive) FPROTO((object *));
+       object *(*nb_add) (object *, object *);
+       object *(*nb_subtract) (object *, object *);
+       object *(*nb_multiply) (object *, object *);
+       object *(*nb_divide) (object *, object *);
+       object *(*nb_remainder) (object *, object *);
+       object *(*nb_power) (object *, object *);
+       object *(*nb_negative) (object *);
+       object *(*nb_positive) (object *);
 } number_methods;
 
 typedef struct {
-       int (*sq_length) FPROTO((object *));
-       object *(*sq_concat) FPROTO((object *, object *));
-       object *(*sq_repeat) FPROTO((object *, int));
-       object *(*sq_item) FPROTO((object *, int));
-       object *(*sq_slice) FPROTO((object *, int, int));
-       int (*sq_ass_item) FPROTO((object *, int, object *));
-       int (*sq_ass_slice) FPROTO((object *, int, int, object *));
+       int (*sq_length) (object *);
+       object *(*sq_concat) (object *, object *);
+       object *(*sq_repeat) (object *, int);
+       object *(*sq_item) (object *, int);
+       object *(*sq_slice) (object *, int, int);
+       int (*sq_ass_item) (object *, int, object *);
+       int (*sq_ass_slice) (object *, int, int, object *);
 } sequence_methods;
 
 typedef struct {
-       int (*mp_length) FPROTO((object *));
-       object *(*mp_subscript) FPROTO((object *, object *));
-       int (*mp_ass_subscript) FPROTO((object *, object *, object *));
+       int (*mp_length) (object *);
+       object *(*mp_subscript) (object *, object *);
+       int (*mp_ass_subscript) (object *, object *, object *);
 } mapping_methods;
 
 typedef struct _typeobject {
@@ -159,12 +159,12 @@ typedef struct _typeobject {
 
        /* Methods to implement standard operations */
 
-       void (*tp_dealloc) FPROTO((object *));
-       void (*tp_print) FPROTO((object *, FILE *, int));
-       object *(*tp_getattr) FPROTO((object *, char *));
-       int (*tp_setattr) FPROTO((object *, char *, object *));
-       int (*tp_compare) FPROTO((object *, object *));
-       object *(*tp_repr) FPROTO((object *));
+       void (*tp_dealloc) (object *);
+       void (*tp_print) (object *, FILE *, int);
+       object *(*tp_getattr) (object *, char *);
+       int (*tp_setattr) (object *, char *, object *);
+       int (*tp_compare) (object *, object *);
+       object *(*tp_repr) (object *);
 
        /* Method suites for standard classes */
 
@@ -178,11 +178,11 @@ extern typeobject Typetype; /* The type of type objects */
 #define is_typeobject(op) ((op)->ob_type == &Typetype)
 
 /* Generic operations on objects */
-extern void printobject PROTO((object *, FILE *, int));
-extern object * reprobject PROTO((object *));
-extern int cmpobject PROTO((object *, object *));
-extern object *getattr PROTO((object *, char *));
-extern int setattr PROTO((object *, char *, object *));
+extern void printobject (object *, FILE *, int);
+extern object * reprobject (object *);
+extern int cmpobject (object *, object *);
+extern object *getattr (object *, char *);
+extern int setattr (object *, char *, object *);
 
 /* Flag bits for printing: */
 #define PRINT_RAW      1       /* No string quotes etc. */

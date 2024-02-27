@@ -121,7 +121,7 @@ printdfas(g, fp)
                fprintf(fp, "\t{%d, \"%s\", %d, %d, states_%d,\n",
                        d->d_type, d->d_name, d->d_initial, d->d_nstates, i);
                fprintf(fp, "\t \"");
-               for (j = 0; j < NBYTES(g->g_ll.ll_nlabels); j++)
+               for (j = 0; j < PY_NBYTES(g->g_ll.ll_nlabels); j++)
                        fprintf(fp, "\\%03o", d->d_first[j] & 0xff);
                fprintf(fp, "\"},\n");
        }

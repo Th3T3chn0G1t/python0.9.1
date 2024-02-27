@@ -27,7 +27,6 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 #include <stdio.h>
 
-#include "PROTO.h"
 #include "object.h"
 #include "errors.h"
 #include "sc_errors.h"

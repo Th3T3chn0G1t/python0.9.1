@@ -73,7 +73,7 @@ typedef struct _dfa {
        int              d_initial;     /* Initial state */
        int              d_nstates;
        state           *d_state;       /* Array of states */
-       bitset           d_first;
+       py_bitset_t           d_first;
 } dfa;
 
 /* A grammar */
@@ -88,23 +88,23 @@ typedef struct _grammar {
 
 /* FUNCTIONS */
 
-grammar *newgrammar PROTO((int start));
-dfa *adddfa PROTO((grammar *g, int type, char *name));
-int addstate PROTO((dfa *d));
-void addarc PROTO((dfa *d, int from, int to, int lbl));
-dfa *finddfa PROTO((grammar *g, int type));
-char *typename PROTO((grammar *g, int lbl));
+grammar *newgrammar(int start);
+dfa *adddfa(grammar *g, int type, char *name);
+int addstate(dfa *d);
+void addarc(dfa *d, int from, int to, int lbl);
+dfa *finddfa(grammar *g, int type);
+char *typename(grammar *g, int lbl);
 
-int addlabel PROTO((labellist *ll, int type, char *str));
-int findlabel PROTO((labellist *ll, int type, char *str));
-char *labelrepr PROTO((label *lb));
-void translatelabels PROTO((grammar *g));
+int addlabel(labellist *ll, int type, char *str);
+int findlabel(labellist *ll, int type, char *str);
+char *labelrepr(label *lb);
+void translatelabels(grammar *g);
 
-void addfirstsets PROTO((grammar *g));
+void addfirstsets(grammar *g);
 
-void addaccellerators PROTO((grammar *g));
+void addaccellerators(grammar *g);
 
-void printgrammar PROTO((grammar *g, FILE *fp));
-void printnonterminals PROTO((grammar *g, FILE *fp));
+void printgrammar(grammar *g, FILE *fp);
+void printnonterminals(grammar *g, FILE *fp);
 
 #endif

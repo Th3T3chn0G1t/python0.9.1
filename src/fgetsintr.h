@@ -22,4 +22,4 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 ******************************************************************/
 
-extern int fgets_intr PROTO((char *, int, FILE *));
+extern int fgets_intr(char *, int, FILE *);
