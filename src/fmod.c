@@ -29,23 +29,22 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 extern int errno;
 
-double
-fmod(x, y)
-       double x, y;
+double fmod(x, y)double x, y;
 {
-       double i, f;
+	double i, f;
 
-       if (y == 0.0) {
-               errno = EDOM;
-               return 0.0;
-       }
+	if(y == 0.0) {
+		errno = EDOM;
+		return 0.0;
+	}
 
-       /* return f such that x = i*y + f for some integer i
-          such that |f| < |y| and f has the same sign as x */
+	/* return f such that x = i*y + f for some integer i
+	   such that |f| < |y| and f has the same sign as x */
 
-       i = floor(x/y);
-       f = x - i*y;
-       if ((x < 0.0) != (y < 0.0))
-               f = f-y;
-       return f;
+	i = floor(x / y);
+	f = x - i * y;
+	if((x < 0.0) != (y < 0.0)) {
+		f = f - y;
+	}
+	return f;
 }

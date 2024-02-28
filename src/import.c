@@ -23,7 +23,7 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 ******************************************************************/
 
 /* Added by Andrew Dalke, 27 March 2009 to handle the needed forward declaration for gcc*/
-static int init_builtin(char *name);
+static int init_builtin(char* name);
 
 
 /* Module definition and import implementation */
@@ -48,216 +48,207 @@ static int init_builtin(char *name);
 #define SEP '/'
 #endif
 
-static object *modules;
+static object* modules;
 
 /* Initialization */
 
-void
-initimport()
-{
-       if ((modules = newdictobject()) == NULL)
-               fatal("no mem for dictionary of modules");
+void initimport() {
+	if((modules = newdictobject()) == NULL) {
+		fatal("no mem for dictionary of modules");
+	}
 }
 
-object *
-get_modules()
-{
-       return modules;
+object* get_modules() {
+	return modules;
 }
 
-object *
-add_module(name)
-       char *name;
+object* add_module(name)char* name;
 {
-       object *m;
-       if ((m = dictlookup(modules, name)) != NULL && is_moduleobject(m))
-               return m;
-       m = newmoduleobject(name);
-       if (m == NULL)
-               return NULL;
-       if (dictinsert(modules, name, m) != 0) {
-               DECREF(m);
-               return NULL;
-       }
-       DECREF(m); /* Yes, it still exists, in modules! */
-       return m;
+	object* m;
+	if((m = dictlookup(modules, name)) != NULL && is_moduleobject(m)) {
+		return m;
+	}
+	m = newmoduleobject(name);
+	if(m == NULL) {
+		return NULL;
+	}
+	if(dictinsert(modules, name, m) != 0) {
+		DECREF(m);
+		return NULL;
+	}
+	DECREF(m); /* Yes, it still exists, in modules! */
+	return m;
 }
 
-static FILE *
-open_module(name, suffix, namebuf)
-       char *name;
-       char *suffix;
-       char *namebuf; /* XXX No buffer overflow checks! */
+static FILE* open_module(name, suffix, namebuf)char* name;
+											   char* suffix;
+											   char* namebuf; /* XXX No buffer overflow checks! */
 {
-       object *path;
-       FILE *fp;
+	object* path;
+	FILE* fp;
 
-       path = sysget("path");
-       if (path == NULL || !is_listobject(path)) {
-               strcpy(namebuf, name);
-               strcat(namebuf, suffix);
-               fp = pyopen_r(namebuf);
-       }
-       else {
-               int npath = getlistsize(path);
-               int i;
-               fp = NULL;
-               for (i = 0; i < npath; i++) {
-                       object *v = getlistitem(path, i);
-                       int len;
-                       if (!is_stringobject(v))
-                               continue;
-                       strcpy(namebuf, getstringvalue(v));
-                       len = getstringsize(v);
-                       if (len > 0 && namebuf[len-1] != SEP)
-                               namebuf[len++] = SEP;
-                       strcpy(namebuf+len, name);
-                       strcat(namebuf, suffix);
-                       fp = pyopen_r(namebuf);
-                       if (fp != NULL)
-                               break;
-               }
-       }
-       return fp;
+	path = sysget("path");
+	if(path == NULL || !is_listobject(path)) {
+		strcpy(namebuf, name);
+		strcat(namebuf, suffix);
+		fp = pyopen_r(namebuf);
+	}
+	else {
+		int npath = getlistsize(path);
+		int i;
+		fp = NULL;
+		for(i = 0; i < npath; i++) {
+			object* v = getlistitem(path, i);
+			int len;
+			if(!is_stringobject(v)) {
+				continue;
+			}
+			strcpy(namebuf, getstringvalue(v));
+			len = getstringsize(v);
+			if(len > 0 && namebuf[len - 1] != SEP) {
+				namebuf[len++] = SEP;
+			}
+			strcpy(namebuf + len, name);
+			strcat(namebuf, suffix);
+			fp = pyopen_r(namebuf);
+			if(fp != NULL) {
+				break;
+			}
+		}
+	}
+	return fp;
 }
 
-static object *
-get_module(m, name, m_ret)
-       /*module*/object *m;
-       char *name;
-       object **m_ret;
+static object* get_module(m, name, m_ret)
+/*module*/object* m;
+		  char* name;
+		  object** m_ret;
 {
-       object *d;
-       FILE *fp;
-       node *n;
-       int err;
-       char namebuf[256];
+	object* d;
+	FILE* fp;
+	node* n;
+	int err;
+	char namebuf[256];
 
-       fp = open_module(name, ".py", namebuf);
-       if (fp == NULL) {
-               if (m == NULL)
-                       err_setstr(NameError, name);
-               else
-                       err_setstr(RuntimeError, "no module source file");
-               return NULL;
-       }
-       err = parse_file(fp, namebuf, file_input, &n);
-       pyclose(fp);
-       if (err != E_DONE) {
-               err_input(err);
-               return NULL;
-       }
-       if (m == NULL) {
-               m = add_module(name);
-               if (m == NULL) {
-                       freetree(n);
-                       return NULL;
-               }
-               *m_ret = m;
-       }
-       d = getmoduledict(m);
-       return run_node(n, namebuf, d, d);
+	fp = open_module(name, ".py", namebuf);
+	if(fp == NULL) {
+		if(m == NULL) {
+			err_setstr(NameError, name);
+		}
+		else {
+			err_setstr(RuntimeError, "no module source file");
+		}
+		return NULL;
+	}
+	err = parse_file(fp, namebuf, file_input, &n);
+	pyclose(fp);
+	if(err != E_DONE) {
+		err_input(err);
+		return NULL;
+	}
+	if(m == NULL) {
+		m = add_module(name);
+		if(m == NULL) {
+			freetree(n);
+			return NULL;
+		}
+		*m_ret = m;
+	}
+	d = getmoduledict(m);
+	return run_node(n, namebuf, d, d);
 }
 
-static object *
-load_module(name)
-       char *name;
+static object* load_module(name)char* name;
 {
-       object *m, *v;
-       v = get_module((object *)NULL, name, &m);
-       if (v == NULL)
-               return NULL;
-       DECREF(v);
-       return m;
+	object* m, * v;
+	v = get_module((object*) NULL, name, &m);
+	if(v == NULL) {
+		return NULL;
+	}
+	DECREF(v);
+	return m;
 }
 
-object *
-import_module(name)
-       char *name;
+object* import_module(name)char* name;
 {
-       object *m;
-       if ((m = dictlookup(modules, name)) == NULL) {
-               if (init_builtin(name)) {
-                       if ((m = dictlookup(modules, name)) == NULL)
-                               err_setstr(SystemError, "builtin module missing");
-               }
-               else {
-                       m = load_module(name);
-               }
-       }
-       return m;
+	object* m;
+	if((m = dictlookup(modules, name)) == NULL) {
+		if(init_builtin(name)) {
+			if((m = dictlookup(modules, name)) == NULL) {
+				err_setstr(SystemError, "builtin module missing");
+			}
+		}
+		else {
+			m = load_module(name);
+		}
+	}
+	return m;
 }
 
-object *
-reload_module(m)
-       object *m;
+object* reload_module(m)object* m;
 {
-       if (m == NULL || !is_moduleobject(m)) {
-               err_setstr(TypeError, "reload() argument must be module");
-               return NULL;
-       }
-       /* XXX Ought to check for builtin modules -- can't reload these... */
-       return get_module(m, getmodulename(m), (object **)NULL);
+	if(m == NULL || !is_moduleobject(m)) {
+		err_setstr(TypeError, "reload() argument must be module");
+		return NULL;
+	}
+	/* XXX Ought to check for builtin modules -- can't reload these... */
+	return get_module(m, getmodulename(m), (object**) NULL);
 }
 
-static void
-cleardict(d)
-       object *d;
+static void cleardict(d)object* d;
 {
-       int i;
-       for (i = getdictsize(d); --i >= 0; ) {
-               char *k;
-               k = getdictkey(d, i);
-               if (k != NULL)
-                       (void) dictremove(d, k);
-       }
+	int i;
+	for(i = getdictsize(d); --i >= 0;) {
+		char* k;
+		k = getdictkey(d, i);
+		if(k != NULL) {
+			(void) dictremove(d, k);
+		}
+	}
 }
 
-void
-doneimport()
-{
-       if (modules != NULL) {
-               int i;
-               /* Explicitly erase all modules; this is the safest way
-                  to get rid of at least *some* circular dependencies */
-               for (i = getdictsize(modules); --i >= 0; ) {
-                       char *k;
-                       k = getdictkey(modules, i);
-                       if (k != NULL) {
-                               object *m;
-                               m = dictlookup(modules, k);
-                               if (m != NULL && is_moduleobject(m)) {
-                                       object *d;
-                                       d = getmoduledict(m);
-                                       if (d != NULL && is_dictobject(d)) {
-                                               cleardict(d);
-                                       }
-                               }
-                       }
-               }
-               cleardict(modules);
-       }
-       DECREF(modules);
+void doneimport() {
+	if(modules != NULL) {
+		int i;
+		/* Explicitly erase all modules; this is the safest way
+		   to get rid of at least *some* circular dependencies */
+		for(i = getdictsize(modules); --i >= 0;) {
+			char* k;
+			k = getdictkey(modules, i);
+			if(k != NULL) {
+				object* m;
+				m = dictlookup(modules, k);
+				if(m != NULL && is_moduleobject(m)) {
+					object* d;
+					d = getmoduledict(m);
+					if(d != NULL && is_dictobject(d)) {
+						cleardict(d);
+					}
+				}
+			}
+		}
+		cleardict(modules);
+	}
+	DECREF(modules);
 }
 
 
 /* Initialize built-in modules when first imported */
 
 extern struct {
-       char *name;
-       void (*initfunc)();
+	char* name;
+
+	void (* initfunc)();
 } inittab[];
 
-static int
-init_builtin(name)
-       char *name;
+static int init_builtin(name)char* name;
 {
-       int i;
-       for (i = 0; inittab[i].name != NULL; i++) {
-               if (strcmp(name, inittab[i].name) == 0) {
-                       (*inittab[i].initfunc)();
-                       return 1;
-               }
-       }
-       return 0;
+	int i;
+	for(i = 0; inittab[i].name != NULL; i++) {
+		if(strcmp(name, inittab[i].name) == 0) {
+			(*inittab[i].initfunc)();
+			return 1;
+		}
+	}
+	return 0;
 }

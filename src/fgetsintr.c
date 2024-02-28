@@ -44,48 +44,48 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 static jmp_buf jback;
 
-static void catcher(sig)
-       int sig;
+static void catcher(sig)int sig;
 {
-       longjmp(jback, 1);
+	longjmp(jback, 1);
 }
 
-int
-fgets_intr(buf, size, fp)
-       char *buf;
-       int size;
-       FILE *fp;
+int fgets_intr(buf, size, fp)char* buf;
+							 int size;
+							 FILE* fp;
 {
-       int ret;
-       SIGTYPE (*sigsave)();
+	int ret;
+	SIGTYPE (* sigsave)();
 
-       if (setjmp(jback)) {
-               clearerr(fp);
-               signal(SIGINT, sigsave);
+	if(setjmp(jback)) {
+		clearerr(fp);
+		signal(SIGINT, sigsave);
 #ifdef THINK_C_3_0
-               Set_Echo(1);
+		Set_Echo(1);
 #endif
-               return E_INTR;
-       }
+		return E_INTR;
+	}
 
-       /* The casts to (SIGTYPE(*)()) are needed by THINK_C only */
+	/* The casts to (SIGTYPE(*)()) are needed by THINK_C only */
 
-       sigsave = signal(SIGINT, (SIGTYPE(*)()) SIG_IGN);
-       if (sigsave != (SIGTYPE(*)()) SIG_IGN)
-               signal(SIGINT, (SIGTYPE(*)()) catcher);
+	sigsave = signal(SIGINT, (SIGTYPE (*)()) SIG_IGN);
+	if(sigsave != (SIGTYPE (*)()) SIG_IGN) {
+		signal(SIGINT, (SIGTYPE (*)()) catcher);
+	}
 
 #ifndef THINK_C
-       if (intrcheck())
-               ret = E_INTR;
-       else
+	if(intrcheck()) {
+		ret = E_INTR;
+	}
+	else
 #endif
-       {
-               sig_block();
-               ret = (fgets(buf, size, fp) == NULL) ? E_EOF : E_OK;
-               sig_unblock();
-       }
+	{
+		sig_block();
+		ret = (fgets(buf, size, fp) == NULL) ? E_EOF : E_OK;
+		sig_unblock();
+	}
 
-       if (sigsave != (SIGTYPE(*)()) SIG_IGN)
-               signal(SIGINT, (SIGTYPE(*)()) sigsave);
-       return ret;
+	if(sigsave != (SIGTYPE (*)()) SIG_IGN) {
+		signal(SIGINT, (SIGTYPE (*)()) sigsave);
+	}
+	return ret;
 }

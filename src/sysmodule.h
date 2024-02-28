@@ -24,7 +24,10 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 /* System module interface */
 
-object *sysget (char *);
-int sysset (char *, object *);
-FILE *sysgetfile (char *, FILE *);
-void initsys (void);
+object* sysget(char*);
+
+int sysset(char*, object*);
+
+FILE* sysgetfile(char*, FILE*);
+
+void initsys(void);

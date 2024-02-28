@@ -39,18 +39,21 @@ returned item's reference count.
 */
 
 typedef struct {
-       OB_VARHEAD
-       object *ob_item[1];
+	OB_VARHEAD
+	object* ob_item[1];
 } tupleobject;
 
 extern typeobject Tupletype;
 
 #define is_tupleobject(op) ((op)->ob_type == &Tupletype)
 
-extern object *newtupleobject (int size);
-extern int gettuplesize (object *);
-extern object *gettupleitem (object *, int);
-extern int settupleitem (object *, int, object *);
+extern object* newtupleobject(int size);
+
+extern int gettuplesize(object*);
+
+extern object* gettupleitem(object*, int);
+
+extern int settupleitem(object*, int, object*);
 
 /* Macro, trading safety for speed */
 #define GETTUPLEITEM(op, i) ((op)->ob_item[i])

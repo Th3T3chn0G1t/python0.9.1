@@ -44,20 +44,25 @@ functions should be applied to nil objects.
 /* NB The type is revealed here only because it is used in dictobject.c */
 
 typedef struct {
-       OB_VARHEAD
-       char ob_sval[1];
+	OB_VARHEAD
+	char ob_sval[1];
 } stringobject;
 
 extern typeobject Stringtype;
 
 #define is_stringobject(op) ((op)->ob_type == &Stringtype)
 
-extern object *newsizedstringobject (char *, int);
-extern object *newstringobject (char *);
-extern unsigned int getstringsize (object *);
-extern char *getstringvalue (object *);
-extern void joinstring (object **, object *);
-extern int resizestring (object **, int);
+extern object* newsizedstringobject(char*, int);
+
+extern object* newstringobject(char*);
+
+extern unsigned int getstringsize(object*);
+
+extern char* getstringvalue(object*);
+
+extern void joinstring(object**, object*);
+
+extern int resizestring(object**, int);
 
 /* Macro, trading safety for speed */
 #define GETSTRINGVALUE(op) ((op)->ob_sval)

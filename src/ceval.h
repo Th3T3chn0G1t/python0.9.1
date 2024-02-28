@@ -25,13 +25,14 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 /* Interface to execute compiled code */
 /* This header depends on "compile.h" */
 
-extern frameobject *current_frame;
+extern frameobject* current_frame;
 
-object *eval_code (codeobject *, object *, object *, object *);
+object* eval_code(codeobject*, object*, object*, object*);
 
-object *getglobals (void);
-object *getlocals (void);
+object* getglobals(void);
+
+object* getlocals(void);
 
 void flushline(void);
 
-void printtraceback (FILE *);
+void printtraceback(FILE*);

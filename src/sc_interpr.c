@@ -81,8 +81,8 @@ xCleanUpLoops(sc_pb)
 {
        TpsLoop prev, this;
 
-       if (sc_pb->loops == NULL)
-               return;
+       if (sc_pb->loops == NULL){
+               return;}
        prev = sc_pb->loops;
        this = sc_pb->loops->l_next;
        while(this) {
@@ -109,11 +109,11 @@ findendloop(label, sc_pb)
                        memcpy(&operand, &sc_pb->data[walk], sizeof(TscOperand));
                        walk += sizeof(TscOperand);
                }
-               if (opcode == EndLoop)
-                       if (operand == label) found = 1;
+               if (opcode == EndLoop){
+                       if (operand == label) found = 1;}
        }
-       if (found)
-               return walk;
+       if (found){
+               return walk;}
        return -1;
 }
 
@@ -192,14 +192,14 @@ object *string;
 int datasize;
 
        string = gettupleitem(self, STUBC);
-       if (string == NULL)
-               return -1;
+       if (string == NULL){
+               return -1;}
        sc_pb->data = getstringvalue(string);
-       if (sc_pb->data == NULL)
-               return -1;
+       if (sc_pb->data == NULL){
+               return -1;}
        datasize = (int)getstringsize(string);
-       if (datasize == -1)
-               return -1;
+       if (datasize == -1){
+               return -1;}
        sc_pb->stack = (object **)malloc(STKSIZE * sizeof(object *));
        if (sc_pb->stack == NULL) {
                err_nomem();
@@ -239,10 +239,10 @@ stacktop(sc_pb)
        struct sc_ProcessBlock *sc_pb;
 {
 
-       if (sc_pb->sp == 0)
-               return err_scerr(StackUnderflow);
-       if (sc_pb->sp == (STKSIZE + 1))
-               return err_scerr(StackOverflow);
+       if (sc_pb->sp == 0){
+               return err_scerr(StackUnderflow);}
+       if (sc_pb->sp == (STKSIZE + 1)){
+               return err_scerr(StackOverflow);}
        return sc_pb->stack[sc_pb->sp - 1];
 }
 
@@ -286,10 +286,10 @@ xTrans(self,cmd, sc_pb)
        capability cap;
        object *capobj;
 
-       if ((capobj = gettupleitem(self, CAP)) == NULL)
-               return -1;
-       if (getcapability(capobj, &cap) == -1)
-               return -1;
+       if ((capobj = gettupleitem(self, CAP)) == NULL){
+               return -1;}
+       if (getcapability(capobj, &cap) == -1){
+               return -1;}
        sc_pb->hdr.h_port = cap.cap_port;
        sc_pb->hdr.h_priv = cap.cap_priv;
        sc_pb->hdr.h_command = (command)cmd;
@@ -324,8 +324,8 @@ xTrans(self,cmd, sc_pb)
        if (sc_pb->hdr.h_status != 0) {
                object *v;
 
-               if ((v = newintobject(sc_pb->hdr.h_status)) == NULL)
-                       return -1;
+               if ((v = newintobject(sc_pb->hdr.h_status)) == NULL){
+                       return -1;}
                err_scerrset(TransError, v, "Trans");
                DECREF(v);
                return -1;
@@ -344,12 +344,12 @@ xTTupleS(size, sc_pb)
 {
        object *tuple;
 
-       if ((tuple = stacktop(sc_pb)) == NULL)
-               return -1;
-       if (!is_tupleobject(tuple))
-               return err_scerrset(TypeFailure, tuple, "TTupleS");
-       if (gettuplesize(tuple) != (unsigned int)size)
-               return err_scerrset(SizeError, tuple, "TTupleS");
+       if ((tuple = stacktop(sc_pb)) == NULL){
+               return -1;}
+       if (!is_tupleobject(tuple)){
+               return err_scerrset(TypeFailure, tuple, "TTupleS");}
+       if (gettuplesize(tuple) != (unsigned int)size){
+               return err_scerrset(SizeError, tuple, "TTupleS");}
        return 0;
 }
 
@@ -366,12 +366,12 @@ xUnpack(size, sc_pb)
 
        if (size < (TscOperand)2) {
                element = newintobject(size);
-               if (element == NULL)
-                       return -1;
+               if (element == NULL){
+                       return -1;}
                return err_scerrset(SizeError, element, "Unpack");
        }
-       if ((tuple = stacktop(sc_pb)) == NULL)
-               return -1;
+       if ((tuple = stacktop(sc_pb)) == NULL){
+               return -1;}
        INCREF(tuple);
        if (xPop((TscOperand) 1, sc_pb) != 0) {
                DECREF(tuple);
@@ -418,8 +418,8 @@ xAilword(headerfield, sc_pb)
                {
                        object *v;
 
-                       if ((v = newintobject(headerfield)) == NULL)
-                               return -1;
+                       if ((v = newintobject(headerfield)) == NULL){
+                               return -1;}
                        return err_scerrset(FlagError, v, "Ailword");
                }
        }
@@ -432,16 +432,16 @@ xStringS(sc_pb)
        object *size, *string;
        int s;
 
-       if ((string = stacktop(sc_pb)) == NULL)
-               return -1;
-       if (!is_stringobject(string))
-               return err_scerrset(TypeFailure, string, "StringS");
-       if ((s = getstringsize(string)) < 0)
-               return -1;
-       if (xPop((TscOperand) 1, sc_pb) != 0)
-               return -1;
-       if ((size = newintobject(s)) == NULL)
-               return -1;
+       if ((string = stacktop(sc_pb)) == NULL){
+               return -1;}
+       if (!is_stringobject(string)){
+               return err_scerrset(TypeFailure, string, "StringS");}
+       if ((s = getstringsize(string)) < 0){
+               return -1;}
+       if (xPop((TscOperand) 1, sc_pb) != 0){
+               return -1;}
+       if ((size = newintobject(s)) == NULL){
+               return -1;}
        if (xPush(size, sc_pb) != 0) {
                DECREF(size);
                return -1;
@@ -460,16 +460,16 @@ xListS(sc_pb)
        object *size, *list;
        int s;
 
-       if ((list = stacktop(sc_pb)) == NULL)
-               return -1;
-       if (!is_listobject(list))
-               return err_scerrset(TypeFailure, list, "ListS");
-       if ((s = getlistsize(list)) < 0)
-               return -1;
-       if (xPop((TscOperand) 1, sc_pb) != 0)
-               return -1;
-       if ((size = newintobject(s)) == NULL)
-               return -1;
+       if ((list = stacktop(sc_pb)) == NULL){
+               return -1;}
+       if (!is_listobject(list)){
+               return err_scerrset(TypeFailure, list, "ListS");}
+       if ((s = getlistsize(list)) < 0){
+               return -1;}
+       if (xPop((TscOperand) 1, sc_pb) != 0){
+               return -1;}
+       if ((size = newintobject(s)) == NULL){
+               return -1;}
        if (xPush(size, sc_pb) != 0) {
                DECREF(size);
                return -1;
@@ -492,12 +492,12 @@ xPutFS(size, sc_pb)
        if ((string = stacktop(sc_pb)) == NULL) {
                return -1;
        }
-       if (!is_stringobject(string))
-               return err_scerrset(TypeFailure, string, "PutFS");
-       if (getstringsize(string) != size)
-               return err_scerrset(SizeError, string, "PutFS");
-       if ((str = getstringvalue(string)) == NULL)
-               return -1;
+       if (!is_stringobject(string)){
+               return err_scerrset(TypeFailure, string, "PutFS");}
+       if (getstringsize(string) != size){
+               return err_scerrset(SizeError, string, "PutFS");}
+       if ((str = getstringvalue(string)) == NULL){
+               return -1;}
        if ((size + sc_pb->bp) > sc_pb->maxbufsize) {
                err_scerr(BufferOverflow);
                return -1;
@@ -518,12 +518,12 @@ xTStringSeq(size, sc_pb)
 {
        object *string;
 
-       if ((string = stacktop(sc_pb)) == NULL)
-               return -1;
-       if (!is_stringobject(string))
-               return err_scerrset(TypeFailure, string, "TStringSeq");
-       if (getstringsize(string) != size)
-               return err_scerrset(SizeError, string, "TStringSeq");
+       if ((string = stacktop(sc_pb)) == NULL){
+               return -1;}
+       if (!is_stringobject(string)){
+               return err_scerrset(TypeFailure, string, "TStringSeq");}
+       if (getstringsize(string) != size){
+               return err_scerrset(SizeError, string, "TStringSeq");}
        return 0;
 }
 
@@ -534,12 +534,12 @@ xTStringSlt(size, sc_pb)
 {
        object *string;
 
-       if ((string = stacktop(sc_pb)) == NULL)
-               return -1;
-       if (!is_stringobject(string))
-               return err_scerrset(TypeFailure, string, "TStringSlt");
-       if (getstringsize(string) > size)
-               return err_scerrset(SizeError, string, "TStringSlt");
+       if ((string = stacktop(sc_pb)) == NULL){
+               return -1;}
+       if (!is_stringobject(string)){
+               return err_scerrset(TypeFailure, string, "TStringSlt");}
+       if (getstringsize(string) > size){
+               return err_scerrset(SizeError, string, "TStringSlt");}
        return 0;
 }
 
@@ -550,12 +550,12 @@ xTListSeq(size, sc_pb)
 {
        object *list;
 
-       if ((list = stacktop(sc_pb)) == NULL)
-               return -1;
-       if (!is_listobject(list))
-               return err_scerrset(TypeFailure, list, "TListSeq");
-       if (getlistsize(list) != size)
-               return err_scerrset(SizeError, list, "TListSeq");
+       if ((list = stacktop(sc_pb)) == NULL){
+               return -1;}
+       if (!is_listobject(list)){
+               return err_scerrset(TypeFailure, list, "TListSeq");}
+       if (getlistsize(list) != size){
+               return err_scerrset(SizeError, list, "TListSeq");}
        return 0;
 }
 
@@ -566,12 +566,12 @@ xTListSlt(size, sc_pb)
 {
        object *list;
 
-       if ((list = stacktop(sc_pb)) == NULL)
-               return -1;
-       if (!is_listobject(list))
-               return err_scerrset(TypeFailure, list, "TListSlt");
-       if (getlistsize(list) > size)
-               return err_scerrset(SizeError, list, "TListSlt");
+       if ((list = stacktop(sc_pb)) == NULL){
+               return -1;}
+       if (!is_listobject(list)){
+               return err_scerrset(TypeFailure, list, "TListSlt");}
+       if (getlistsize(list) > size){
+               return err_scerrset(SizeError, list, "TListSlt");}
        return 0;
 }
 
@@ -583,12 +583,12 @@ xPutVS(sc_pb)
        char *str;
        int size;
 
-       if ((string = stacktop(sc_pb)) == NULL)
-               return -1;
-       if ((size = getstringsize(string)) < 0)
-               return (size == -1 ? -1 : err_scerrset(SizeError, string, "PutVS"));
-       if ((str = getstringvalue(string)) == NULL)
-               return -1;
+       if ((string = stacktop(sc_pb)) == NULL){
+               return -1;}
+       if ((size = getstringsize(string)) < 0){
+               return (size == -1 ? -1 : err_scerrset(SizeError, string, "PutVS"));}
+       if ((str = getstringvalue(string)) == NULL){
+               return -1;}
        if (sc_pb->bp + size > sc_pb->maxbufsize) {
                err_scerr(BufferOverflow);
                return -1;
@@ -609,12 +609,12 @@ xLoopPut(label, sc_pb)
        TpsLoop this;
        object *list, *element;
 
-       if (findloop(&this, label, sc_pb) < 0)
-               return -1;
-       if ((list = stacktop(sc_pb)) == NULL)
-               return -1;
-       if (!is_listobject(list))
-               return err_scerrset(TypeFailure, list, "LoopPut");
+       if (findloop(&this, label, sc_pb) < 0){
+               return -1;}
+       if ((list = stacktop(sc_pb)) == NULL){
+               return -1;}
+       if (!is_listobject(list)){
+               return err_scerrset(TypeFailure, list, "LoopPut");}
        if (this->l_index >= getlistsize(list)) {
                sc_pb->pc = this->l_endaddr;
                /*
@@ -622,8 +622,8 @@ xLoopPut(label, sc_pb)
                */
                return xPop((TscOperand)1, sc_pb);
        }
-       if ((element = getlistitem(list, this->l_index)) == NULL)
-               return -1;
+       if ((element = getlistitem(list, this->l_index)) == NULL){
+               return -1;}
        return xPush(element, sc_pb);
 }
 
@@ -636,28 +636,28 @@ xLoopGet(label, sc_pb)
        object *element, *integer;
        int i;
 
-       if ((i = findloop(&this, label, sc_pb)) < 0)
-               return -1;
+       if ((i = findloop(&this, label, sc_pb)) < 0){
+               return -1;}
        else if (i == 1) {
                /*
                 *       It is the first time we enter LoopGet label
                 */
-               if ((this->l_list = newlistobject(0)) == NULL)
-                       return -1;
-               if ((integer = stacktop(sc_pb)) == NULL)
-                       return -1;
-               if (!is_intobject(integer))
-                       return err_scerrset(TypeFailure, integer, "LoopGet");
+               if ((this->l_list = newlistobject(0)) == NULL){
+                       return -1;}
+               if ((integer = stacktop(sc_pb)) == NULL){
+                       return -1;}
+               if (!is_intobject(integer)){
+                       return err_scerrset(TypeFailure, integer, "LoopGet");}
                this->l_size = getintvalue(integer);
-               if (xPop((TscOperand) 1, sc_pb) != 0)
-                       return -1;
+               if (xPop((TscOperand) 1, sc_pb) != 0){
+                       return -1;}
        } else {
-               if ((element = stacktop(sc_pb)) == NULL)
-                       return -1;
-               if (addlistitem(this->l_list, element) != 0)
-                       return -1;
-               if (xPop((TscOperand) 1, sc_pb) != 0)
-                       return -1;
+               if ((element = stacktop(sc_pb)) == NULL){
+                       return -1;}
+               if (addlistitem(this->l_list, element) != 0){
+                       return -1;}
+               if (xPop((TscOperand) 1, sc_pb) != 0){
+                       return -1;}
        }
        if (this->l_index >= this->l_size) {
                int ret;
@@ -677,8 +677,8 @@ xEndLoop(label, sc_pb)
 {
        TpsLoop this;
 
-       if (findloop(&this, label, sc_pb) < 0)
-               return -1;
+       if (findloop(&this, label, sc_pb) < 0){
+               return -1;}
        this ->l_index += 1;
        sc_pb->pc = this->l_retaddr;
        return 0;
@@ -691,10 +691,10 @@ xPutI(flags, sc_pb)
 {
        object *integer;
 
-       if ((integer = stacktop(sc_pb)) == NULL)
-               return -1;
-       if (!is_intobject(integer))
-               return err_scerrset(TypeFailure, integer, "PutI");
+       if ((integer = stacktop(sc_pb)) == NULL){
+               return -1;}
+       if (!is_intobject(integer)){
+               return err_scerrset(TypeFailure, integer, "PutI");}
        if (flags & ALL_FIELDS) {
                long i;
 
@@ -719,8 +719,8 @@ xPutI(flags, sc_pb)
                        break;
 
                default:
-                       if ((integer = newintobject(flags & ALL_FIELDS)) == NULL)
-                               return -1;
+                       if ((integer = newintobject(flags & ALL_FIELDS)) == NULL){
+                               return -1;}
                        err_scerrset(FlagError, integer, "Ailword");
                        DECREF(integer);
                        return -1;
@@ -790,8 +790,8 @@ xPutI(flags, sc_pb)
                        {
                                object *x;
 
-                               if ((x = newintobject(flags)) == NULL)
-                                       return -1;
+                               if ((x = newintobject(flags)) == NULL){
+                                       return -1;}
                                err_scerrset(FlagError, x, "PutI");
                                DECREF(x);
                                return -1;
@@ -808,12 +808,12 @@ xPutC(sc_pb)
        capability cap;
        object *capobj;
 
-       if ((capobj = stacktop(sc_pb)) == NULL)
-               return -1;
-       if (!is_capobj(capobj))
-               return err_scerrset(TypeFailure, capobj, "xPutC");
-       if (getcapability(capobj, &cap) != 0)
-               return -1;
+       if ((capobj = stacktop(sc_pb)) == NULL){
+               return -1;}
+       if (!is_capobj(capobj)){
+               return err_scerrset(TypeFailure, capobj, "xPutC");}
+       if (getcapability(capobj, &cap) != 0){
+               return -1;}
        if ((sc_pb->bp + CAPSIZE) > sc_pb->maxbufsize) {
                err_scerr(BufferOverflow);
                return -1;
@@ -832,8 +832,8 @@ xDup(n, sc_pb)
        if ((int)n > sc_pb->sp) {
                object *i;
 
-               if ((i = newintobject((long)n)) == NULL)
-                       return -1;
+               if ((i = newintobject((long)n)) == NULL){
+                       return -1;}
                err_scerrset(RangeError, i, "Dup");
                DECREF(i);
                return -1;
@@ -889,16 +889,16 @@ xPack(size, sc_pb)
        object *element, *tuple;
        int i, ret;
 
-       if ((tuple = newtupleobject((int)size)) == NULL)
-               return -1;
+       if ((tuple = newtupleobject((int)size)) == NULL){
+               return -1;}
        for (i = 0; i < (int)size; i++) {
-               if ((element = stacktop(sc_pb)) == NULL)
-                       return -1;
-               if (settupleitem(tuple, (int)size - i - 1, element) != 0)
-                       return -1;
+               if ((element = stacktop(sc_pb)) == NULL){
+                       return -1;}
+               if (settupleitem(tuple, (int)size - i - 1, element) != 0){
+                       return -1;}
                INCREF(element);
-               if (xPop((TscOperand) 1, sc_pb) != 0)
-                       return -1;
+               if (xPop((TscOperand) 1, sc_pb) != 0){
+                       return -1;}
        }
        ret = xPush(tuple, sc_pb);
        DECREF(tuple);
@@ -912,20 +912,20 @@ xGetVS(sc_pb)
        object *string, *integer;
        int size;
 
-       if ((integer = stacktop(sc_pb)) == NULL)
-               return -1;
-       if (!is_intobject(integer))
-               return err_scerrset(TypeFailure, integer, "GetVS");
+       if ((integer = stacktop(sc_pb)) == NULL){
+               return -1;}
+       if (!is_intobject(integer)){
+               return err_scerrset(TypeFailure, integer, "GetVS");}
        size = getintvalue(integer);
        if ((sc_pb->bp + size) > sc_pb->maxbufsize) {
                err_scerr(BufferOverflow);
                return -1;
        }
-       if ((string = newsizedstringobject(&sc_pb->buffer[sc_pb->bp], size)) == NULL)
-               return -1;
+       if ((string = newsizedstringobject(&sc_pb->buffer[sc_pb->bp], size)) == NULL){
+               return -1;}
        sc_pb->bp += size;
-       if (xPop((TscOperand) 1, sc_pb) != 0)
-               return -1;
+       if (xPop((TscOperand) 1, sc_pb) != 0){
+               return -1;}
        if (xPush(string, sc_pb) != 0) {
                return -1;
        }
@@ -944,8 +944,8 @@ xGetFS(size, sc_pb)
                err_scerr(BufferOverflow);
                return -1;
        }
-       if ((string = newsizedstringobject(&sc_pb->buffer[sc_pb->bp], (int)size)) == NULL)
-               return -1;
+       if ((string = newsizedstringobject(&sc_pb->buffer[sc_pb->bp], (int)size)) == NULL){
+               return -1;}
        sc_pb->bp += (int)size;
        if(xPush(string, sc_pb) != 0) {
                return -1;
@@ -979,8 +979,8 @@ xGetI(flags, sc_pb)
                        break;
 
                default:
-                       if ((integer = newintobject(flags & ALL_FIELDS)) == NULL)
-                               return -1;
+                       if ((integer = newintobject(flags & ALL_FIELDS)) == NULL){
+                               return -1;}
                        err_scerrset(FlagError, integer, "Ailword");
                        DECREF(integer);
                        return -1;
@@ -1045,16 +1045,16 @@ xGetI(flags, sc_pb)
                        }
                default:
                        {
-                               if ((integer = newintobject(flags)) == NULL)
-                                       return -1;
+                               if ((integer = newintobject(flags)) == NULL){
+                                       return -1;}
                                err_scerrset(FlagError, integer, "GetI");
                                DECREF(integer);
                                return -1;
                        }
                }
        }
-       if ((integer = newintobject(i)) == NULL)
-               return -1;
+       if ((integer = newintobject(i)) == NULL){
+               return -1;}
        if (xPush(integer, sc_pb) != 0) {
                DECREF(integer);
                return -1;
@@ -1087,8 +1087,8 @@ xGetC(flags, sc_pb)
                }
                memcpy(&cap, &sc_pb->buffer[sc_pb->bp], CAPSIZE);
        }
-       if ((capobj = newcapobject(&cap)) == NULL)
-               return -1;
+       if ((capobj = newcapobject(&cap)) == NULL){
+               return -1;}
        return xPush(capobj, sc_pb);
 }
 
@@ -1104,17 +1104,17 @@ xEqual(sc_pb)
        }
        int1 = sc_pb->stack[sc_pb->sp - 1];
        int2 = sc_pb->stack[sc_pb->sp - 2];
-       if ((int1 == NULL) || (int2 == NULL))
-               return -1;
-       if (!is_intobject(int1))
-               return err_scerrset(TypeFailure, int1, "Equal");
-       if (!is_intobject(int2))
-               return err_scerrset(TypeFailure, int2, "Equal");
+       if ((int1 == NULL) || (int2 == NULL)){
+               return -1;}
+       if (!is_intobject(int1)){
+               return err_scerrset(TypeFailure, int1, "Equal");}
+       if (!is_intobject(int2)){
+               return err_scerrset(TypeFailure, int2, "Equal");}
        if (getintvalue(int1) != getintvalue(int2)) {
                object *tmptuple;
 
-               if ((tmptuple = newtupleobject(2)) == NULL)
-                       return -1;
+               if ((tmptuple = newtupleobject(2)) == NULL){
+                       return -1;}
                INCREF(int1);
                if (settupleitem(tmptuple, 0, int1) != 0) {
                        DECREF(tmptuple);
@@ -1141,8 +1141,8 @@ int datasize, ret;
 object *returnobject;
 struct sc_ProcessBlock sc_pb;
 
-       if ((datasize = init(self, &sc_pb)) < 0)
-               return NULL;
+       if ((datasize = init(self, &sc_pb)) < 0){
+               return NULL;}
        memcpy(&opcode, sc_pb.data, sizeof(TscOpcode));
        sc_pb.datsize = datasize;
        sc_pb.pc += sizeof(TscOpcode);

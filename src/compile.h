@@ -34,11 +34,11 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
    - and a list of the names used. */
 
 typedef struct {
-       OB_HEAD
-       stringobject *co_code;  /* instruction opcodes */
-       object *co_consts;      /* list of immutable constant objects */
-       object *co_names;       /* list of stringobjects */
-       object *co_filename;    /* string */
+	OB_HEAD
+	stringobject* co_code;  /* instruction opcodes */
+	object* co_consts;      /* list of immutable constant objects */
+	object* co_names;       /* list of stringobjects */
+	object* co_filename;    /* string */
 } codeobject;
 
 extern typeobject Codetype;
@@ -47,6 +47,7 @@ extern typeobject Codetype;
 
 
 /* Public interface */
-codeobject *compile PROTO((struct _node *, char *));
+codeobject* compile
+PROTO((struct _node *, char *));
 
 #endif

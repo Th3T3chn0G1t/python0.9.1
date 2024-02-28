@@ -94,7 +94,7 @@ static object* builtin_chr(object* self, object* v) {
 static object* builtin_dir(object* self, object* v) {
 	object* d;
 
-	if(v == NULL) d = getlocals();
+	if(v == NULL) { d = getlocals(); }
 	else {
 		if(!is_moduleobject(v)) {
 			err_setstr(TypeError, "dir() argument, must be module or absent");
@@ -126,7 +126,7 @@ static object* builtin_divmod(object* self, object* v) {
 	x = gettupleitem(v, 0);
 	y = gettupleitem(v, 1);
 
-	if (!is_intobject(x) || !is_intobject(y)) {
+	if(!is_intobject(x) || !is_intobject(y)) {
 		err_setstr(TypeError, "divmod() requires 2 int arguments");
 		return NULL;
 	}
@@ -134,15 +134,15 @@ static object* builtin_divmod(object* self, object* v) {
 	xi = getintvalue(x);
 	yi = getintvalue(y);
 
-	if (yi == 0) {
+	if(yi == 0) {
 		err_setstr(TypeError, "divmod() division by zero");
 		return NULL;
 	}
 
-	if (yi < 0) xdivy = -xi / -yi;
-	else xdivy = xi / yi;
+	if(yi < 0) { xdivy = -xi / -yi; }
+	else { xdivy = xi / yi; }
 
-	xmody = xi - xdivy*yi;
+	xmody = xi - xdivy * yi;
 
 	if(xmody < 0 && yi > 0 || xmody > 0 && yi < 0) {
 		xmody += yi;
@@ -154,7 +154,7 @@ static object* builtin_divmod(object* self, object* v) {
 	y = newintobject(xmody);
 
 	if(v == NULL || x == NULL || y == NULL || settupleitem(v, 0, x) != 0 ||
-		settupleitem(v, 1, y) != 0) {
+	   settupleitem(v, 1, y) != 0) {
 
 		XDECREF(v);
 		XDECREF(x);
@@ -173,7 +173,7 @@ static object* exec_eval(object* v, int start) {
 	int n;
 
 	if(v != NULL) {
-		if(is_stringobject(v)) str = v;
+		if(is_stringobject(v)) { str = v; }
 		else if(is_tupleobject(v) && ((n = gettuplesize(v)) == 2 || n == 3)) {
 			str = gettupleitem(v, 0);
 			globals = gettupleitem(v, 1);
@@ -182,11 +182,12 @@ static object* exec_eval(object* v, int start) {
 		}
 	}
 
-	if(str == NULL || !is_stringobject(str) || globals != NULL &&
-		!is_dictobject(globals) || locals != NULL && !is_dictobject(locals)) {
+	if(str == NULL || !is_stringobject(str) ||
+	   globals != NULL && !is_dictobject(globals) ||
+	   locals != NULL && !is_dictobject(locals)) {
 
 		err_setstr(
-			TypeError, "exec/eval arguments must be string[,dict[,dict]]");
+				TypeError, "exec/eval arguments must be string[,dict[,dict]]");
 		return NULL;
 	}
 
@@ -211,7 +212,7 @@ static object* builtin_float(object* self, object* v) {
 	}
 	else if(is_intobject(v)) {
 		long x = getintvalue(v);
-		return newfloatobject((double)x);
+		return newfloatobject((double) x);
 	}
 
 	err_setstr(TypeError, "float() argument must be float or int");
@@ -240,13 +241,13 @@ static object* builtin_int(object* self, object* v) {
 	if(v == NULL) {
 		/* */
 	}
-	else if (is_intobject(v)) {
+	else if(is_intobject(v)) {
 		INCREF(v);
 		return v;
 	}
-	else if (is_floatobject(v)) {
+	else if(is_floatobject(v)) {
 		double x = getfloatvalue(v);
-		return newintobject((long)x);
+		return newintobject((long) x);
 	}
 
 	err_setstr(TypeError, "int() argument must be float or int");
@@ -255,7 +256,7 @@ static object* builtin_int(object* self, object* v) {
 
 static object* builtin_len(object* self, object* v) {
 	long len;
-	typeobject* tp;
+	typeobject * tp;
 
 	if(v == NULL) {
 		err_setstr(TypeError, "len() without argument");
@@ -264,7 +265,10 @@ static object* builtin_len(object* self, object* v) {
 
 	tp = v->ob_type;
 
-	if(tp->tp_as_sequence != NULL) len = (*tp->tp_as_sequence->sq_length)(v);
+	if(tp->tp_as_sequence != NULL) {
+		len = (*tp->tp_as_sequence->sq_length)(
+				v);
+	}
 	else if(tp->tp_as_mapping != NULL) {
 		len = (*tp->tp_as_mapping->mp_length)(v);
 	}
@@ -330,8 +334,8 @@ static object* builtin_open(object* self, object* v) {
 	object* mode;
 
 	if(v == NULL || !is_tupleobject(v) || gettuplesize(v) != 2 ||
-		!is_stringobject(name = gettupleitem(v, 0)) ||
-		!is_stringobject(mode = gettupleitem(v, 1))) {
+	   !is_stringobject(name = gettupleitem(v, 0)) ||
+	   !is_stringobject(mode = gettupleitem(v, 1))) {
 
 		err_setstr(TypeError, "open() requires 2 string arguments");
 		return NULL;
@@ -361,7 +365,9 @@ static object* builtin_range(object* self, object* v) {
 	long ilow, ihigh, istep;
 
 	if(v != NULL && is_intobject(v)) {
-		ilow = 0; ihigh = getintvalue(v); istep = 1;
+		ilow = 0;
+		ihigh = getintvalue(v);
+		istep = 1;
 	}
 	else if(v == NULL || !is_tupleobject(v)) {
 		err_setstr(TypeError, errmsg);
@@ -386,12 +392,12 @@ static object* builtin_range(object* self, object* v) {
 			istep = getintvalue(gettupleitem(v, 2));
 			--n;
 		}
-		else istep = 1;
+		else { istep = 1; }
 
 		ihigh = getintvalue(gettupleitem(v, --n));
 
-		if(n > 0) ilow = getintvalue(gettupleitem(v, 0));
-		else ilow = 0;
+		if(n > 0) { ilow = getintvalue(gettupleitem(v, 0)); }
+		else { ilow = 0; }
 	}
 
 	if(istep == 0) {
@@ -400,8 +406,8 @@ static object* builtin_range(object* self, object* v) {
 	}
 
 	/* XXX ought to check overflow of subtraction */
-	if(istep > 0) n = (ihigh - ilow + istep - 1) / istep;
-	else n = (ihigh - ilow + istep + 1) / istep;
+	if(istep > 0) { n = (ihigh - ilow + istep - 1) / istep; }
+	else { n = (ihigh - ilow + istep + 1) / istep; }
 
 	if(n < 0) n = 0;
 
@@ -434,7 +440,7 @@ static object* builtin_raw_input(object* self, object* v) {
 
 	if(v != NULL) printobject(v, out, PRINT_RAW);
 
-	v = newsizedstringobject((char *)NULL, n);
+	v = newsizedstringobject((char*) NULL, n);
 
 	if(v != NULL) {
 		if((err = fgets_intr(getstringvalue(v), n + 1, in)) != E_OK) {
@@ -445,7 +451,7 @@ static object* builtin_raw_input(object* self, object* v) {
 		else {
 			n = strlen(getstringvalue(v));
 
-			if (n > 0 && getstringvalue(v)[n-1] == '\n') n--;
+			if(n > 0 && getstringvalue(v)[n - 1] == '\n') n--;
 
 			resizestring(&v, n);
 		}
@@ -470,26 +476,25 @@ static object* builtin_type(object* self, object* v) {
 }
 
 static struct methodlist builtin_methods[] = {
-	{ "abs", builtin_abs },
-	{ "chr", builtin_chr },
-	{ "dir", builtin_dir },
-	{ "divmod", builtin_divmod },
-	{ "eval", builtin_eval },
-	{ "exec", builtin_exec },
-	{ "float", builtin_float },
-	{ "input", builtin_input },
-	{ "int", builtin_int },
-	{ "len", builtin_len },
-	{ "max", builtin_max },
-	{ "min", builtin_min },
-	{ "open", builtin_open }, /* XXX move to OS module */
-	{ "ord", builtin_ord },
-	{ "range", builtin_range },
-	{ "raw_input", builtin_raw_input },
-	{ "reload", builtin_reload },
-	{ "type", builtin_type },
-	{ NULL, NULL },
-};
+		{ "abs",       builtin_abs },
+		{ "chr",       builtin_chr },
+		{ "dir",       builtin_dir },
+		{ "divmod",    builtin_divmod },
+		{ "eval",      builtin_eval },
+		{ "exec",      builtin_exec },
+		{ "float",     builtin_float },
+		{ "input",     builtin_input },
+		{ "int",       builtin_int },
+		{ "len",       builtin_len },
+		{ "max",       builtin_max },
+		{ "min",       builtin_min },
+		{ "open",      builtin_open }, /* XXX move to OS module */
+		{ "ord",       builtin_ord },
+		{ "range",     builtin_range },
+		{ "raw_input", builtin_raw_input },
+		{ "reload",    builtin_reload },
+		{ "type",      builtin_type },
+		{ NULL, NULL }, };
 
 /* TODO: Centralise all global interpreter state. */
 static object* builtin_dict;
@@ -515,8 +520,8 @@ static void initerrors(void) {
 	MemoryError = newstdexception("MemoryError", "out of memory");
 	NameError = newstdexception("NameError", "undefined name");
 	SystemError = newstdexception("SystemError", "system error");
-	KeyboardInterrupt =
-		newstdexception("KeyboardInterrupt", "keyboard interrupt");
+	KeyboardInterrupt = newstdexception(
+			"KeyboardInterrupt", "keyboard interrupt");
 }
 
 void doneerrors(void) {

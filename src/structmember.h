@@ -41,10 +41,10 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
    pointer is NULL. */
 
 struct memberlist {
-       char *name;
-       int type;
-       int offset;
-       int readonly;
+	char* name;
+	int type;
+	int offset;
+	int readonly;
 };
 
 /* Types */
@@ -60,5 +60,7 @@ struct memberlist {
 #define READONLY       1
 #define RO             READONLY                /* Shorthand */
 
-object *getmember PROTO((char *, struct memberlist *, char *));
-int setmember PROTO((char *, struct memberlist *, char *, object *));
+object* getmember
+PROTO((char *, struct memberlist *, char *));
+int setmember
+PROTO((char *, struct memberlist *, char *, object *));

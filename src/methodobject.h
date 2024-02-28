@@ -28,15 +28,17 @@ extern typeobject Methodtype;
 
 #define is_methodobject(op) ((op)->ob_type == &Methodtype)
 
-typedef object *(*method) (object *, object *);
+typedef object* (* method)(object*, object*);
 
-extern object *newmethodobject (char *, method, object *, unsigned int);
-extern method getmethod (object *);
-extern object *getself (object *);
+extern object* newmethodobject(char*, method, object*, unsigned int);
+
+extern method getmethod(object*);
+
+extern object* getself(object*);
 
 struct methodlist {
-       char* ml_name;
-       method ml_meth;
+	char* ml_name;
+	method ml_meth;
 };
 
-extern object *findmethod (struct methodlist *, object *, char *);
+extern object* findmethod(struct methodlist*, object*, char*);

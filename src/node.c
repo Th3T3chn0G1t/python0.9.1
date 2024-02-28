@@ -29,75 +29,72 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #include "pgenheaders.h"
 #include "node.h"
 
-node *
-newtree(type)
-       int type;
+node* newtree(type)int type;
 {
-       node *n = malloc(sizeof(node));
-       if (n == NULL)
-               return NULL;
-       n->n_type = type;
-       n->n_str = NULL;
-       n->n_lineno = 0;
-       n->n_nchildren = 0;
-       n->n_child = NULL;
-       return n;
+	node* n = malloc(sizeof(node));
+	if(n == NULL) {
+		return NULL;
+	}
+	n->n_type = type;
+	n->n_str = NULL;
+	n->n_lineno = 0;
+	n->n_nchildren = 0;
+	n->n_child = NULL;
+	return n;
 }
 
 #define XXX 3 /* Node alignment factor to speed up realloc */
 #define XXXROUNDUP(n) ((n) == 1 ? 1 : ((n) + XXX - 1) / XXX * XXX)
 
-node *
-addchild(n1, type, str, lineno)
-       register node *n1;
-       int type;
-       char *str;
-       int lineno;
+node* addchild(n1, type, str, lineno)register node* n1;
+									 int type;
+									 char* str;
+									 int lineno;
 {
-       register int nch = n1->n_nchildren;
-       register int nch1 = nch+1;
-       register node *n;
-       if (XXXROUNDUP(nch) < nch1) {
-               n = n1->n_child;
-               nch1 = XXXROUNDUP(nch1);
-			   /* TODO: Leaky realloc. */
-               n = realloc(n, nch1 * sizeof(node));
-               if (n == NULL)
-                       return NULL;
-               n1->n_child = n;
-       }
-       n = &n1->n_child[n1->n_nchildren++];
-       n->n_type = type;
-       n->n_str = str;
-       n->n_lineno = lineno;
-       n->n_nchildren = 0;
-       n->n_child = NULL;
-       return n;
+	register int nch = n1->n_nchildren;
+	register int nch1 = nch + 1;
+	register node* n;
+	if(XXXROUNDUP(nch) < nch1) {
+		n = n1->n_child;
+		nch1 = XXXROUNDUP(nch1);
+		/* TODO: Leaky realloc. */
+		n = realloc(n, nch1 * sizeof(node));
+		if(n == NULL) {
+			return NULL;
+		}
+		n1->n_child = n;
+	}
+	n = &n1->n_child[n1->n_nchildren++];
+	n->n_type = type;
+	n->n_str = str;
+	n->n_lineno = lineno;
+	n->n_nchildren = 0;
+	n->n_child = NULL;
+	return n;
 }
 
 /* Forward */
-static void freechildren (node *);
+static void freechildren(node*);
 
 
-void
-freetree(n)
-       node *n;
+void freetree(n)node* n;
 {
-       if (n != NULL) {
-               freechildren(n);
-               free(n);
-       }
+	if(n != NULL) {
+		freechildren(n);
+		free(n);
+	}
 }
 
-static void
-freechildren(n)
-       node *n;
+static void freechildren(n)node* n;
 {
-       int i;
-       for (i = NCH(n); --i >= 0; )
-               freechildren(CHILD(n, i));
-       if (n->n_child != NULL)
-               free(n->n_child);
-       if (STR(n) != NULL)
-               free(STR(n));
+	int i;
+	for(i = NCH(n); --i >= 0;) {
+		freechildren(CHILD(n, i));
+	}
+	if(n->n_child != NULL) {
+		free(n->n_child);
+	}
+	if(STR(n) != NULL) {
+		free(STR(n));
+	}
 }

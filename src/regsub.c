@@ -59,57 +59,60 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 /*
  - regsub - perform substitutions after a regexp match
  */
-void
-regsub(prog, source, dest)
-regexp *prog;
-char *source;
-char *dest;
+void regsub(prog, source, dest)regexp* prog;
+							   char* source;
+							   char* dest;
 {
-       register char *src;
-       register char *dst;
-       register char c;
-       register int no;
-       register int len;
-       extern char *strncpy();
+	register char* src;
+	register char* dst;
+	register char c;
+	register int no;
+	register int len;
+	extern char* strncpy();
 
-       if (prog == NULL || source == NULL || dest == NULL) {
-               regerror("NULL parm to regsub");
-               return;
-       }
-       if (UCHARAT(prog->program) != MAGIC) {
-               regerror("damaged regexp fed to regsub");
-               return;
-       }
+	if(prog == NULL || source == NULL || dest == NULL) {
+		regerror("NULL parm to regsub");
+		return;
+	}
+	if(UCHARAT(prog->program) != MAGIC) {
+		regerror("damaged regexp fed to regsub");
+		return;
+	}
 
-       src = source;
-       dst = dest;
-       while ((c = *src++) != '\0') {
-               if (c == '&')
-                       no = 0;
-               else if (c == '\\' && '0' <= *src && *src <= '9')
-                       no = *src++ - '0';
-               else
-                       no = -1;
+	src = source;
+	dst = dest;
+	while((c = *src++) != '\0') {
+		if(c == '&') {
+			no = 0;
+		}
+		else if(c == '\\' && '0' <= *src && *src <= '9') {
+			no = *src++ - '0';
+		}
+		else {
+			no = -1;
+		}
 
-               if (no < 0) {        /* Ordinary character. */
-                       if (c == '\\' && (*src == '\\' || *src == '&'))
-                               c = *src++;
+		if(no < 0) {        /* Ordinary character. */
+			if(c == '\\' && (*src == '\\' || *src == '&')) {
+				c = *src++;
+			}
 #ifdef MULTILINE
-                       else if (c == '\\' && *src == 'n') {
-                               c = '\n';
-                               src++;
-                       }
+			else if(c == '\\' && *src == 'n') {
+				c = '\n';
+				src++;
+			}
 #endif
-                       *dst++ = c;
-               } else if (prog->startp[no] != NULL && prog->endp[no] != NULL) {
-                       len = prog->endp[no] - prog->startp[no];
-                       (void) strncpy(dst, prog->startp[no], len);
-                       dst += len;
-                       if (len != 0 && *(dst-1) == '\0') {     /* strncpy hit NUL. */
-                               regerror("damaged match string");
-                               return;
-                       }
-               }
-       }
-       *dst++ = '\0';
+			*dst++ = c;
+		}
+		else if(prog->startp[no] != NULL && prog->endp[no] != NULL) {
+			len = prog->endp[no] - prog->startp[no];
+			(void) strncpy(dst, prog->startp[no], len);
+			dst += len;
+			if(len != 0 && *(dst - 1) == '\0') {     /* strncpy hit NUL. */
+				regerror("damaged match string");
+				return;
+			}
+		}
+	}
+	*dst++ = '\0';
 }

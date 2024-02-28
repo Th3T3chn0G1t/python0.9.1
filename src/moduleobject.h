@@ -28,6 +28,8 @@ extern typeobject Moduletype;
 
 #define is_moduleobject(op) ((op)->ob_type == &Moduletype)
 
-object *newmoduleobject (char *);
-object *getmoduledict (object *);
-char *getmodulename (object *);
+object* newmoduleobject(char*);
+
+object* getmoduledict(object*);
+
+char* getmodulename(object*);

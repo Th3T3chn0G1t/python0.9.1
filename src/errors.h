@@ -24,22 +24,27 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 /* Error handling definitions */
 
-void err_set (object *);
-void err_setval (object *, object *);
-void err_setstr (object *, char *);
-int err_occurred (void);
-void err_get (object **, object **);
-void err_clear (void);
+void err_set(object*);
+
+void err_setval(object*, object*);
+
+void err_setstr(object*, char*);
+
+int err_occurred(void);
+
+void err_get(object**, object**);
+
+void err_clear(void);
 
 /* Predefined exceptions */
 
-extern object *RuntimeError;
-extern object *EOFError;
-extern object *TypeError;
-extern object *MemoryError;
-extern object *NameError;
-extern object *SystemError;
-extern object *KeyboardInterrupt;
+extern object* RuntimeError;
+extern object* EOFError;
+extern object* TypeError;
+extern object* MemoryError;
+extern object* NameError;
+extern object* SystemError;
+extern object* KeyboardInterrupt;
 
 /* Some more planned for the future */
 
@@ -50,11 +55,14 @@ extern object *KeyboardInterrupt;
 
 /* Convenience functions */
 
-extern int err_badarg (void);
-extern object *err_nomem (void);
-extern object *err_errno (object *);
-extern void err_input (int);
+extern int err_badarg(void);
 
-extern void err_badcall (void);
+extern object* err_nomem(void);
+
+extern object* err_errno(object*);
+
+extern void err_input(int);
+
+extern void err_badcall(void);
 
 void fatal(char*);

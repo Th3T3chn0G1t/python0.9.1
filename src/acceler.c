@@ -46,6 +46,7 @@ static int freelist_len = 0;
 
 /* Forward references */
 static void fixdfa(grammar*, dfa*);
+
 static void fixstate(grammar*, dfa*, state*);
 
 void addaccelerators(grammar* g) {
@@ -94,7 +95,7 @@ static void fixstate(grammar* g, dfa* d, state* s) {
 		}
 
 		if(ISNONTERMINAL(type)) {
-			dfa *d1 = finddfa(g, type);
+			dfa* d1 = finddfa(g, type);
 			int ibit;
 
 			if(type - NT_OFFSET >= (1 << 7)) {
@@ -103,7 +104,7 @@ static void fixstate(grammar* g, dfa* d, state* s) {
 			}
 
 			for(ibit = 0; ibit < g->g_ll.ll_nlabels; ibit++) {
-				if (PY_TESTBIT(d1->d_first, ibit)) {
+				if(PY_TESTBIT(d1->d_first, ibit)) {
 					if(accel[ibit] != -1) printf("XXX ambiguity!\n");
 
 					accel[ibit] = a->a_arrow | (1 << 7);
@@ -111,11 +112,11 @@ static void fixstate(grammar* g, dfa* d, state* s) {
 				}
 			}
 		}
-		else if(lbl == EMPTY) s->s_accept = 1;
+		else if(lbl == EMPTY) { s->s_accept = 1; }
 		else if(lbl >= 0 && lbl < nl) accel[lbl] = a->a_arrow;
 	}
 
-	while (nl > 0 && accel[nl - 1] == -1) nl--;
+	while(nl > 0 && accel[nl - 1] == -1) nl--;
 	for(k = 0; k < nl && accel[k] == -1;) k++;
 
 	if(k < nl) {

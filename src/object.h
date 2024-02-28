@@ -85,9 +85,9 @@ whose size is determined when the object is allocated.
 
 #ifdef TRACE_REFS
 #define OB_HEAD \
-       struct _object *_ob_next, *_ob_prev; \
-       int ob_refcnt; \
-       struct _typeobject *ob_type;
+	   struct _object *_ob_next, *_ob_prev; \
+	   int ob_refcnt; \
+	   struct _typeobject *ob_type;
 #define OB_HEAD_INIT(type) 0, 0, 1, type,
 #else
 #define OB_HEAD \
@@ -101,11 +101,11 @@ whose size is determined when the object is allocated.
        unsigned int ob_size; /* Number of items in variable part */
 
 typedef struct _object {
-       OB_HEAD
+	OB_HEAD
 } object;
 
 typedef struct {
-       OB_VARHEAD
+	OB_VARHEAD
 } varobject;
 
 
@@ -126,51 +126,71 @@ method blocks.
 */
 
 typedef struct {
-       object *(*nb_add) (object *, object *);
-       object *(*nb_subtract) (object *, object *);
-       object *(*nb_multiply) (object *, object *);
-       object *(*nb_divide) (object *, object *);
-       object *(*nb_remainder) (object *, object *);
-       object *(*nb_power) (object *, object *);
-       object *(*nb_negative) (object *);
-       object *(*nb_positive) (object *);
+	object* (* nb_add)(object*, object*);
+
+	object* (* nb_subtract)(object*, object*);
+
+	object* (* nb_multiply)(object*, object*);
+
+	object* (* nb_divide)(object*, object*);
+
+	object* (* nb_remainder)(object*, object*);
+
+	object* (* nb_power)(object*, object*);
+
+	object* (* nb_negative)(object*);
+
+	object* (* nb_positive)(object*);
 } number_methods;
 
 typedef struct {
-       int (*sq_length) (object *);
-       object *(*sq_concat) (object *, object *);
-       object *(*sq_repeat) (object *, int);
-       object *(*sq_item) (object *, int);
-       object *(*sq_slice) (object *, int, int);
-       int (*sq_ass_item) (object *, int, object *);
-       int (*sq_ass_slice) (object *, int, int, object *);
+	int (* sq_length)(object*);
+
+	object* (* sq_concat)(object*, object*);
+
+	object* (* sq_repeat)(object*, int);
+
+	object* (* sq_item)(object*, int);
+
+	object* (* sq_slice)(object*, int, int);
+
+	int (* sq_ass_item)(object*, int, object*);
+
+	int (* sq_ass_slice)(object*, int, int, object*);
 } sequence_methods;
 
 typedef struct {
-       int (*mp_length) (object *);
-       object *(*mp_subscript) (object *, object *);
-       int (*mp_ass_subscript) (object *, object *, object *);
+	int (* mp_length)(object*);
+
+	object* (* mp_subscript)(object*, object*);
+
+	int (* mp_ass_subscript)(object*, object*, object*);
 } mapping_methods;
 
 typedef struct _typeobject {
-       OB_VARHEAD
-       char *tp_name; /* For printing */
-       unsigned int tp_basicsize, tp_itemsize; /* For allocation */
+	OB_VARHEAD
+	char* tp_name; /* For printing */
+	unsigned int tp_basicsize, tp_itemsize; /* For allocation */
 
-       /* Methods to implement standard operations */
+	/* Methods to implement standard operations */
 
-       void (*tp_dealloc) (object *);
-       void (*tp_print) (object *, FILE *, int);
-       object *(*tp_getattr) (object *, char *);
-       int (*tp_setattr) (object *, char *, object *);
-       int (*tp_compare) (object *, object *);
-       object *(*tp_repr) (object *);
+	void (* tp_dealloc)(object*);
 
-       /* Method suites for standard classes */
+	void (* tp_print)(object*, FILE*, int);
 
-       number_methods *tp_as_number;
-       sequence_methods *tp_as_sequence;
-       mapping_methods *tp_as_mapping;
+	object* (* tp_getattr)(object*, char*);
+
+	int (* tp_setattr)(object*, char*, object*);
+
+	int (* tp_compare)(object*, object*);
+
+	object* (* tp_repr)(object*);
+
+	/* Method suites for standard classes */
+
+	number_methods* tp_as_number;
+	sequence_methods* tp_as_sequence;
+	mapping_methods* tp_as_mapping;
 } typeobject;
 
 extern typeobject Typetype; /* The type of type objects */
@@ -178,11 +198,15 @@ extern typeobject Typetype; /* The type of type objects */
 #define is_typeobject(op) ((op)->ob_type == &Typetype)
 
 /* Generic operations on objects */
-extern void printobject (object *, FILE *, int);
-extern object * reprobject (object *);
-extern int cmpobject (object *, object *);
-extern object *getattr (object *, char *);
-extern int setattr (object *, char *, object *);
+extern void printobject(object*, FILE*, int);
+
+extern object* reprobject(object*);
+
+extern int cmpobject(object*, object*);
+
+extern object* getattr(object*, char*);
+
+extern int setattr(object*, char*, object*);
 
 /* Flag bits for printing: */
 #define PRINT_RAW      1       /* No string quotes etc. */
@@ -244,10 +268,10 @@ extern long ref_total;
 #define INCREF(op) ((op)->ob_refcnt++)
 #undef DECREF
 #define DECREF(op) \
-       if (--(op)->ob_refcnt > 0) \
-               ; \
-       else \
-               DELREF(op)
+	   if (--(op)->ob_refcnt > 0) \
+			   ; \
+	   else \
+			   DELREF(op)
 #endif
 
 /* Macros to use in case the object pointer may be NULL: */
@@ -274,7 +298,9 @@ extern object NoObject; /* Don't use this directly */
 #define None (&NoObject)
 
 static void pyobject_free(object* p) { free(p); }
+
 FILE* pyopen_r(const char* path);
+
 void pyclose(FILE* fp);
 
 #ifdef __has_attribute

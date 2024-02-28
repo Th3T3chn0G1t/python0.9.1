@@ -34,36 +34,30 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #include "stdwin.h"
 #endif
 
-void
-initargs(p_argc, p_argv)
-       int *p_argc;
-       char ***p_argv;
+void initargs(p_argc, p_argv)int* p_argc;
+							 char*** p_argv;
 {
 #ifdef USE_STDWIN
 
 #ifdef THINK_C_3_0
-       wsetstdio(1);
+	wsetstdio(1);
 #else
-       /* This printf() statement is really needed only
-          to initialize THINK C 4.0's stdio: */
-       printf(
+	/* This printf() statement is really needed only
+	   to initialize THINK C 4.0's stdio: */
+	printf(
 "Python 4.0, Copyright 1990 Stichting Mathematisch Centrum, Amsterdam\n");
 #endif
 
-       wargs(p_argc, p_argv);
+	wargs(p_argc, p_argv);
 #endif
 }
 
-void
-initcalls()
-{
+void initcalls() {
 }
 
-void
-donecalls()
-{
+void donecalls() {
 #ifdef USE_STDWIN
-       wdone();
+	wdone();
 #endif
 }
 
@@ -72,10 +66,8 @@ donecalls()
 #define PYTHONPATH ": :lib :lib:stdwin :lib:mac :lib:demo"
 #endif
 
-char *
-getpythonpath()
-{
-       return PYTHONPATH;
+char* getpythonpath() {
+	return PYTHONPATH;
 }
 
 
@@ -84,30 +76,32 @@ getpythonpath()
 
 /* Standard modules */
 extern void inittime();
+
 extern void initmath();
+
 extern void initregexp();
 
 /* Mac-specific modules */
 extern void initmac();
+
 #ifdef USE_STDWIN
 extern void initstdwin();
 #endif
 
 struct {
-       char *name;
-       void (*initfunc)();
-} inittab[] = {
-       /* Standard modules */
-       {"time",      inittime},
-       {"math",      initmath},
-       {"regexp",    initregexp},
+	char* name;
 
-       /* Mac-specific modules */
-       {"mac",               initmac},
+	void (* initfunc)();
+} inittab[] = {
+		/* Standard modules */
+		{ "time", inittime }, { "math", initmath }, { "regexp", initregexp },
+
+		/* Mac-specific modules */
+		{ "mac", initmac },
 #ifdef USE_STDWIN
-       {"stdwin",    initstdwin},
+		{"stdwin",    initstdwin},
 #endif
-       {0,             0}              /* Sentinel */
+		{ 0, 0 }              /* Sentinel */
 };
 
 #endif

@@ -42,7 +42,7 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #include "pythonrun.h"
 #include "import.h"
 
-extern char *getpythonpath();
+extern char* getpythonpath();
 
 extern grammar gram; /* From graminit.c */
 
@@ -50,369 +50,348 @@ extern grammar gram; /* From graminit.c */
 int debugging; /* Needed by parser.c */
 #endif
 
-int main(int argc, char **argv)
-{
-       char *filename = NULL;
-       FILE *fp = stdin;
+int main(int argc, char** argv) {
+	char* filename = NULL;
+	FILE* fp = stdin;
 
-       initargs(&argc, &argv);
+	initargs(&argc, &argv);
 
-       if (argc > 1 && strcmp(argv[1], "-") != 0)
-               filename = argv[1];
+	if(argc > 1 && strcmp(argv[1], "-") != 0) {
+		filename = argv[1];
+	}
 
-       if (filename != NULL) {
-               if ((fp = fopen(filename, "r")) == NULL) {
-                       fprintf(stderr, "python: can't open file '%s'\n",
-                               filename);
-                       exit(2);
-               }
-       }
+	if(filename != NULL) {
+		if((fp = fopen(filename, "r")) == NULL) {
+			fprintf(
+					stderr, "python: can't open file '%s'\n", filename);
+			exit(2);
+		}
+	}
 
-       initall();
+	initall();
 
-       setpythonpath(getpythonpath());
-       setpythonargv(argc-1, argv+1);
+	setpythonpath(getpythonpath());
+	setpythonargv(argc - 1, argv + 1);
 
-       goaway(run(fp, filename == NULL ? "<stdin>" : filename));
-       /*NOTREACHED*/
+	goaway(run(fp, filename == NULL ? "<stdin>" : filename));
+	/*NOTREACHED*/
 }
 
 /* Initialize all */
 
-void
-initall()
-{
-       static int inited;
+void initall() {
+	static int inited;
 
-       if (inited)
-               return;
-       inited = 1;
+	if(inited) {
+		return;
+	}
+	inited = 1;
 
-       initimport();
+	initimport();
 
-       /* Modules 'builtin' and 'sys' are initialized here,
-          they are needed by random bits of the interpreter.
-          All other modules are optional and should be initialized
-          by the initcalls() of a specific configuration. */
+	/* Modules 'builtin' and 'sys' are initialized here,
+	   they are needed by random bits of the interpreter.
+	   All other modules are optional and should be initialized
+	   by the initcalls() of a specific configuration. */
 
-       initbuiltin(); /* Also initializes builtin exceptions */
-       initsys();
+	initbuiltin(); /* Also initializes builtin exceptions */
+	initsys();
 
-       initcalls(); /* Configuration-dependent initializations */
+	initcalls(); /* Configuration-dependent initializations */
 
-       initintr(); /* For intrcheck() */
+	initintr(); /* For intrcheck() */
 }
 
 /* Parse input from a file and execute it */
 
-int
-run(fp, filename)
-       FILE *fp;
-       char *filename;
+int run(fp, filename)FILE* fp;
+					 char* filename;
 {
-       if (filename == NULL)
-               filename = "???";
-       if (isatty(fileno(fp)))
-               return run_tty_loop(fp, filename);
-       else
-               return run_script(fp, filename);
+	if(filename == NULL) {
+		filename = "???";
+	}
+	if(isatty(fileno(fp))) {
+		return run_tty_loop(fp, filename);
+	}
+	else {
+		return run_script(fp, filename);
+	}
 }
 
-int
-run_tty_loop(fp, filename)
-       FILE *fp;
-       char *filename;
+int run_tty_loop(fp, filename)FILE* fp;
+							  char* filename;
 {
-       object *v;
-       int ret;
-       v = sysget("ps1");
-       if (v == NULL) {
-               sysset("ps1", v = newstringobject(">>> "));
-               XDECREF(v);
-       }
-       v = sysget("ps2");
-       if (v == NULL) {
-               sysset("ps2", v = newstringobject("... "));
-               XDECREF(v);
-       }
-       for (;;) {
-               ret = run_tty_1(fp, filename);
+	object* v;
+	int ret;
+	v = sysget("ps1");
+	if(v == NULL) {
+		sysset("ps1", v = newstringobject(">>> "));
+		XDECREF(v);
+	}
+	v = sysget("ps2");
+	if(v == NULL) {
+		sysset("ps2", v = newstringobject("... "));
+		XDECREF(v);
+	}
+	for(;;) {
+		ret = run_tty_1(fp, filename);
 #ifdef REF_DEBUG
-               fprintf(stderr, "[%ld refs]\n", ref_total);
+		fprintf(stderr, "[%ld refs]\n", ref_total);
 #endif
-               if (ret == E_EOF)
-                       return 0;
-               /*
-               if (ret == E_NOMEM)
-                       return -1;
-               */
-       }
+		if(ret == E_EOF) {
+			return 0;
+		}
+		/*
+		if (ret == E_NOMEM)
+				return -1;
+		*/
+	}
 }
 
-int
-run_tty_1(fp, filename)
-       FILE *fp;
-       char *filename;
+int run_tty_1(fp, filename)FILE* fp;
+						   char* filename;
 {
-       object *m, *d, *v, *w;
-       node *n;
-       char *ps1, *ps2;
-       int err;
-       v = sysget("ps1");
-       w = sysget("ps2");
-       if (v != NULL && is_stringobject(v)) {
-               INCREF(v);
-               ps1 = getstringvalue(v);
-       }
-       else {
-               v = NULL;
-               ps1 = "";
-       }
-       if (w != NULL && is_stringobject(w)) {
-               INCREF(w);
-               ps2 = getstringvalue(w);
-       }
-       else {
-               w = NULL;
-               ps2 = "";
-       }
-       err = parsefile(fp, filename, &gram, single_input, ps1, ps2, &n);
-       XDECREF(v);
-       XDECREF(w);
-       if (err == E_EOF)
-               return E_EOF;
-       if (err != E_DONE) {
-               err_input(err);
-               print_error();
-               return err;
-       }
-       m = add_module("__main__");
-       if (m == NULL)
-               return -1;
-       d = getmoduledict(m);
-       v = run_node(n, filename, d, d);
-       flushline();
-       if (v == NULL) {
-               print_error();
-               return -1;
-       }
-       DECREF(v);
-       return 0;
+	object* m, * d, * v, * w;
+	node* n;
+	char* ps1, * ps2;
+	int err;
+	v = sysget("ps1");
+	w = sysget("ps2");
+	if(v != NULL && is_stringobject(v)) {
+		INCREF(v);
+		ps1 = getstringvalue(v);
+	}
+	else {
+		v = NULL;
+		ps1 = "";
+	}
+	if(w != NULL && is_stringobject(w)) {
+		INCREF(w);
+		ps2 = getstringvalue(w);
+	}
+	else {
+		w = NULL;
+		ps2 = "";
+	}
+	err = parsefile(fp, filename, &gram, single_input, ps1, ps2, &n);
+	XDECREF(v);
+	XDECREF(w);
+	if(err == E_EOF) {
+		return E_EOF;
+	}
+	if(err != E_DONE) {
+		err_input(err);
+		print_error();
+		return err;
+	}
+	m = add_module("__main__");
+	if(m == NULL) {
+		return -1;
+	}
+	d = getmoduledict(m);
+	v = run_node(n, filename, d, d);
+	flushline();
+	if(v == NULL) {
+		print_error();
+		return -1;
+	}
+	DECREF(v);
+	return 0;
 }
 
-int
-run_script(fp, filename)
-       FILE *fp;
-       char *filename;
+int run_script(fp, filename)FILE* fp;
+							char* filename;
 {
-       object *m, *d, *v;
-       m = add_module("__main__");
-       if (m == NULL)
-               return -1;
-       d = getmoduledict(m);
-       v = run_file(fp, filename, file_input, d, d);
-       flushline();
-       if (v == NULL) {
-               print_error();
-               return -1;
-       }
-       DECREF(v);
-       return 0;
+	object* m, * d, * v;
+	m = add_module("__main__");
+	if(m == NULL) {
+		return -1;
+	}
+	d = getmoduledict(m);
+	v = run_file(fp, filename, file_input, d, d);
+	flushline();
+	if(v == NULL) {
+		print_error();
+		return -1;
+	}
+	DECREF(v);
+	return 0;
 }
 
-void
-print_error()
-{
-       object *exception, *v;
-       err_get(&exception, &v);
-       fprintf(stderr, "Unhandled exception: ");
-       printobject(exception, stderr, PRINT_RAW);
-       if (v != NULL && v != None) {
-               fprintf(stderr, ": ");
-               printobject(v, stderr, PRINT_RAW);
-       }
-       fprintf(stderr, "\n");
-       XDECREF(exception);
-       XDECREF(v);
-       printtraceback(stderr);
+void print_error() {
+	object* exception, * v;
+	err_get(&exception, &v);
+	fprintf(stderr, "Unhandled exception: ");
+	printobject(exception, stderr, PRINT_RAW);
+	if(v != NULL && v != None) {
+		fprintf(stderr, ": ");
+		printobject(v, stderr, PRINT_RAW);
+	}
+	fprintf(stderr, "\n");
+	XDECREF(exception);
+	XDECREF(v);
+	printtraceback(stderr);
 }
 
-object *
-run_string(str, start, globals, locals)
-       char *str;
-       int start;
-       /*dict*/object *globals, *locals;
+object* run_string(str, start, globals, locals)char* str;
+											   int start;
+		/*dict*/object* globals, * locals;
 {
-       node *n;
-       int err;
-       err = parse_string(str, start, &n);
-       return run_err_node(err, n, "<string>", globals, locals);
+	node* n;
+	int err;
+	err = parse_string(str, start, &n);
+	return run_err_node(err, n, "<string>", globals, locals);
 }
 
-object *
-run_file(fp, filename, start, globals, locals)
-       FILE *fp;
-       char *filename;
-       int start;
-       /*dict*/object *globals, *locals;
+object* run_file(fp, filename, start, globals, locals)FILE* fp;
+													  char* filename;
+													  int start;
+		/*dict*/object* globals, * locals;
 {
-       node *n;
-       int err;
-       err = parse_file(fp, filename, start, &n);
-       return run_err_node(err, n, filename, globals, locals);
+	node* n;
+	int err;
+	err = parse_file(fp, filename, start, &n);
+	return run_err_node(err, n, filename, globals, locals);
 }
 
-object *
-run_err_node(err, n, filename, globals, locals)
-       int err;
-       node *n;
-       char *filename;
-       /*dict*/object *globals, *locals;
+object* run_err_node(err, n, filename, globals, locals)int err;
+													   node* n;
+													   char* filename;
+		/*dict*/object* globals, * locals;
 {
-       if (err != E_DONE) {
-               err_input(err);
-               return NULL;
-       }
-       return run_node(n, filename, globals, locals);
+	if(err != E_DONE) {
+		err_input(err);
+		return NULL;
+	}
+	return run_node(n, filename, globals, locals);
 }
 
-object *
-run_node(n, filename, globals, locals)
-       node *n;
-       char *filename;
-       /*dict*/object *globals, *locals;
+object* run_node(n, filename, globals, locals)node* n;
+											  char* filename;
+		/*dict*/object* globals, * locals;
 {
-       if (globals == NULL) {
-               globals = getglobals();
-               if (locals == NULL)
-                       locals = getlocals();
-       }
-       else {
-               if (locals == NULL)
-                       locals = globals;
-       }
-       return eval_node(n, filename, globals, locals);
+	if(globals == NULL) {
+		globals = getglobals();
+		if(locals == NULL) {
+			locals = getlocals();
+		}
+	}
+	else {
+		if(locals == NULL) {
+			locals = globals;
+		}
+	}
+	return eval_node(n, filename, globals, locals);
 }
 
-object *
-eval_node(n, filename, globals, locals)
-       node *n;
-       char *filename;
-       object *globals;
-       object *locals;
+object* eval_node(n, filename, globals, locals)node* n;
+											   char* filename;
+											   object* globals;
+											   object* locals;
 {
-       codeobject *co;
-       object *v;
-       co = compile(n, filename);
-       freetree(n);
-       if (co == NULL)
-               return NULL;
-       v = eval_code(co, globals, locals, (object *)NULL);
-       DECREF(co);
-       return v;
+	codeobject* co;
+	object* v;
+	co = compile(n, filename);
+	freetree(n);
+	if(co == NULL) {
+		return NULL;
+	}
+	v = eval_code(co, globals, locals, (object*) NULL);
+	DECREF(co);
+	return v;
 }
 
 /* Simplified interface to parsefile */
 
-int
-parse_file(fp, filename, start, n_ret)
-       FILE *fp;
-       char *filename;
-       int start;
-       node **n_ret;
+int parse_file(fp, filename, start, n_ret)FILE* fp;
+										  char* filename;
+										  int start;
+										  node** n_ret;
 {
-       return parsefile(fp, filename, &gram, start,
-                               (char *)0, (char *)0, n_ret);
+	return parsefile(
+			fp, filename, &gram, start, (char*) 0, (char*) 0, n_ret);
 }
 
 /* Simplified interface to parsestring */
 
-int
-parse_string(str, start, n_ret)
-       char *str;
-       int start;
-       node **n_ret;
+int parse_string(str, start, n_ret)char* str;
+								   int start;
+								   node** n_ret;
 {
-       int err = parsestring(str, &gram, start, n_ret);
-       /* Don't confuse early end of string with early end of input */
-       if (err == E_EOF)
-               err = E_SYNTAX;
-       return err;
+	int err = parsestring(str, &gram, start, n_ret);
+	/* Don't confuse early end of string with early end of input */
+	if(err == E_EOF) {
+		err = E_SYNTAX;
+	}
+	return err;
 }
 
 /* Print fatal error message and abort */
 
-void
-fatal(msg)
-       char *msg;
+void fatal(msg)char* msg;
 {
 	/* TODO: Hook all random python/libwww prints for sinking. */
-       fprintf(stderr, "Fatal error: %s\n", msg);
-       abort();
+	fprintf(stderr, "Fatal error: %s\n", msg);
+	abort();
 }
 
 /* Clean up and exit */
 
-void
-goaway(sts)
-       int sts;
+void goaway(sts)int sts;
 {
-       flushline();
+	flushline();
 
-       /* XXX Call doneimport() before donecalls(), since donecalls()
-          calls wdone(), and doneimport() may close windows */
-       doneimport();
-       donecalls();
+	/* XXX Call doneimport() before donecalls(), since donecalls()
+	   calls wdone(), and doneimport() may close windows */
+	doneimport();
+	donecalls();
 
-       err_clear();
+	err_clear();
 
 #ifdef REF_DEBUG
-       fprintf(stderr, "[%ld refs]\n", ref_total);
+	fprintf(stderr, "[%ld refs]\n", ref_total);
 #endif
 
 #ifdef THINK_C_3_0
-       if (sts == 0)
-               Click_On(0);
+	if (sts == 0)
+			Click_On(0);
 #endif
 
 #ifdef TRACE_REFS
-       if (askyesno("Print left references?")) {
+	if (askyesno("Print left references?")) {
 #ifdef THINK_C_3_0
-               Click_On(1);
+			Click_On(1);
 #endif
-               printrefs(stderr);
-       }
+			printrefs(stderr);
+	}
 #endif /* TRACE_REFS */
 
-       exit(sts);
-       /*NOTREACHED*/
+	exit(sts);
+	/*NOTREACHED*/
 }
 
-static
-finaloutput()
-{
+static finaloutput() {
 #ifdef TRACE_REFS
-       if (!askyesno("Print left references?"))
-               return;
+	if (!askyesno("Print left references?"))
+			return;
 #ifdef THINK_C_3_0
-       Click_On(1);
+	Click_On(1);
 #endif
-       printrefs(stderr);
+	printrefs(stderr);
 #endif /* TRACE_REFS */
 }
 
 /* Ask a yes/no question */
 
-static int
-askyesno(prompt)
-       char *prompt;
+static int askyesno(prompt)char* prompt;
 {
-       char buf[256];
+	char buf[256];
 
-       printf("%s [ny] ", prompt);
-       if (fgets(buf, sizeof buf, stdin) == NULL)
-               return 0;
-       return buf[0] == 'y' || buf[0] == 'Y';
+	printf("%s [ny] ", prompt);
+	if(fgets(buf, sizeof buf, stdin) == NULL) {
+		return 0;
+	}
+	return buf[0] == 'y' || buf[0] == 'Y';
 }
 
 #ifdef THINK_C_3_0
@@ -422,9 +401,9 @@ askyesno(prompt)
 
 int
 isatty(fd)
-       int fd;
+	   int fd;
 {
-       return fd == fileno(stdin);
+	   return fd == fileno(stdin);
 }
 
 #endif

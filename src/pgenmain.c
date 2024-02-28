@@ -43,26 +43,25 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 int debugging;
 
 /* Forward */
-grammar *getgrammar (char *filename);
+grammar* getgrammar(char* filename);
+
 #ifdef THINK_C
 int main PROTO((int, char **));
 char *askfile PROTO((void));
 #endif
 
-int
-main(argc, argv)
-		int argc;
-		char **argv;
+int main(argc, argv)int argc;
+					char** argv;
 {
-	grammar *g;
-	node *n;
-	FILE *fp;
-	char *filename;
+	grammar* g;
+	node* n;
+	FILE* fp;
+	char* filename;
 
 #ifdef THINK_C
 	filename = askfile();
 #else
-	if (argc != 4) {
+	if(argc != 4) {
 		fprintf(stderr, "usage: %s grammar outsource outheader\n", argv[0]);
 		exit(2);
 	}
@@ -70,7 +69,7 @@ main(argc, argv)
 #endif
 	g = getgrammar(filename);
 	fp = fopen(argv[2], "w");
-	if (fp == NULL) {
+	if(fp == NULL) {
 		perror("graminit.c");
 		exit(1);
 	}
@@ -78,7 +77,7 @@ main(argc, argv)
 	printgrammar(g, fp);
 	fclose(fp);
 	fp = fopen(argv[3], "w");
-	if (fp == NULL) {
+	if(fp == NULL) {
 		perror("graminit.h");
 		exit(1);
 	}
@@ -88,29 +87,27 @@ main(argc, argv)
 	exit(0);
 }
 
-grammar *
-getgrammar(filename)
-		char *filename;
+grammar* getgrammar(filename)char* filename;
 {
-	FILE *fp;
-	node *n;
-	grammar *g0, *g;
+	FILE* fp;
+	node* n;
+	grammar* g0, * g;
 
 	fp = fopen(filename, "r");
-	if (fp == NULL) {
+	if(fp == NULL) {
 		perror(filename);
 		exit(1);
 	}
 	g0 = meta_grammar();
 	n = NULL;
-	parsefile(fp, filename, g0, g0->g_start, (char *)NULL, (char *)NULL, &n);
+	parsefile(fp, filename, g0, g0->g_start, (char*) NULL, (char*) NULL, &n);
 	fclose(fp);
-	if (n == NULL) {
+	if(n == NULL) {
 		fprintf(stderr, "Parsing error.\n");
 		exit(1);
 	}
 	g = pgen(n);
-	if (g == NULL) {
+	if(g == NULL) {
 		fprintf(stderr, "Bad grammar.\n");
 		exit(1);
 	}
@@ -121,25 +118,23 @@ getgrammar(filename)
 char *
 askfile()
 {
-       char buf[256];
-       static char name[256];
-       printf("Input file name: ");
-       if (fgets(buf, sizeof buf, stdin) == NULL) {
-               printf("EOF\n");
-               exit(1);
-       }
-       /* XXX The (unsigned char *) case is needed by THINK C 3.0 */
-       if (sscanf(/*(unsigned char *)*/buf, " %s ", name) != 1) {
-               printf("No file\n");
-               exit(1);
-       }
-       return name;
+	   char buf[256];
+	   static char name[256];
+	   printf("Input file name: ");
+	   if (fgets(buf, sizeof buf, stdin) == NULL) {
+			   printf("EOF\n");
+			   exit(1);
+	   }
+	   /* XXX The (unsigned char *) case is needed by THINK C 3.0 */
+	   if (sscanf(/*(unsigned char *)*/buf, " %s ", name) != 1) {
+			   printf("No file\n");
+			   exit(1);
+	   }
+	   return name;
 }
 #endif
 
-void
-fatal(msg)
-		char *msg;
+void fatal(msg)char* msg;
 {
 	fprintf(stderr, "pgen: FATAL ERROR: %s\n", msg);
 	exit(1);

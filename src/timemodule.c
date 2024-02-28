@@ -52,8 +52,8 @@ time_time(self, args)
        object *args;
 {
        long secs;
-       if (!getnoarg(args))
-               return NULL;
+       if (!getnoarg(args)){
+               return NULL;}
        secs = time((time_t *)NULL);
        return newintobject(secs);
 }
@@ -74,16 +74,16 @@ time_sleep(self, args)
 {
        int secs;
        SIGTYPE (*sigsave)();
-       if (!getintarg(args, &secs))
-               return NULL;
+       if (!getintarg(args, &secs)){
+               return NULL;}
        if (setjmp(sleep_intr)) {
                signal(SIGINT, sigsave);
                err_set(KeyboardInterrupt);
                return NULL;
        }
        sigsave = signal(SIGINT, SIG_IGN);
-       if (sigsave != (SIGTYPE (*)()) SIG_IGN)
-               signal(SIGINT, sleep_catcher);
+       if (sigsave != (SIGTYPE (*)()) SIG_IGN){
+               signal(SIGINT, sleep_catcher);}
 #ifdef _MSC_VER
 	   _sleep(secs);
 #else

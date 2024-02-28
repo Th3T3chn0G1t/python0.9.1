@@ -36,12 +36,12 @@ initintr()
 int
 intrcheck()
 {
-       int interrupted = 0;
-       while (kbhit()) {
-               if (getch() == '\003')
-                       interrupted = 1;
-       }
-       return interrupted;
+	   int interrupted = 0;
+	   while (kbhit()) {
+			   if (getch() == '\003')
+					   interrupted = 1;
+	   }
+	   return interrupted;
 }
 
 #define OK
@@ -62,44 +62,44 @@ static int interrupted;
 
 static SIGTYPE
 intcatcher(sig)
-       int sig;
+	   int sig;
 {
-       interrupted = 1;
-       signal(SIGINT, intcatcher);
+	   interrupted = 1;
+	   signal(SIGINT, intcatcher);
 }
 
 void
 initintr()
 {
-       if (signal(SIGINT, SIG_IGN) != SIG_IGN)
-               signal(SIGINT, intcatcher);
+	   if (signal(SIGINT, SIG_IGN) != SIG_IGN)
+			   signal(SIGINT, intcatcher);
 }
 
 int
 intrcheck()
 {
-       register EvQElPtr q;
+	   register EvQElPtr q;
 
-       /* This is like THINK C 4.0's <console.h>.
-          I'm not sure why FlushEvents must be called from asm{}. */
-       for (q = (EvQElPtr)EventQueue.qHead; q; q = (EvQElPtr)q->qLink) {
-               if (q->evtQWhat == keyDown &&
-                               (char)q->evtQMessage == '.' &&
-                               (q->evtQModifiers & cmdKey) != 0) {
+	   /* This is like THINK C 4.0's <console.h>.
+		  I'm not sure why FlushEvents must be called from asm{}. */
+	   for (q = (EvQElPtr)EventQueue.qHead; q; q = (EvQElPtr)q->qLink) {
+			   if (q->evtQWhat == keyDown &&
+							   (char)q->evtQMessage == '.' &&
+							   (q->evtQModifiers & cmdKey) != 0) {
 
-                       asm {
-                               moveq   #keyDownMask,d0
-                               _FlushEvents
-                       }
-                       interrupted = 1;
-                       break;
-               }
-       }
-       if (interrupted) {
-               interrupted = 0;
-               return 1;
-       }
-       return 0;
+					   asm {
+							   moveq   #keyDownMask,d0
+							   _FlushEvents
+					   }
+					   interrupted = 1;
+					   break;
+			   }
+	   }
+	   if (interrupted) {
+			   interrupted = 0;
+			   return 1;
+	   }
+	   return 0;
 }
 
 #define OK
@@ -117,28 +117,24 @@ intrcheck()
 
 static int interrupted;
 
-static SIGTYPE
-intcatcher(sig)
-       int sig;
+static SIGTYPE intcatcher(sig)int sig;
 {
-       interrupted = 1;
-       signal(SIGINT, intcatcher);
+	interrupted = 1;
+	signal(SIGINT, intcatcher);
 }
 
-void
-initintr()
-{
-       if (signal(SIGINT, SIG_IGN) != SIG_IGN)
-               signal(SIGINT, intcatcher);
+void initintr() {
+	if(signal(SIGINT, SIG_IGN) != SIG_IGN) {
+		signal(SIGINT, intcatcher);
+	}
 }
 
-int
-intrcheck()
-{
-       if (!interrupted)
-               return 0;
-       interrupted = 0;
-       return 1;
+int intrcheck() {
+	if(!interrupted) {
+		return 0;
+	}
+	interrupted = 0;
+	return 1;
 }
 
 #endif /* !OK */

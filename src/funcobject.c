@@ -29,46 +29,40 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #include "structmember.h"
 
 typedef struct {
-       OB_HEAD
-       object *func_code;
-       object *func_globals;
+	OB_HEAD
+	object* func_code;
+	object* func_globals;
 } funcobject;
 
-object *
-newfuncobject(code, globals)
-       object *code;
-       object *globals;
+object* newfuncobject(code, globals)object* code;
+									object* globals;
 {
-       funcobject *op = NEWOBJ(funcobject, &Functype);
-       if (op != NULL) {
-               INCREF(code);
-               op->func_code = code;
-               INCREF(globals);
-               op->func_globals = globals;
-       }
-       return (object *)op;
+	funcobject* op = NEWOBJ(funcobject, &Functype);
+	if(op != NULL) {
+		INCREF(code);
+		op->func_code = code;
+		INCREF(globals);
+		op->func_globals = globals;
+	}
+	return (object*) op;
 }
 
-object *
-getfunccode(op)
-       object *op;
+object* getfunccode(op)object* op;
 {
-       if (!is_funcobject(op)) {
-               err_badcall();
-               return NULL;
-       }
-       return ((funcobject *) op) -> func_code;
+	if(!is_funcobject(op)) {
+		err_badcall();
+		return NULL;
+	}
+	return ((funcobject*) op)->func_code;
 }
 
-object *
-getfuncglobals(op)
-       object *op;
+object* getfuncglobals(op)object* op;
 {
-       if (!is_funcobject(op)) {
-               err_badcall();
-               return NULL;
-       }
-       return ((funcobject *) op) -> func_globals;
+	if(!is_funcobject(op)) {
+		err_badcall();
+		return NULL;
+	}
+	return ((funcobject*) op)->func_globals;
 }
 
 /* Methods */
@@ -76,38 +70,30 @@ getfuncglobals(op)
 #define OFF(x) offsetof(funcobject, x)
 
 static struct memberlist func_memberlist[] = {
-       {"func_code", T_OBJECT,       OFF(func_code)},
-       {"func_globals",T_OBJECT,     OFF(func_globals)},
-       {NULL}  /* Sentinel */
+		{ "func_code",    T_OBJECT, OFF(func_code) },
+		{ "func_globals", T_OBJECT, OFF(func_globals) },
+		{ NULL }  /* Sentinel */
 };
 
-static object *
-func_getattr(op, name)
-       funcobject *op;
-       char *name;
+static object* func_getattr(op, name)funcobject* op;
+									 char* name;
 {
-       return getmember((char *)op, func_memberlist, name);
+	return getmember((char*) op, func_memberlist, name);
 }
 
-static void
-func_dealloc(op)
-       funcobject *op;
+static void func_dealloc(op)funcobject* op;
 {
-       DECREF(op->func_code);
-       DECREF(op->func_globals);
-       free(op);
+	DECREF(op->func_code);
+	DECREF(op->func_globals);
+	free(op);
 }
 
 typeobject Functype = {
-       OB_HEAD_INIT(&Typetype)
-       0,
-       "function",
-       sizeof(funcobject),
-       0,
-       func_dealloc,   /*tp_dealloc*/
-       0,              /*tp_print*/
-       func_getattr,   /*tp_getattr*/
-       0,              /*tp_setattr*/
-       0,              /*tp_compare*/
-       0,              /*tp_repr*/
+		OB_HEAD_INIT(&Typetype) 0, "function", sizeof(funcobject), 0,
+		func_dealloc,   /*tp_dealloc*/
+		0,              /*tp_print*/
+		func_getattr,   /*tp_getattr*/
+		0,              /*tp_setattr*/
+		0,              /*tp_compare*/
+		0,              /*tp_repr*/
 };

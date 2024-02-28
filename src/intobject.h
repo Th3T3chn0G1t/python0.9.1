@@ -40,16 +40,17 @@ TrueObject and FalseObject below; don't use this.
 */
 
 typedef struct {
-       OB_HEAD
-       long ob_ival;
+	OB_HEAD
+	long ob_ival;
 } intobject;
 
 extern typeobject Inttype;
 
 #define is_intobject(op) ((op)->ob_type == &Inttype)
 
-extern object *newintobject (long);
-extern long getintvalue (object *);
+extern object* newintobject(long);
+
+extern long getintvalue(object*);
 
 
 /*

@@ -13,16 +13,18 @@
 # f and x are stored as data attributes of the member.
 
 class _CurryClass():
-       def new(self, (f, x)):
-               self.f = f
-               self.x = x
-               return self
-       def fx(self, y):
-               return self.f(self.x, y)
+    def new(self, (f, x)):
+        self.f = f
+        self.x = x
+        return self
+
+    def fx(self, y):
+        return self.f(self.x, y)
+
 
 def CURRY(f, x):
-       # NB: f is not "simple": it has 2 arguments
-       return _CurryClass().new(f, x).fx
+    # NB: f is not "simple": it has 2 arguments
+    return _CurryClass().new(f, x).fx
 
 
 # Numbers in Lambda Calculus
@@ -39,17 +41,37 @@ def CURRY(f, x):
 # the second as twice(f).
 
 def Never(f, x): return x
+
+
 def Once(f, x): return f(x)
+
+
 def Twice(f, x): return f(f(x))
+
+
 def Thrice(f, x): return f(f(f(x)))
+
+
 def Fourfold(f, x): return f(f(f(f(x))))
+
+
 # (etc.)
 
 def never(f): return CURRY(Never, f)
+
+
 def once(f): return CURRY(Once, f)
+
+
 def twice(f): return CURRY(Twice, f)
+
+
 def thrice(f): return CURRY(Thrice, f)
+
+
 def fourfold(f): return CURRY(Fourfold, f)
+
+
 # (etc.)
 
 
@@ -75,15 +97,30 @@ def fourfold(f): return CURRY(Fourfold, f)
 # use CURRY, which only works on functions of exactly 2 arguments.
 
 def SUCCESSOR(Ntimes, (f, x)): return f(Ntimes(f, x))
+
+
 def SUCCESSOR(Ntimes, (f, x)): return Ntimes(f, f(x))  # Same effect
+
+
 def SUM(Ntimes, (Mtimes, (f, x))): return Ntimes(f, Mtimes(f, x))
+
+
 def PRODUCT(Ntimes, (Mtimes, (f, x))): return Ntimes(CURRY(Mtimes, f), x)
+
+
 def POWER(Ntimes, (Mtimes, (f, x))):
-       return Mtimes(CURRY(CURRY, Ntimes), f)(x)
+    return Mtimes(CURRY(CURRY, Ntimes), f)(x)
+
 
 def Successor(Ntimes): return CURRY(SUCCESSOR, Ntimes)
+
+
 def Sum(Ntimes, Mtimes): return CURRY(CURRY(SUM, Ntimes), Mtimes)
+
+
 def Product(Ntimes, Mtimes): return CURRY(CURRY(PRODUCT, Ntimes), Mtimes)
+
+
 def Power(Ntimes, Mtimes): return CURRY(CURRY(POWER, Ntimes), Mtimes)
 
 
@@ -103,12 +140,13 @@ def Power(Ntimes, Mtimes): return CURRY(CURRY(POWER, Ntimes), Mtimes)
 # defines the successor function.
 
 def lambda(args, expr):
-       if '\n' in args or '\n' in expr:
-               raise RuntimeError, 'lambda: no cheating!'
-       stmt = 'def func(' + args + '): return ' + expr + '\n'
-       print 'lambda:', stmt,
-       exec(stmt)
-       return func
+    if '\n' in args or '\n' in expr:
+        raise RuntimeError, 'lambda: no cheating!'
+    stmt = 'def func(' + args + '): return ' + expr + '\n'
+    print
+    'lambda:', stmt,
+    exec(stmt)
+    return func
 
 
 # P.P.S.S.: Here is a way to construct Ntimes and ntimes directly.
@@ -117,16 +155,18 @@ def lambda(args, expr):
 # is equivalent to Fourfold.
 
 class _GenericNtimesClass():
-       def new(self, n):
-               self.n = n
-               return self
-       def Ntimes(self, (f, x)):
-               n = self.n
-               while n > 0: x, n = f(x), n-1
-               return x
+    def new(self, n):
+        self.n = n
+        return self
+
+    def Ntimes(self, (f, x)):
+        n = self.n
+        while n > 0: x, n = f(x), n - 1
+        return x
+
 
 def GenericNtimes(n):
-       return _GenericNtimesClass().new(n).Ntimes
+    return _GenericNtimesClass().new(n).Ntimes
 
 
 # To construct any 'ntimes' function from the corresponding 'Ntimes',
@@ -135,11 +175,13 @@ def GenericNtimes(n):
 # yields a function equivalent to fourfold.
 
 class _Ntimes2ntimesClass():
-       def new(self, Ntimes):
-               self.Ntimes = Ntimes
-               return self
-       def ntimes(self, f):
-               return CURRY(self.Ntimes, f)
+    def new(self, Ntimes):
+        self.Ntimes = Ntimes
+        return self
+
+    def ntimes(self, f):
+        return CURRY(self.Ntimes, f)
+
 
 def Ntimes2ntimes(Ntimes): return _Ntimes2ntimesClass().new(Ntimes).ntimes
 

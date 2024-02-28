@@ -31,9 +31,12 @@ typedef char py_byte_t;
 typedef py_byte_t* py_bitset_t;
 
 py_bitset_t newbitset(int nbits);
+
 void delbitset(py_bitset_t bs);
+
 int addbit(py_bitset_t bs, int ibit); /* Returns 0 if already set */
 int samebitset(py_bitset_t bs1, py_bitset_t bs2, int nbits);
+
 void mergebitset(py_bitset_t bs1, py_bitset_t bs2, int nbits);
 
 #define PY_BITSPERBYTE (8 * sizeof(py_byte_t))
@@ -44,6 +47,6 @@ void mergebitset(py_bitset_t bs1, py_bitset_t bs2, int nbits);
 #define PY_BIT2MASK(ibit) (1 << PY_BIT2SHIFT(ibit))
 #define PY_BYTE2BIT(ibyte) ((ibyte) * PY_BITSPERBYTE)
 #define PY_TESTBIT(ss, ibit) \
-	(((ss)[PY_BIT2BYTE(ibit)] & PY_BIT2MASK(ibit)) != 0)
+    (((ss)[PY_BIT2BYTE(ibit)] & PY_BIT2MASK(ibit)) != 0)
 
 #endif

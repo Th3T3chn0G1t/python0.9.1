@@ -1,16 +1,16 @@
 # Constants defined in <gl.h>
 
-#************************************************************************* *
-#*                                                                       *
-#*              Copyright (C) 1984, Silicon Graphics, Inc.               *
-#*                                                                       *
-#*  These coded instructions, statements, and computer programs  contain  *
-#*  unpublished  proprietary  information of Silicon Graphics, Inc., and  *
-#*  are protected by Federal copyright law.  They  may  not be disclosed  *
-#*  to  third  parties  or copied or duplicated in any form, in whole or  *
-#*  in part, without the prior written consent of Silicon Graphics, Inc.  *
-#*                                                                       *
-#************************************************************************* *
+# ************************************************************************* *
+# *                                                                       *
+# *              Copyright (C) 1984, Silicon Graphics, Inc.               *
+# *                                                                       *
+# *  These coded instructions, statements, and computer programs  contain  *
+# *  unpublished  proprietary  information of Silicon Graphics, Inc., and  *
+# *  are protected by Federal copyright law.  They  may  not be disclosed  *
+# *  to  third  parties  or copied or duplicated in any form, in whole or  *
+# *  in part, without the prior written consent of Silicon Graphics, Inc.  *
+# *                                                                       *
+# ************************************************************************* *
 
 # Graphics Libary constants
 
@@ -21,11 +21,11 @@ FALSE = 0
 # maximum X and Y screen coordinates
 XMAXSCREEN = 1279
 YMAXSCREEN = 1023
-XMAXMEDIUM = 1023              # max for medium res monitor
+XMAXMEDIUM = 1023  # max for medium res monitor
 YMAXMEDIUM = 767
-XMAX170 = 645          # max for RS-170
+XMAX170 = 645  # max for RS-170
 YMAX170 = 484
-XMAXPAL = 779          # max for PAL
+XMAXPAL = 779  # max for PAL
 YMAXPAL = 574
 
 # various hardware/software limits
@@ -35,7 +35,7 @@ MATRIXSTACKDEPTH = 32
 NAMESTACKDEPTH = 1025
 STARTTAG = -2
 ENDTAG = -3
-CPOSX_INVALID = -(2*XMAXSCREEN)
+CPOSX_INVALID = -(2 * XMAXSCREEN)
 
 # names for colors in color map loaded by greset
 BLACK = 0
@@ -278,10 +278,10 @@ N_SHADED = 1.0
 #
 # ---------------------------------------------------------------------------
 #
-N_ST = 0x8     # N_MKFLAG( N_T_ST, 2, N_NONRATIONAL )
-N_STW = 0xd    # N_MKFLAG( N_T_ST, 3, N_RATAFTER )
-N_WST = 0xf    # N_MKFLAG( N_T_ST, 3, N_RATBEFORE )
-N_XYZ = 0x4c   # N_MKFLAG( N_T_XYZ, 3, N_NONRATIONAL )
+N_ST = 0x8  # N_MKFLAG( N_T_ST, 2, N_NONRATIONAL )
+N_STW = 0xd  # N_MKFLAG( N_T_ST, 3, N_RATAFTER )
+N_WST = 0xf  # N_MKFLAG( N_T_ST, 3, N_RATBEFORE )
+N_XYZ = 0x4c  # N_MKFLAG( N_T_XYZ, 3, N_NONRATIONAL )
 N_XYZW = 0x51  # N_MKFLAG( N_T_XYZ, 4, N_RATAFTER )
 N_WXYZ = 0x53  # N_MKFLAG( N_T_XYZ, 4, N_RATBEFORE )
 
@@ -355,10 +355,10 @@ LMC_NULL = 6
 # START distributed graphics library defines
 #
 
-DGLSINK = 0    # sink connection
-DGLLOCAL = 1   # local connection
-DGLTSOCKET = 2 # tcp socket connection
-DGL4DDN = 3    # 4DDN (DECnet)
+DGLSINK = 0  # sink connection
+DGLLOCAL = 1  # local connection
+DGLTSOCKET = 2  # tcp socket connection
+DGL4DDN = 3  # 4DDN (DECnet)
 
 #
 # END distributed graphics library defines

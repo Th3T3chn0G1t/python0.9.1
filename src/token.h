@@ -65,5 +65,5 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #define ISEOF(x)               ((x) == ENDMARKER)
 
 
-extern char *tok_name[]; /* Token names */
-extern int tok_1char (int);
+extern char* tok_name[]; /* Token names */
+extern int tok_1char(int);

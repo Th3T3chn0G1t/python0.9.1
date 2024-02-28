@@ -28,16 +28,18 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 /* Parse tree node interface */
 
 typedef struct _node {
-       int             n_type;
-       char            *n_str;
-       int             n_lineno;
-       int             n_nchildren;
-       struct _node    *n_child;
+	int n_type;
+	char* n_str;
+	int n_lineno;
+	int n_nchildren;
+	struct _node* n_child;
 } node;
 
-extern node *newtree (int type);
-extern node *addchild (node *n, int type, char *str, int lineno);
-extern void freetree (node *n);
+extern node* newtree(int type);
+
+extern node* addchild(node* n, int type, char* str, int lineno);
+
+extern void freetree(node* n);
 
 /* Node access functions */
 #define NCH(n)         ((n)->n_nchildren)
@@ -57,7 +59,8 @@ extern void freetree (node *n);
        } }
 #endif
 
-extern void listtree (node *);
-extern void listnode (FILE *, node *);
+extern void listtree(node*);
+
+extern void listnode(FILE*, node*);
 
 #endif
