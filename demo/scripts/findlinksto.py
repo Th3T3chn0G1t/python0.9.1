@@ -4,9 +4,10 @@
 #
 # find symbolic links to a given path
 
-import path
 import posix
 import sys
+
+import path
 
 
 def visit(pattern, dirname, names):

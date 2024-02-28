@@ -2,12 +2,12 @@
 
 import time
 
+import panel
 from gl import *
 
 import light
 import material
 import objectdef
-import panel
 from objdict import *
 
 

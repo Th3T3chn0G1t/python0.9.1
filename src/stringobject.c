@@ -222,14 +222,16 @@ static object* stringslice(a, i, j)register stringobject* a;
 	if(j < 0) {
 		j = 0;
 	} /* Avoid signed/unsigned bug in next line */
-	if(j > a->ob_size)
+	if(j > a->ob_size) {
 		j = a->ob_size;
+	}
 	if(i == 0 && j == a->ob_size) { /* It's the same as a */
 		INCREF(a);
 		return (object*) a;
 	}
-	if(j < i)
+	if(j < i) {
 		j = i;
+	}
 	return newsizedstringobject(a->ob_sval + i, (int) (j - i));
 }
 

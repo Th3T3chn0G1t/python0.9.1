@@ -1,8 +1,9 @@
 # Module 'listwin'
 # List windows, a subclass of gwin
 
-import gwin
 import stdwin
+
+import gwin
 
 
 def maxlinewidth(a):  # Compute maximum textwidth of lines in a sequence

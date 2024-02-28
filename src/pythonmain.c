@@ -410,12 +410,12 @@ isatty(fd)
 
 /*     XXX WISH LIST
 
-       - possible new types:
-               - iterator (for range, keys, ...)
-       - improve interpreter error handling, e.g., true tracebacks
-       - save precompiled modules on file?
-       - fork threads, locking
-       - allow syntax extensions
+	   - possible new types:
+			   - iterator (for range, keys, ...)
+	   - improve interpreter error handling, e.g., true tracebacks
+	   - save precompiled modules on file?
+	   - fork threads, locking
+	   - allow syntax extensions
 */
 
 /* "Floccinaucinihilipilification" */

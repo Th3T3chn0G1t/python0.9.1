@@ -163,8 +163,9 @@ static object* makepathobject(path, delim)char* path;
 			return NULL;
 		}
 		setlistitem(v, i, w);
-		if(*p == '\0')
+		if(*p == '\0') {
 			break;
+		}
 		path = p + 1;
 	}
 	return v;

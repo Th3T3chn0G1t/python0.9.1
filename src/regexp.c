@@ -628,13 +628,15 @@ static char* regatom(flagp)int* flagp;
 				len--;
 			}          /* Back off clear of ?+* operand. */
 			*flagp |= HASWIDTH;
-			if(len == 1)
+			if(len == 1) {
 				*flagp |= SIMPLE;
+			}
 			ret = regnode(EXACTLY);
 			while(len > 0) {
 #ifdef MULTILINE
-				if(*regparse == '\n')
+				if(*regparse == '\n') {
 					regnl++;
+				}
 #endif
 				regc(*regparse++);
 				len--;
