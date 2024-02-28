@@ -64,7 +64,7 @@ xx_dealloc(xp)
        xxobject *xp;
 {
        XDECREF(xp->x_attr);
-       DEL(xp);
+       free(xp);
 }
 
 static object *

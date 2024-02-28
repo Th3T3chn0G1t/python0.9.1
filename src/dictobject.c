@@ -99,7 +99,7 @@ newdictobject()
        dp->di_size = primes[0];
        dp->di_table = (dictentry *) calloc(sizeof(dictentry), dp->di_size);
        if (dp->di_table == NULL) {
-               DEL(dp);
+               free(dp);
                return err_nomem();
        }
        dp->di_fill = 0;
@@ -229,7 +229,7 @@ dictresize(dp)
                else if (ep->de_key != NULL)
                        DECREF(ep->de_key);
        }
-       DEL(oldtable);
+       free(oldtable);
        return 0;
 }
 
@@ -414,8 +414,8 @@ dict_dealloc(dp)
                        DECREF(ep->de_value);
        }
        if (dp->di_table != NULL)
-               DEL(dp->di_table);
-       DEL(dp);
+               free(dp->di_table);
+       free(dp);
 }
 
 static void

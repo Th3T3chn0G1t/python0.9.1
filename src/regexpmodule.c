@@ -65,7 +65,7 @@ regexp_dealloc(re)
 {
        XDECREF(re->re_string);
        XDEL(re->re_prog);
-       DEL(re);
+       free(re);
 }
 
 static object *

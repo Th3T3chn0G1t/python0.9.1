@@ -44,10 +44,7 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 static jmp_buf jback;
 
-static void catcher PROTO((int));
-
-static void
-catcher(sig)
+static void catcher(sig)
        int sig;
 {
        longjmp(jback, 1);

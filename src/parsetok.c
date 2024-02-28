@@ -24,6 +24,8 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 /* Parser-tokenizer link implementation */
 
+#include <stdlib.h>
+
 #include "pgenheaders.h"
 #include "tokenizer.h"
 #include "node.h"
@@ -34,7 +36,7 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 
 /* Forward */
-static int parsetok PROTO((struct tok_state *, grammar *, int, node **));
+static int parsetok (struct tok_state *, grammar *, int, node **);
 
 
 /* Parse input coming from a string.  Return error code, print some errors. */
@@ -133,7 +135,7 @@ parsetok(tok, g, start, n_ret)
                        break;
                }
                len = b - a;
-               str = NEW(char, len + 1);
+               str = malloc((len + 1) * sizeof(char));
                if (str == NULL) {
                        fprintf(stderr, "no mem for next token\n");
                        ret = E_NOMEM;

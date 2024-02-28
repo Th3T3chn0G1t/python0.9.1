@@ -31,6 +31,7 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #include "pgenheaders.h"
 
 #include <ctype.h>
+#include <stdlib.h>
 #include "string.h"
 
 #include "fgetsintr.h"
@@ -46,9 +47,9 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #endif
 
 /* Forward */
-static struct tok_state *tok_new PROTO((void));
-static int tok_nextc PROTO((struct tok_state *tok));
-static void tok_backup PROTO((struct tok_state *tok, int c));
+static struct tok_state *tok_new (void);
+static int tok_nextc (struct tok_state *tok);
+static void tok_backup (struct tok_state *tok, int c);
 
 /* Token names */
 
@@ -92,7 +93,7 @@ char *tok_name[] = {
 static struct tok_state *
 tok_new()
 {
-       struct tok_state *tok = NEW(struct tok_state, 1);
+       struct tok_state *tok = malloc(sizeof(struct tok_state));
        if (tok == NULL)
                return NULL;
        tok->buf = tok->cur = tok->end = tok->inp = NULL;
@@ -134,8 +135,8 @@ tok_setupf(fp, ps1, ps2)
        struct tok_state *tok = tok_new();
        if (tok == NULL)
                return NULL;
-       if ((tok->buf = NEW(char, BUFSIZ)) == NULL) {
-               DEL(tok);
+       if ((tok->buf = malloc(BUFSIZ * sizeof(char))) == NULL) {
+               free(tok);
                return NULL;
        }
        tok->cur = tok->inp = tok->buf;
@@ -155,8 +156,8 @@ tok_free(tok)
 {
        /* XXX really need a separate flag to say 'my buffer' */
        if (tok->fp != NULL && tok->buf != NULL)
-               DEL(tok->buf);
-       DEL(tok);
+               free(tok->buf);
+       free(tok);
 }
 
 
@@ -181,7 +182,8 @@ tok_nextc(tok)
                if (tok->inp == tok->end) {
                        int n = tok->end - tok->buf;
                        char *new = tok->buf;
-                       RESIZE(new, char, n+n);
+					   /* TODO: Leaky realloc. */
+                       new = realloc(new, (n + n) * sizeof(char));
                        if (new == NULL) {
                                fprintf(stderr, "tokenizer out of mem\n");
                                tok->done = E_NOMEM;
@@ -193,7 +195,7 @@ tok_nextc(tok)
                }
 #ifdef USE_READLINE
                if (tok->prompt != NULL) {
-                       extern char *readline PROTO((char *prompt));
+                       extern char *readline (char *prompt);
                        static int been_here;
                        if (!been_here) {
                                /* Force rebind of TAB to insert-tab */

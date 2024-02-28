@@ -285,9 +285,9 @@ gl_nurbssurface(self, args)
        t_byte_stride = s_byte_stride * s_nctl;
        nurbssurface( arg1 , arg2 , arg3 , arg4 ,
                s_byte_stride , t_byte_stride , arg5 , arg6 , arg7 , arg8 );
-       DEL(arg2);
-       DEL(arg4);
-       DEL(arg5);
+       free(arg2);
+       free(arg4);
+       free(arg5);
        INCREF(None);
        return None;
 }
@@ -349,8 +349,8 @@ gl_nurbscurve(self, args)
        }
        arg3 = (sizeof(double)) * ncoords;
        nurbscurve( arg1 , arg2 , arg3 , arg4 , arg5 , arg6 );
-       DEL(arg2);
-       DEL(arg4);
+       free(arg2);
+       free(arg4);
        INCREF(None);
        return None;
 }
@@ -395,7 +395,7 @@ gl_pwlcurve(self, args)
                pnext += ncoords;
        }
        pwlcurve(npoints, data, sizeof(double)*ncoords, type);
-       DEL(data);
+       free(data);
        INCREF(None);
        return None;
 }
@@ -462,7 +462,7 @@ endpick_select(args, func)
                }
                setlistitem(v, i, w);
        }
-       DEL(pickbuffer);
+       free(pickbuffer);
        pickbuffer = NULL;
        return v;
 }

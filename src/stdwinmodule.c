@@ -544,7 +544,7 @@ text_dealloc(tp)
        if (tp->t_attr != NULL)
                DECREF(tp->t_attr);
        DECREF(tp->t_ref);
-       DEL(tp);
+       free(tp);
 }
 
 static object *
@@ -823,7 +823,7 @@ menu_dealloc(mp)
        wmenudelete(mp->m_menu);
        if (mp->m_attr != NULL)
                DECREF(mp->m_attr);
-       DEL(mp);
+       free(mp);
 }
 
 static object *

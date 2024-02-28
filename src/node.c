@@ -24,6 +24,8 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 /* Parse tree node implementation */
 
+#include <stdlib.h>
+
 #include "pgenheaders.h"
 #include "node.h"
 
@@ -31,7 +33,7 @@ node *
 newtree(type)
        int type;
 {
-       node *n = NEW(node, 1);
+       node *n = malloc(sizeof(node));
        if (n == NULL)
                return NULL;
        n->n_type = type;
@@ -58,7 +60,8 @@ addchild(n1, type, str, lineno)
        if (XXXROUNDUP(nch) < nch1) {
                n = n1->n_child;
                nch1 = XXXROUNDUP(nch1);
-               RESIZE(n, node, nch1);
+			   /* TODO: Leaky realloc. */
+               n = realloc(n, nch1 * sizeof(node));
                if (n == NULL)
                        return NULL;
                n1->n_child = n;
@@ -73,7 +76,7 @@ addchild(n1, type, str, lineno)
 }
 
 /* Forward */
-static void freechildren PROTO((node *));
+static void freechildren (node *);
 
 
 void
@@ -82,7 +85,7 @@ freetree(n)
 {
        if (n != NULL) {
                freechildren(n);
-               DEL(n);
+               free(n);
        }
 }
 
@@ -94,7 +97,7 @@ freechildren(n)
        for (i = NCH(n); --i >= 0; )
                freechildren(CHILD(n, i));
        if (n->n_child != NULL)
-               DEL(n->n_child);
+               free(n->n_child);
        if (STR(n) != NULL)
-               DEL(STR(n));
+               free(STR(n));
 }

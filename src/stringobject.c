@@ -335,7 +335,7 @@ resizestring(pv, newsize)
                realloc((char *)v,
                        sizeof(stringobject) + newsize * sizeof(char));
        if (*pv == NULL) {
-               DEL(v);
+               free(v);
                err_nomem();
                return -1;
        }

@@ -50,9 +50,9 @@ struct tok_state {
        int lineno;     /* Current line number */
 };
 
-extern struct tok_state *tok_setups PROTO((char *));
-extern struct tok_state *tok_setupf PROTO((FILE *, char *ps1, char *ps2));
-extern void tok_free PROTO((struct tok_state *));
-extern int tok_get PROTO((struct tok_state *, char **, char **));
+extern struct tok_state *tok_setups (char *);
+extern struct tok_state *tok_setupf (FILE *, char *ps1, char *ps2);
+extern void tok_free (struct tok_state *);
+extern int tok_get (struct tok_state *, char **, char **);
 
 #endif

@@ -26,5 +26,5 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 extern grammar gram;
 
-extern grammar *meta_grammar PROTO((void));
-extern grammar *pgen PROTO((struct _node *));
+extern grammar *meta_grammar (void);
+extern grammar *pgen (struct _node *);

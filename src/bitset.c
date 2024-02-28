@@ -24,6 +24,8 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 /* Bitset primitives used by the parser generator */
 
+#include <stdlib.h>
+
 #include "pgenheaders.h"
 #include "bitset.h"
 

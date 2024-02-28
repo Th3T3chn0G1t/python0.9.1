@@ -28,6 +28,8 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 /* XXX To do: error recovery */
 
+#include <stdlib.h>
+
 #include "pgenheaders.h"
 #include "assert.h"
 #include "token.h"
@@ -46,8 +48,6 @@ extern int debugging;
 
 /* STACK DATA TYPE */
 
-static void s_reset PROTO((stack *));
-
 static void
 s_reset(s)
        stack *s;
@@ -56,8 +56,6 @@ s_reset(s)
 }
 
 #define s_empty(s) ((s)->s_top == &(s)->s_base[MAXSTACK])
-
-static int s_push PROTO((stack *, dfa *, node *));
 
 static int
 s_push(s, d, parent)
@@ -78,8 +76,6 @@ s_push(s, d, parent)
 }
 
 #ifdef _DEBUG
-
-static void s_pop PROTO((stack *));
 
 static void
 s_pop(s)
@@ -110,13 +106,13 @@ newparser(g, start)
 
        if (!g->g_accel)
                addaccelerators(g);
-       ps = NEW(parser_state, 1);
+       ps = malloc(sizeof(parser_state));
        if (ps == NULL)
                return NULL;
        ps->p_grammar = g;
        ps->p_tree = newtree(start);
        if (ps->p_tree == NULL) {
-               DEL(ps);
+               free(ps);
                return NULL;
        }
        s_reset(&ps->p_stack);
@@ -131,13 +127,11 @@ delparser(ps)
        /* NB If you want to save the parse tree,
           you must set p_tree to NULL before calling delparser! */
        freetree(ps->p_tree);
-       DEL(ps);
+       free(ps);
 }
 
 
 /* PARSER STACK OPERATIONS */
-
-static int shift PROTO((stack *, int, char *, int, int));
 
 static int
 shift(s, type, str, newstate, lineno)
@@ -155,8 +149,6 @@ shift(s, type, str, newstate, lineno)
        s->s_top->s_state = newstate;
        return 0;
 }
-
-static int push PROTO((stack *, int, dfa *, int, int));
 
 static int
 push(s, type, d, newstate, lineno)
@@ -179,8 +171,6 @@ push(s, type, d, newstate, lineno)
 
 
 /* PARSER PROPER */
-
-static int classify PROTO((grammar *, int, char *));
 
 static int
 classify(g, type, str)

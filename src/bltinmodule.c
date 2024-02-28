@@ -39,6 +39,16 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #include "ceval.h"
 #include "modsupport.h"
 
+/* Predefined exceptions */
+
+object* RuntimeError;
+object* EOFError;
+object* TypeError;
+object* MemoryError;
+object* NameError;
+object* SystemError;
+object* KeyboardInterrupt;
+
 static object* builtin_abs(object* self, object* v) {
 	/* XXX This should be a method in the as_number struct in the type */
 	if(v == NULL) {
@@ -487,16 +497,6 @@ static object* builtin_dict;
 object* getbuiltin(char* name) {
 	return dictlookup(builtin_dict, name);
 }
-
-/* Predefined exceptions */
-
-object* RuntimeError;
-object* EOFError;
-object* TypeError;
-object* MemoryError;
-object* NameError;
-object* SystemError;
-object* KeyboardInterrupt;
 
 static object* newstdexception(char* name, char* message) {
 	object* v = newstringobject(message);

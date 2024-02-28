@@ -33,6 +33,8 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
    are not part of the static data structure written on graminit.[ch]
    by the parser generator. */
 
+#include <stdlib.h>
+
 #include "pgenheaders.h"
 #include "grammar.h"
 #include "token.h"

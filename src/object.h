@@ -277,6 +277,16 @@ static void pyobject_free(object* p) { free(p); }
 FILE* pyopen_r(const char* path);
 void pyclose(FILE* fp);
 
+#ifdef __has_attribute
+# if __has_attribute(fallthrough)
+#  define PY_FALLTHROUGH __attribute__((fallthrough))
+# endif
+#endif
+
+#ifndef PY_FALLTHROUGH
+# define PY_FALLTHROUGH
+#endif
+
 /*
 123456789-123456789-123456789-123456789-123456789-123456789-123456789-12
 

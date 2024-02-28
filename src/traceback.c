@@ -63,7 +63,7 @@ tb_dealloc(tb)
 {
        XDECREF(tb->tb_next);
        XDECREF(tb->tb_frame);
-       DEL(tb);
+       free(tb);
 }
 
 static typeobject Tracebacktype = {

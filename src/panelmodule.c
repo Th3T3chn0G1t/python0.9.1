@@ -322,7 +322,7 @@ panel_dealloc(p)
        pnl_delpanel(p->ob_panel);
        if (p->ob_paneldict != NULL)
                DECREF(p->ob_paneldict);
-       DEL(p);
+       free(p);
 }
 
 
@@ -797,7 +797,7 @@ actuator_dealloc(a)
           to hold a temporary reference to an actuator, like one gotten
           from pnl_dopanel(). */
 
-       DEL(a);
+       free(a);
 }
 
 

@@ -67,7 +67,7 @@ code_dealloc(co)
        XDECREF(co->co_consts);
        XDECREF(co->co_names);
        XDECREF(co->co_filename);
-       DEL(co);
+       free(co);
 }
 
 typeobject Codetype = {

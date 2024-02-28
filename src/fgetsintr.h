@@ -23,3 +23,4 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 ******************************************************************/
 
 extern int fgets_intr(char *, int, FILE *);
+int intrcheck(void);

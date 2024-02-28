@@ -95,7 +95,7 @@ func_dealloc(op)
 {
        DECREF(op->func_code);
        DECREF(op->func_globals);
-       DEL(op);
+       free(op);
 }
 
 typeobject Functype = {

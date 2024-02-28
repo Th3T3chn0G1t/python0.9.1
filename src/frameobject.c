@@ -59,7 +59,7 @@ frame_dealloc(f)
        XDECREF(f->f_locals);
        XDEL(f->f_valuestack);
        XDEL(f->f_blockstack);
-       DEL(f);
+       free(f);
 }
 
 typeobject Frametype = {
