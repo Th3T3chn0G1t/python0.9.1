@@ -36,7 +36,7 @@ extern int errno;
 
 #include <math.h>
 
-static int getdoublearg(args, px)register object* args;
+static int getdoublearg(args, px)object* args;
 								 double* px;
 {
 	if(args == NULL) {
@@ -53,7 +53,7 @@ static int getdoublearg(args, px)register object* args;
 	return err_badarg();
 }
 
-static int get2doublearg(args, px, py)register object* args;
+static int get2doublearg(args, px, py)object* args;
 									  double* px, * py;
 {
 	if(args == NULL || !is_tupleobject(args) || gettuplesize(args) != 2) {
@@ -64,9 +64,7 @@ static int get2doublearg(args, px, py)register object* args;
 }
 
 static object* math_1(args, func)object* args;
-		double (* func)
-
-FPROTO((double));
+		double (* func)(double);
 {
 double x;
 if (!
@@ -83,9 +81,7 @@ newfloatobject(x);
 }
 
 static object* math_2(args, func)object* args;
-		double (* func)
-
-FPROTO((double, double));
+		double (* func)(double, double);
 {
 double x, y;
 if (!

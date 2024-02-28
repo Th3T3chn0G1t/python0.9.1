@@ -129,7 +129,7 @@ static int findloop(ret, label, sc_pb)TpsLoop* ret;
 	if(walk == NULL) {
 		TpsLoop newloop;
 
-		newloop = (TpsLoop) malloc(sizeof(TsLoop));
+		newloop = malloc(sizeof(TsLoop));
 		if(newloop == NULL) {
 			err_nomem();
 			return -1;
@@ -200,7 +200,7 @@ static int init(self, sc_pb)object* self;
 	if(datasize == -1) {
 		return -1;
 	}
-	sc_pb->stack = (object**) malloc(STKSIZE * sizeof(object*));
+	sc_pb->stack = malloc(STKSIZE * sizeof(object*));
 	if(sc_pb->stack == NULL) {
 		err_nomem();
 		return -1;
@@ -1156,7 +1156,7 @@ object* sc_interpreter(self, args)object* self, * args;
 	}
 	memcpy(&operand, &sc_pb.data[sc_pb.pc], sizeof(TscOperand));
 	sc_pb.pc += sizeof(TscOperand);
-	sc_pb.buffer = (unsigned char*) malloc(operand);
+	sc_pb.buffer = malloc(operand);
 	sc_pb.maxbufsize = (int) operand;
 	if(sc_pb.buffer == NULL) {
 		free((char*) sc_pb.stack);
@@ -1187,7 +1187,7 @@ object* sc_interpreter(self, args)object* self, * args;
 #endif
 #ifdef STACK_TRACE
 		{
-				register i;
+				i;
 
 				printf("Stack trace :\n");
 				for(i = 0; i < sc_pb.sp; i++) {

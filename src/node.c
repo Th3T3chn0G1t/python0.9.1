@@ -46,14 +46,14 @@ node* newtree(type)int type;
 #define XXX 3 /* Node alignment factor to speed up realloc */
 #define XXXROUNDUP(n) ((n) == 1 ? 1 : ((n) + XXX - 1) / XXX * XXX)
 
-node* addchild(n1, type, str, lineno)register node* n1;
+node* addchild(n1, type, str, lineno)node* n1;
 									 int type;
 									 char* str;
 									 int lineno;
 {
-	register int nch = n1->n_nchildren;
-	register int nch1 = nch + 1;
-	register node* n;
+	int nch = n1->n_nchildren;
+	int nch1 = nch + 1;
+	node* n;
 	if(XXXROUNDUP(nch) < nch1) {
 		n = n1->n_child;
 		nch1 = XXXROUNDUP(nch1);

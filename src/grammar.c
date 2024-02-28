@@ -24,6 +24,8 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 /* Grammar implementation */
 
+#include <stdlib.h>
+
 #include "pgenheaders.h"
 
 #include <ctype.h>
@@ -38,7 +40,7 @@ grammar* newgrammar(start)int start;
 {
 	grammar* g;
 
-	g = NEW(grammar, 1);
+	g = malloc(sizeof(grammar));
 	if(g == NULL) {
 		fatal("no mem for new grammar");
 	}
@@ -56,7 +58,8 @@ dfa* adddfa(g, type, name)grammar* g;
 {
 	dfa* d;
 
-	RESIZE(g->g_dfa, dfa, g->g_ndfas + 1);
+	/* TODO: Leaky realloc. */
+	g->g_dfa = realloc(g->g_dfa, (g->g_ndfas + 1) * sizeof(dfa));
 	if(g->g_dfa == NULL) {
 		fatal("no mem to resize dfa in adddfa");
 	}
@@ -74,7 +77,7 @@ int addstate(d)dfa* d;
 {
 	state* s;
 
-	RESIZE(d->d_state, state, d->d_nstates + 1);
+	d->d_state = realloc(d->d_state, (d->d_nstates + 1) * sizeof(state));
 	if(d->d_state == NULL) {
 		fatal("no mem to resize state in addstate");
 	}
@@ -85,9 +88,7 @@ int addstate(d)dfa* d;
 	return s - d->d_state;
 }
 
-void addarc(d, from, to, lbl)dfa* d;
-							 int lbl;
-{
+void addarc(dfa* d, int from, int to, int lbl) {
 	state* s;
 	arc* a;
 
@@ -95,7 +96,7 @@ void addarc(d, from, to, lbl)dfa* d;
 	assert(0 <= to && to < d->d_nstates);
 
 	s = &d->d_state[from];
-	RESIZE(s->s_arc, arc, s->s_narcs + 1);
+	s->s_arc = realloc(s->s_arc, (s->s_narcs + 1) * sizeof(arc));
 	if(s->s_arc == NULL) {
 		fatal("no mem to resize arc list in addarc");
 	}
@@ -117,7 +118,7 @@ int addlabel(ll, type, str)labellist* ll;
 			return i;
 		}
 	}
-	RESIZE(ll->ll_label, label, ll->ll_nlabels + 1);
+	ll->ll_label = realloc(ll->ll_label, (ll->ll_nlabels + 1) * sizeof(label));
 	if(ll->ll_label == NULL) {
 		fatal("no mem to resize labellist in addlabel");
 	}
@@ -147,9 +148,7 @@ int findlabel(ll, type, str)labellist* ll;
 }
 
 /* Forward */
-static void translabel
-PROTO((grammar
-*, label *));
+static void translabel(grammar*, label *);
 
 void translatelabels(g)grammar* g;
 {

@@ -524,7 +524,7 @@ static object* text_arrow(self, args)textobject* self;
 static object* text_draw(self, args)textobject* self;
 									object* args;
 {
-	register TEXTEDIT* tp = self->t_text;
+	TEXTEDIT* tp = self->t_text;
 	int a[4];
 	int left, top, right, bottom;
 	if(!getrectarg(args, a)) {
@@ -563,7 +563,7 @@ static object* text_draw(self, args)textobject* self;
 static object* text_event(self, args)textobject* self;
 									 object* args;
 {
-	register TEXTEDIT* tp = self->t_text;
+	TEXTEDIT* tp = self->t_text;
 	EVENT e;
 	if(!geteventarg(args, &e)) {
 		return NULL;

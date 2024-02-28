@@ -53,21 +53,16 @@ object* initmodule(name, methods)char* name;
 	return m;
 }
 
-
 /* Argument list handling tools.
    All return 1 for success, or call err_set*() and return 0 for failure */
 
-int getnoarg(v)object* v;
-{
-	if(v != NULL) {
-		return err_badarg();
-	}
+int getnoarg(object* v) {
+	if(v != NULL) return err_badarg();
+
 	return 1;
 }
 
-int getintarg(v, a)object* v;
-				   int* a;
-{
+int getintarg(object* v, int* a) {
 	if(v == NULL || !is_intobject(v)) {
 		return err_badarg();
 	}
@@ -75,19 +70,14 @@ int getintarg(v, a)object* v;
 	return 1;
 }
 
-int getintintarg(v, a, b)object* v;
-						 int* a;
-						 int* b;
-{
+int getintintarg(object* v, int* a, int* b) {
 	if(v == NULL || !is_tupleobject(v) || gettuplesize(v) != 2) {
 		return err_badarg();
 	}
 	return getintarg(gettupleitem(v, 0), a) && getintarg(gettupleitem(v, 1), b);
 }
 
-int getlongarg(v, a)object* v;
-					long* a;
-{
+int getlongarg(object* v, long* a) {
 	if(v == NULL || !is_intobject(v)) {
 		return err_badarg();
 	}
@@ -95,9 +85,7 @@ int getlongarg(v, a)object* v;
 	return 1;
 }
 
-int getlonglongargs(v, a, b)object* v;
-							long* a, * b;
-{
+int getlonglongargs(object* v, long* a, long* b) {
 	if(v == NULL || !is_tupleobject(v) || gettuplesize(v) != 2) {
 		return err_badarg();
 	}
@@ -105,10 +93,7 @@ int getlonglongargs(v, a, b)object* v;
 		   getlongarg(gettupleitem(v, 1), b);
 }
 
-int getlonglongobjectargs(v, a, b, c)object* v;
-									 long* a, * b;
-									 object** c;
-{
+int getlonglongobjectargs(object* v, long* a, long* b, object** c) {
 	if(v == NULL || !is_tupleobject(v) || gettuplesize(v) != 3) {
 		return err_badarg();
 	}
@@ -121,9 +106,7 @@ int getlonglongobjectargs(v, a, b, c)object* v;
 	}
 }
 
-int getstrarg(v, a)object* v;
-				   object** a;
-{
+int getstrarg(object* v, object** a) {
 	if(v == NULL || !is_stringobject(v)) {
 		return err_badarg();
 	}
@@ -131,21 +114,14 @@ int getstrarg(v, a)object* v;
 	return 1;
 }
 
-int getstrstrarg(v, a, b)object* v;
-						 object** a;
-						 object** b;
-{
+int getstrstrarg(object* v, object** a, object** b) {
 	if(v == NULL || !is_tupleobject(v) || gettuplesize(v) != 2) {
 		return err_badarg();
 	}
 	return getstrarg(gettupleitem(v, 0), a) && getstrarg(gettupleitem(v, 1), b);
 }
 
-int getstrstrintarg(v, a, b, c)object* v;
-							   object** a;
-							   object** b;
-							   int* c;
-{
+int getstrstrintarg(object* v, object** a, object** b, int* c) {
 	if(v == NULL || !is_tupleobject(v) || gettuplesize(v) != 3) {
 		return err_badarg();
 	}
@@ -153,35 +129,25 @@ int getstrstrintarg(v, a, b, c)object* v;
 		   getstrarg(gettupleitem(v, 1), b) && getintarg(gettupleitem(v, 2), c);
 }
 
-int getstrintarg(v, a, b)object* v;
-						 object** a;
-						 int* b;
-{
+int getstrintarg(object* v, object** a, int* b) {
 	if(v == NULL || !is_tupleobject(v) || gettuplesize(v) != 2) {
 		return err_badarg();
 	}
 	return getstrarg(gettupleitem(v, 0), a) && getintarg(gettupleitem(v, 1), b);
 }
 
-int getintstrarg(v, a, b)object* v;
-						 int* a;
-						 object** b;
-{
+int getintstrarg(object* v, int* a, object** b) {
 	if(v == NULL || !is_tupleobject(v) || gettuplesize(v) != 2) {
 		return err_badarg();
 	}
 	return getintarg(gettupleitem(v, 0), a) && getstrarg(gettupleitem(v, 1), b);
 }
 
-int getpointarg(v, a)object* v;
-					 int* a; /* [2] */
-{
+int getpointarg(object* v, int* a /* [2] */) {
 	return getintintarg(v, a, a + 1);
 }
 
-int get3pointarg(v, a)object* v;
-					  int* a; /* [6] */
-{
+int get3pointarg(object* v, int* a) {
 	if(v == NULL || !is_tupleobject(v) || gettuplesize(v) != 3) {
 		return err_badarg();
 	}
@@ -190,9 +156,7 @@ int get3pointarg(v, a)object* v;
 		   getpointarg(gettupleitem(v, 2), a + 4);
 }
 
-int getrectarg(v, a)object* v;
-					int* a; /* [2+2] */
-{
+int getrectarg(object* v, int* a) {
 	if(v == NULL || !is_tupleobject(v) || gettuplesize(v) != 2) {
 		return err_badarg();
 	}
@@ -200,9 +164,7 @@ int getrectarg(v, a)object* v;
 		   getpointarg(gettupleitem(v, 1), a + 2);
 }
 
-int getrectintarg(v, a)object* v;
-					   int* a; /* [4+1] */
-{
+int getrectintarg(object* v, int* a /* [4+1] */) {
 	if(v == NULL || !is_tupleobject(v) || gettuplesize(v) != 2) {
 		return err_badarg();
 	}
@@ -210,9 +172,7 @@ int getrectintarg(v, a)object* v;
 		   getintarg(gettupleitem(v, 1), a + 4);
 }
 
-int getpointintarg(v, a)object* v;
-						int* a; /* [2+1] */
-{
+int getpointintarg(object* v, int* a /* [2+1] */) {
 	if(v == NULL || !is_tupleobject(v) || gettuplesize(v) != 2) {
 		return err_badarg();
 	}
@@ -220,10 +180,7 @@ int getpointintarg(v, a)object* v;
 		   getintarg(gettupleitem(v, 1), a + 2);
 }
 
-int getpointstrarg(v, a, b)object* v;
-						   int* a; /* [2] */
-						   object** b;
-{
+int getpointstrarg(object* v, int* a /* [2] */, object** b) {
 	if(v == NULL || !is_tupleobject(v) || gettuplesize(v) != 2) {
 		return err_badarg();
 	}
@@ -231,10 +188,7 @@ int getpointstrarg(v, a, b)object* v;
 		   getstrarg(gettupleitem(v, 1), b);
 }
 
-int getstrintintarg(v, a, b, c)object* v;
-							   object* a;
-							   int* b, * c;
-{
+int getstrintintarg(object* v, object* a, int* b, int* c) {
 	if(v == NULL || !is_tupleobject(v) || gettuplesize(v) != 3) {
 		return err_badarg();
 	}
@@ -242,9 +196,7 @@ int getstrintintarg(v, a, b, c)object* v;
 		   getintarg(gettupleitem(v, 1), b) && getintarg(gettupleitem(v, 2), c);
 }
 
-int getrectpointarg(v, a)object* v;
-						 int* a; /* [4+2] */
-{
+int getrectpointarg(object* v, int* a /* [4+2] */) {
 	if(v == NULL || !is_tupleobject(v) || gettuplesize(v) != 2) {
 		return err_badarg();
 	}
@@ -252,10 +204,7 @@ int getrectpointarg(v, a)object* v;
 		   getpointarg(gettupleitem(v, 1), a + 4);
 }
 
-int getlongtuplearg(args, a, n)object* args;
-							   long* a; /* [n] */
-							   int n;
-{
+int getlongtuplearg(object* args, long* a /* [n] */, int n) {
 	int i;
 	if(!is_tupleobject(args) || gettuplesize(args) != n) {
 		return err_badarg();
@@ -270,10 +219,7 @@ int getlongtuplearg(args, a, n)object* args;
 	return 1;
 }
 
-int getshorttuplearg(args, a, n)object* args;
-								short* a; /* [n] */
-								int n;
-{
+int getshorttuplearg(object* args, short* a /* [n] */, int n) {
 	int i;
 	if(!is_tupleobject(args) || gettuplesize(args) != n) {
 		return err_badarg();
@@ -288,10 +234,7 @@ int getshorttuplearg(args, a, n)object* args;
 	return 1;
 }
 
-int getlonglistarg(args, a, n)object* args;
-							  long* a; /* [n] */
-							  int n;
-{
+int getlonglistarg(object* args, long* a /* [n] */, int n) {
 	int i;
 	if(!is_listobject(args) || getlistsize(args) != n) {
 		return err_badarg();
@@ -306,10 +249,7 @@ int getlonglistarg(args, a, n)object* args;
 	return 1;
 }
 
-int getshortlistarg(args, a, n)object* args;
-							   short* a; /* [n] */
-							   int n;
-{
+int getshortlistarg(object* args, short* a /* [n] */, int n) {
 	int i;
 	if(!is_listobject(args) || getlistsize(args) != n) {
 		return err_badarg();

@@ -29,26 +29,15 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 #include "allobjects.h"
 
+#include <stdlib.h>
 #include <errno.h>
-
-#ifndef errno
-extern int errno;
-#endif
-
 #include <ctype.h>
 #include <math.h>
-
-#ifndef THINK_C
-extern double fmod
-PROTO((double, double));
-extern double pow
-PROTO((double, double));
-#endif
 
 object* newfloatobject(fval)double fval;
 {
 	/* For efficiency, this code is copied from newobject() */
-	register floatobject* op = (floatobject*) malloc(sizeof(floatobject));
+	floatobject* op = malloc(sizeof(floatobject));
 	if(op == NULL) {
 		return err_nomem();
 	}
@@ -74,7 +63,7 @@ double getfloatvalue(op)object* op;
 static void float_buf_repr(buf, v)char* buf;
 								  floatobject* v;
 {
-	register char* cp;
+	char* cp;
 	/* Subroutine for float_repr and float_print.
 	   We want float numbers to be recognizable as such,
 	   i.e., they should contain a decimal point or an exponent.

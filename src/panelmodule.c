@@ -120,7 +120,7 @@ static object* panel_getmember(addr, mlist, name)char* addr;
 												 char* name;
 {
 	object * v;
-	register struct memberlist* l;
+	struct memberlist* l;
 
 	for(l = mlist; l->name != NULL; l++) {
 		if(strcmp(l->name, name) == 0) {
@@ -160,7 +160,7 @@ static int panel_setmember(addr, mlist, name, v)char* addr;
 												char* name;
 												object* v;
 {
-	register struct memberlist* l;
+	struct memberlist* l;
 
 	for(l = mlist; l->name != NULL; l++) {
 		if(strcmp(l->name, name) == 0) {

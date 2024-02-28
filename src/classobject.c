@@ -62,10 +62,10 @@ static void class_dealloc(op)classobject* op;
 	free((void*) op);
 }
 
-static object* class_getattr(op, name)register classobject* op;
-									  register char* name;
+static object* class_getattr(op, name)classobject* op;
+									  char* name;
 {
-	register object* v;
+	object* v;
 	v = dictlookup(op->cl_methods, name);
 	if(v != NULL) {
 		INCREF(v);
@@ -108,9 +108,9 @@ typedef struct {
 	object* cm_attr;       /* A dictionary */
 } classmemberobject;
 
-object* newclassmemberobject(class)register object* class;
+object* newclassmemberobject(class)object* class;
 {
-	register classmemberobject* cm;
+	classmemberobject* cm;
 	if(!is_classobject(class)) {
 		err_badcall();
 		return NULL;
@@ -131,7 +131,7 @@ object* newclassmemberobject(class)register object* class;
 
 /* Class member methods */
 
-static void classmember_dealloc(cm)register classmemberobject* cm;
+static void classmember_dealloc(cm)classmemberobject* cm;
 {
 	DECREF(cm->cm_class);
 	if(cm->cm_attr != NULL)
@@ -139,10 +139,10 @@ static void classmember_dealloc(cm)register classmemberobject* cm;
 	free((void*) cm);
 }
 
-static object* classmember_getattr(cm, name)register classmemberobject* cm;
-											register char* name;
+static object* classmember_getattr(cm, name)classmemberobject* cm;
+											char* name;
 {
-	register object* v = dictlookup(cm->cm_attr, name);
+	object* v = dictlookup(cm->cm_attr, name);
 	if(v != NULL) {
 		INCREF(v);
 		return v;
@@ -199,7 +199,7 @@ typedef struct {
 object* newclassmethodobject(func, self)object* func;
 										object* self;
 {
-	register classmethodobject* cm;
+	classmethodobject* cm;
 	if(!is_funcobject(func)) {
 		err_badcall();
 		return NULL;
@@ -215,7 +215,7 @@ object* newclassmethodobject(func, self)object* func;
 	return (object*) cm;
 }
 
-object* classmethodgetfunc(cm)register object* cm;
+object* classmethodgetfunc(cm)object* cm;
 {
 	if(!is_classmethodobject(cm)) {
 		err_badcall();
@@ -224,7 +224,7 @@ object* classmethodgetfunc(cm)register object* cm;
 	return ((classmethodobject*) cm)->cm_func;
 }
 
-object* classmethodgetself(cm)register object* cm;
+object* classmethodgetself(cm)object* cm;
 {
 	if(!is_classmethodobject(cm)) {
 		err_badcall();
@@ -243,13 +243,13 @@ static struct memberlist classmethod_memberlist[] = {
 		{ NULL }  /* Sentinel */
 };
 
-static object* classmethod_getattr(cm, name)register classmethodobject* cm;
+static object* classmethod_getattr(cm, name)classmethodobject* cm;
 											char* name;
 {
 	return getmember((char*) cm, classmethod_memberlist, name);
 }
 
-static void classmethod_dealloc(cm)register classmethodobject* cm;
+static void classmethod_dealloc(cm)classmethodobject* cm;
 {
 	DECREF(cm->cm_func);
 	DECREF(cm->cm_self);

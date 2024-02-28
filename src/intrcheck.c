@@ -78,7 +78,7 @@ initintr()
 int
 intrcheck()
 {
-	   register EvQElPtr q;
+	   EvQElPtr q;
 
 	   /* This is like THINK C 4.0's <console.h>.
 		  I'm not sure why FlushEvents must be called from asm{}. */

@@ -24,6 +24,8 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 /* Integer object implementation */
 
+#include <stdlib.h>
+
 #include "allobjects.h"
 
 /* Standard Booleans */
@@ -59,7 +61,7 @@ static object* err_zdiv() {
 
 static intobject* fill_free_list() {
 	intobject* p, * q;
-	p = NEW(intobject, N_INTOBJECTS);
+	p = malloc(N_INTOBJECTS * sizeof(intobject));
 	if(p == NULL) {
 		return (intobject*) err_nomem();
 	}
@@ -74,7 +76,7 @@ static intobject* free_list = NULL;
 
 object* newintobject(ival)long ival;
 {
-	register intobject* v;
+	intobject* v;
 	if(free_list == NULL) {
 		if((free_list = fill_free_list()) == NULL) {
 			return NULL;
@@ -94,7 +96,7 @@ static void int_dealloc(v)intobject* v;
 	free_list = v;
 }
 
-long getintvalue(op)register object* op;
+long getintvalue(op)object* op;
 {
 	if(!is_intobject(op)) {
 		err_badcall();
@@ -123,15 +125,15 @@ static object* int_repr(v)intobject* v;
 
 static int int_compare(v, w)intobject* v, * w;
 {
-	register long i = v->ob_ival;
-	register long j = w->ob_ival;
+	long i = v->ob_ival;
+	long j = w->ob_ival;
 	return (i < j) ? -1 : (i > j) ? 1 : 0;
 }
 
 static object* int_add(v, w)intobject* v;
-							register object* w;
+							object* w;
 {
-	register long a, b, x;
+	long a, b, x;
 	if(!is_intobject(w)) {
 		err_badarg();
 		return NULL;
@@ -146,9 +148,9 @@ static object* int_add(v, w)intobject* v;
 }
 
 static object* int_sub(v, w)intobject* v;
-							register object* w;
+							object* w;
 {
-	register long a, b, x;
+	long a, b, x;
 	if(!is_intobject(w)) {
 		err_badarg();
 		return NULL;
@@ -163,9 +165,9 @@ static object* int_sub(v, w)intobject* v;
 }
 
 static object* int_mul(v, w)intobject* v;
-							register object* w;
+							object* w;
 {
-	register long a, b;
+	long a, b;
 	double x;
 	if(!is_intobject(w)) {
 		err_badarg();
@@ -182,7 +184,7 @@ static object* int_mul(v, w)intobject* v;
 }
 
 static object* int_div(v, w)intobject* v;
-							register object* w;
+							object* w;
 {
 	if(!is_intobject(w)) {
 		err_badarg();
@@ -195,7 +197,7 @@ static object* int_div(v, w)intobject* v;
 }
 
 static object* int_rem(v, w)intobject* v;
-							register object* w;
+							object* w;
 {
 	if(!is_intobject(w)) {
 		err_badarg();
@@ -208,10 +210,10 @@ static object* int_rem(v, w)intobject* v;
 }
 
 static object* int_pow(v, w)intobject* v;
-							register object* w;
+							object* w;
 {
-	register long iv, iw, ix;
-	register int neg;
+	long iv, iw, ix;
+	int neg;
 	if(!is_intobject(w)) {
 		err_badarg();
 		return NULL;
@@ -238,7 +240,7 @@ static object* int_pow(v, w)intobject* v;
 
 static object* int_neg(v)intobject* v;
 {
-	register long a, x;
+	long a, x;
 	a = v->ob_ival;
 	x = -a;
 	if(a < 0 && x < 0) {

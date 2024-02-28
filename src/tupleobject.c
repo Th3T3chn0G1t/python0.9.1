@@ -24,17 +24,19 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 /* Tuple object implementation */
 
+#include <stdlib.h>
+
 #include "allobjects.h"
 
-object* newtupleobject(size)register int size;
+object* newtupleobject(size)int size;
 {
-	register int i;
-	register tupleobject* op;
+	int i;
+	tupleobject* op;
 	if(size < 0) {
 		err_badcall();
 		return NULL;
 	}
-	op = (tupleobject*) malloc(sizeof(tupleobject) + size * sizeof(object*));
+	op = malloc(sizeof(tupleobject) + size * sizeof(object*));
 	if(op == NULL) {
 		return err_nomem();
 	}
@@ -47,7 +49,7 @@ object* newtupleobject(size)register int size;
 	return (object*) op;
 }
 
-int gettuplesize(op)register object* op;
+int gettuplesize(op)object* op;
 {
 	if(!is_tupleobject(op)) {
 		err_badcall();
@@ -58,8 +60,8 @@ int gettuplesize(op)register object* op;
 	}
 }
 
-object* gettupleitem(op, i)register object* op;
-						   register int i;
+object* gettupleitem(op, i)object* op;
+						   int i;
 {
 	if(!is_tupleobject(op)) {
 		err_badcall();
@@ -72,11 +74,11 @@ object* gettupleitem(op, i)register object* op;
 	return ((tupleobject*) op)->ob_item[i];
 }
 
-int settupleitem(op, i, newitem)register object* op;
-								register int i;
-								register object* newitem;
+int settupleitem(op, i, newitem)object* op;
+								int i;
+								object* newitem;
 {
-	register object* olditem;
+	object* olditem;
 	if(!is_tupleobject(op)) {
 		if(newitem != NULL)
 			DECREF(newitem);
@@ -98,9 +100,9 @@ int settupleitem(op, i, newitem)register object* op;
 
 /* Methods */
 
-static void tupledealloc(op)register tupleobject* op;
+static void tupledealloc(op)tupleobject* op;
 {
-	register int i;
+	int i;
 	for(i = 0; i < op->ob_size; i++) {
 		if(op->ob_item[i] != NULL)
 			DECREF(op->ob_item[i]);
@@ -153,10 +155,10 @@ object* tuplerepr(v)tupleobject* v;
 	return s;
 }
 
-static int tuplecompare(v, w)register tupleobject* v, * w;
+static int tuplecompare(v, w)tupleobject* v, * w;
 {
-	register int len = (v->ob_size < w->ob_size) ? v->ob_size : w->ob_size;
-	register int i;
+	int len = (v->ob_size < w->ob_size) ? v->ob_size : w->ob_size;
+	int i;
 	for(i = 0; i < len; i++) {
 		int cmp = cmpobject(v->ob_item[i], w->ob_item[i]);
 		if(cmp != 0) {
@@ -171,8 +173,8 @@ static int tuplelength(a)tupleobject* a;
 	return a->ob_size;
 }
 
-static object* tupleitem(a, i)register tupleobject* a;
-							  register int i;
+static object* tupleitem(a, i)tupleobject* a;
+							  int i;
 {
 	if(i < 0 || i >= a->ob_size) {
 		err_setstr(IndexError, "tuple index out of range");
@@ -182,11 +184,11 @@ static object* tupleitem(a, i)register tupleobject* a;
 	return a->ob_item[i];
 }
 
-static object* tupleslice(a, ilow, ihigh)register tupleobject* a;
-										 register int ilow, ihigh;
+static object* tupleslice(a, ilow, ihigh)tupleobject* a;
+										 int ilow, ihigh;
 {
-	register tupleobject* np;
-	register int i;
+	tupleobject* np;
+	int i;
 	if(ilow < 0) {
 		ilow = 0;
 	}
@@ -213,11 +215,11 @@ static object* tupleslice(a, ilow, ihigh)register tupleobject* a;
 	return (object*) np;
 }
 
-static object* tupleconcat(a, bb)register tupleobject* a;
-								 register object* bb;
+static object* tupleconcat(a, bb)tupleobject* a;
+								 object* bb;
 {
-	register int size;
-	register int i;
+	int size;
+	int i;
 	tupleobject* np;
 	if(!is_tupleobject(bb)) {
 		err_badarg();

@@ -22,10 +22,12 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 ******************************************************************/
 
-
 /* List object implementation */
 
+#include <stdlib.h>
+
 #include "allobjects.h"
+#include "modsupport.h"
 
 object* newlistobject(size)int size;
 {
@@ -35,7 +37,7 @@ object* newlistobject(size)int size;
 		err_badcall();
 		return NULL;
 	}
-	op = (listobject*) malloc(sizeof(listobject));
+	op = malloc(sizeof(listobject));
 	if(op == NULL) {
 		return err_nomem();
 	}
@@ -43,7 +45,7 @@ object* newlistobject(size)int size;
 		op->ob_item = NULL;
 	}
 	else {
-		op->ob_item = (object**) malloc(size * sizeof(object*));
+		op->ob_item = malloc(size * sizeof(object*));
 		if(op->ob_item == NULL) {
 			free((void*) op);
 			return err_nomem();
@@ -83,11 +85,11 @@ object* getlistitem(op, i)object* op;
 	return ((listobject*) op)->ob_item[i];
 }
 
-int setlistitem(op, i, newitem)register object* op;
-							   register int i;
-							   register object* newitem;
+int setlistitem(op, i, newitem)object* op;
+							   int i;
+							   object* newitem;
 {
-	register object* olditem;
+	object* olditem;
 	if(!is_listobject(op)) {
 		if(newitem != NULL)
 			DECREF(newitem);
@@ -118,7 +120,8 @@ static int ins1(self, where, v)listobject* self;
 		return -1;
 	}
 	items = self->ob_item;
-	RESIZE(items, object * , self->ob_size + 1);
+	/* TODO: Leaky realloc. */
+	items = realloc(items, (self->ob_size + 1) * sizeof(object*));
 	if(items == NULL) {
 		err_nomem();
 		return -1;
@@ -368,12 +371,14 @@ static int list_ass_slice(a, ilow, ihigh, v)listobject* a;
 				item[k + d] = item[k];
 			}
 			a->ob_size += d;
-			RESIZE(item, object * , a->ob_size); /* Can't fail */
+			/* TODO: Leaky realloc. */
+			item = realloc(item, a->ob_size * sizeof(object*));
 			a->ob_item = item;
 		}
 	}
 	else { /* Insert d items; DECREF ihigh-ilow items */
-		RESIZE(item, object * , a->ob_size + d);
+		/* TODO: Leaky realloc. */
+		item = realloc(item, (a->ob_size + d) * sizeof(object*));
 		if(item == NULL) {
 			err_nomem();
 			return -1;

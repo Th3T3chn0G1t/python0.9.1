@@ -24,6 +24,8 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 /* Frame object implementation */
 
+#include <stdlib.h>
+
 #include "allobjects.h"
 
 #include "compile.h"
@@ -53,8 +55,8 @@ static void frame_dealloc(f)frameobject* f;
 	XDECREF(f->f_code);
 	XDECREF(f->f_globals);
 	XDECREF(f->f_locals);
-	XDEL(f->f_valuestack);
-	XDEL(f->f_blockstack);
+	free(f->f_valuestack);
+	free(f->f_blockstack);
 	free(f);
 }
 
@@ -97,8 +99,8 @@ frameobject* newframeobject(back, code, globals, locals, nvalues, nblocks)
 		f->f_globals = globals;
 		INCREF(locals);
 		f->f_locals = locals;
-		f->f_valuestack = NEW(object * , nvalues + 1);
-		f->f_blockstack = NEW(block, nblocks + 1);
+		f->f_valuestack = malloc((nvalues + 1) * sizeof(object*));
+		f->f_blockstack = malloc((nblocks + 1) * sizeof(block));
 		f->f_nvalues = nvalues;
 		f->f_nblocks = nblocks;
 		f->f_iblock = 0;

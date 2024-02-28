@@ -35,6 +35,8 @@ A similar module that I saw by Chris Torek:
        h = 0; p = str; while (*p) h = (h<<5) - h + *p++;
 */
 
+#include <stdlib.h>
+
 #include "allobjects.h"
 
 
@@ -83,7 +85,7 @@ typedef struct {
 } dictobject;
 
 object* newdictobject() {
-	register dictobject* dp;
+	dictobject* dp;
 	if(dummy == NULL) { /* Auto-initialize dummy */
 		dummy = (stringobject*) newstringobject("");
 		if(dummy == NULL) {
@@ -122,16 +124,14 @@ is also derived from sum, with the additional requirement that it is
 relative prime to the table size (i.e., 1 <= incr < size, since the size
 is a prime number).  My choice for incr is somewhat arbitrary.
 */
-static dictentry* lookdict
-PROTO((dictobject
-*, char *));
-static dictentry* lookdict(dp, key)register dictobject* dp;
+
+static dictentry* lookdict(dp, key)dictobject* dp;
 								   char* key;
 {
-	register int i, incr;
-	register dictentry* freeslot = NULL;
-	register unsigned char* p = (unsigned char*) key;
-	register unsigned long sum = *p << 7;
+	int i, incr;
+	dictentry* freeslot = NULL;
+	unsigned char* p = (unsigned char*) key;
+	unsigned long sum = *p << 7;
 	while(*p != '\0')
 		sum = sum + sum + *p++;
 	i = sum % dp->di_size;
@@ -140,7 +140,7 @@ static dictentry* lookdict(dp, key)register dictobject* dp;
 		incr = sum % dp->di_size;
 	} while(incr == 0);
 	for(;;) {
-		register dictentry* ep = &dp->di_table[i];
+		dictentry* ep = &dp->di_table[i];
 		if(ep->de_key == NULL) {
 			if(freeslot != NULL) {
 				return freeslot;
@@ -168,14 +168,8 @@ Internal routine to insert a new item into the table.
 Used both by the internal resize routine and by the public insert routine.
 Eats a reference to key and one to value.
 */
-static void insertdict
-PROTO((dictobject
-*, stringobject *, object *));
-static void insertdict(dp, key, value)register dictobject* dp;
-									  stringobject* key;
-									  object* value;
-{
-	register dictentry* ep;
+static void insertdict(dictobject* dp, stringobject* key, object* value) {
+	dictentry* ep;
 	ep = lookdict(dp, GETSTRINGVALUE(key));
 	if(ep->de_value != NULL) {
 		DECREF(ep->de_value);
@@ -197,17 +191,14 @@ Restructure the table by allocating a new table and reinserting all
 items again.  When entries have been deleted, the new table may
 actually be smaller than the old one.
 */
-static int dictresize
-PROTO((dictobject
-*));
-static int dictresize(dp)dictobject* dp;
-{
-	register int oldsize = dp->di_size;
-	register int newsize;
-	register dictentry* oldtable = dp->di_table;
-	register dictentry* newtable;
-	register dictentry* ep;
-	register int i;
+
+static int dictresize(dictobject* dp) {
+	int oldsize = dp->di_size;
+	int newsize;
+	dictentry* oldtable = dp->di_table;
+	dictentry* newtable;
+	dictentry* ep;
+	int i;
 	newsize = dp->di_size;
 	for(i = 0;; i++) {
 		if(primes[i] > dp->di_used * 2) {
@@ -247,10 +238,10 @@ object* dictlookup(op, key)object* op;
 #ifdef NOT_USED
 static object *
 dict2lookup(op, key)
-	   register object *op;
-	   register object *key;
+	   object *op;
+	   object *key;
 {
-	   register object *res;
+	   object *res;
 	   if (!is_dictobject(op)) {
 			   err_badcall();
 			   return NULL;
@@ -267,12 +258,12 @@ dict2lookup(op, key)
 }
 #endif
 
-static int dict2insert(op, key, value)register object* op;
+static int dict2insert(op, key, value)object* op;
 									  object* key;
 									  object* value;
 {
-	register dictobject* dp;
-	register stringobject* keyobj;
+	dictobject* dp;
+	stringobject* keyobj;
 	if(!is_dictobject(op)) {
 		err_badcall();
 		return -1;
@@ -301,8 +292,8 @@ int dictinsert(op, key, value)object* op;
 							  char* key;
 							  object* value;
 {
-	register object* keyobj;
-	register int err;
+	object* keyobj;
+	int err;
 	keyobj = newstringobject(key);
 	if(keyobj == NULL) {
 		err_nomem();
@@ -316,8 +307,8 @@ int dictinsert(op, key, value)object* op;
 int dictremove(op, key)object* op;
 					   char* key;
 {
-	register dictobject* dp;
-	register dictentry* ep;
+	dictobject* dp;
+	dictentry* ep;
 	if(!is_dictobject(op)) {
 		err_badcall();
 		return -1;
@@ -338,7 +329,7 @@ int dictremove(op, key)object* op;
 }
 
 static int dict2remove(op, key)object* op;
-							   register object* key;
+							   object* key;
 {
 	if(!is_stringobject(key)) {
 		err_badarg();
@@ -347,7 +338,7 @@ static int dict2remove(op, key)object* op;
 	return dictremove(op, GETSTRINGVALUE((stringobject*) key));
 }
 
-int getdictsize(op)register object* op;
+int getdictsize(op)object* op;
 {
 	if(!is_dictobject(op)) {
 		err_badcall();
@@ -357,11 +348,11 @@ int getdictsize(op)register object* op;
 }
 
 static object* getdict2key(op, i)object* op;
-								 register int i;
+								 int i;
 {
 	/* XXX This can't return errors since its callers assume
 	   that NULL means there was no key at that point */
-	register dictobject* dp;
+	dictobject* dp;
 	if(!is_dictobject(op)) {
 		/* err_badcall(); */
 		return NULL;
@@ -381,7 +372,7 @@ static object* getdict2key(op, i)object* op;
 char* getdictkey(op, i)object* op;
 					   int i;
 {
-	register object* keyobj = getdict2key(op, i);
+	object* keyobj = getdict2key(op, i);
 	if(keyobj == NULL) {
 		return NULL;
 	}
@@ -390,10 +381,10 @@ char* getdictkey(op, i)object* op;
 
 /* Methods */
 
-static void dict_dealloc(dp)register dictobject* dp;
+static void dict_dealloc(dp)dictobject* dp;
 {
-	register int i;
-	register dictentry* ep;
+	int i;
+	dictentry* ep;
 	for(i = 0, ep = dp->di_table; i < dp->di_size; i++, ep++) {
 		if(ep->de_key != NULL)
 			DECREF(ep->de_key);
@@ -406,13 +397,13 @@ static void dict_dealloc(dp)register dictobject* dp;
 	free(dp);
 }
 
-static void dict_print(dp, fp, flags)register dictobject* dp;
-									 register FILE* fp;
-									 register int flags;
+static void dict_print(dp, fp, flags)dictobject* dp;
+									 FILE* fp;
+									 int flags;
 {
-	register int i;
-	register int any;
-	register dictentry* ep;
+	int i;
+	int any;
+	dictentry* ep;
 	fprintf(fp, "{");
 	any = 0;
 	for(i = 0, ep = dp->di_table; i < dp->di_size && !StopPrint; i++, ep++) {
@@ -439,11 +430,11 @@ static void js(pv, w)object** pv;
 static object* dict_repr(dp)dictobject* dp;
 {
 	auto object* v;
-	register object* w;
+	object* w;
 	object* semi, * colon;
-	register int i;
-	register int any;
-	register dictentry* ep;
+	int i;
+	int any;
+	dictentry* ep;
 	v = newstringobject("{");
 	semi = newstringobject("; ");
 	colon = newstringobject(": ");
@@ -472,7 +463,7 @@ static int dict_length(dp)dictobject* dp;
 }
 
 static object* dict_subscript(dp, v)dictobject* dp;
-									register object* v;
+									object* v;
 {
 	if(!is_stringobject(v)) {
 		err_badarg();
@@ -504,11 +495,11 @@ static mapping_methods dict_as_mapping = {
 		dict_ass_sub,   /*mp_ass_subscript*/
 };
 
-static object* dict_keys(dp, args)register dictobject* dp;
+static object* dict_keys(dp, args)dictobject* dp;
 								  object* args;
 {
-	register object* v;
-	register int i, j;
+	object* v;
+	int i, j;
 	if(!getnoarg(args)) {
 		return NULL;
 	}
@@ -536,11 +527,11 @@ object* getdictkeys(dp)object* dp;
 	return dict_keys((dictobject*) dp, (object*) NULL);
 }
 
-static object* dict_has_key(dp, args)register dictobject* dp;
+static object* dict_has_key(dp, args)dictobject* dp;
 									 object* args;
 {
 	object* key;
-	register long ok;
+	long ok;
 	if(!getstrarg(args, &key)) {
 		return NULL;
 	}

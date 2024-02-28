@@ -27,6 +27,8 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 /* For a description, see the comments at end of this file */
 
+#include <stdlib.h>
+
 #include "pgenheaders.h"
 #include "assert.h"
 #include "token.h"
@@ -62,7 +64,9 @@ static int addnfastate(nf)nfa* nf;
 {
 	nfastate* st;
 
-	RESIZE(nf->nf_state, nfastate, nf->nf_nstates + 1);
+	/* TODO: Leaky realloc. */
+	nf->nf_state =
+		realloc(nf->nf_state, (nf->nf_nstates + 1) * sizeof(nfastate));
 	if(nf->nf_state == NULL) {
 		fatal("out of mem");
 	}
@@ -79,7 +83,7 @@ static void addnfaarc(nf, from, to, lbl)nfa* nf;
 	nfaarc* ar;
 
 	st = &nf->nf_state[from];
-	RESIZE(st->st_arc, nfaarc, st->st_narcs + 1);
+	st->st_arc = realloc(st->st_arc, (st->st_narcs + 1) * sizeof(nfaarc));
 	if(st->st_arc == NULL) {
 		fatal("out of mem");
 	}
@@ -91,9 +95,9 @@ static void addnfaarc(nf, from, to, lbl)nfa* nf;
 static nfa* newnfa(name)char* name;
 {
 	nfa* nf;
-	static type = NT_OFFSET; /* All types will be disjunct */
+	static int type = NT_OFFSET; /* All types will be disjunct */
 
-	nf = NEW(nfa, 1);
+	nf = malloc(sizeof(nfa));
 	if(nf == NULL) {
 		fatal("no mem for new nfa");
 	}
@@ -114,7 +118,7 @@ typedef struct _nfagrammar {
 static nfagrammar* newnfagrammar() {
 	nfagrammar* gr;
 
-	gr = NEW(nfagrammar, 1);
+	gr = malloc(sizeof(nfagrammar));
 	if(gr == NULL) {
 		fatal("no mem for new nfa grammar");
 	}
@@ -132,7 +136,7 @@ static nfa* addnfa(gr, name)nfagrammar* gr;
 	nfa* nf;
 
 	nf = newnfa(name);
-	RESIZE(gr->gr_nfa, nfa * , gr->gr_nnfas + 1);
+	gr->gr_nfa = realloc(gr->gr_nfa, (gr->gr_nnfas + 1) * sizeof(nfa *));
 	if(gr->gr_nfa == NULL) {
 		fatal("out of mem");
 	}
@@ -155,6 +159,8 @@ static char REQNFMT[] = "metacompile: less than %d children\n";
 #define REQN(i, count) /* empty */
 #endif
 
+void compile_rule(nfagrammar* gr, node* n);
+
 static nfagrammar* metacompile(n)node* n;
 {
 	nfagrammar* gr;
@@ -173,9 +179,7 @@ static nfagrammar* metacompile(n)node* n;
 	return gr;
 }
 
-compile_rule(gr, n)nfagrammar* gr;
-				   node* n;
-{
+void compile_rule(nfagrammar* gr, node* n) {
 	nfa* nf;
 
 	REQ(n, RULE);
@@ -192,6 +196,8 @@ compile_rule(gr, n)nfagrammar* gr;
 	n++;
 	REQ(n, NEWLINE);
 }
+
+void compile_alt(labellist* ll, nfa* nf, node* n, int* pa, int* pb);
 
 void compile_rhs(ll, nf, n, pa, pb)labellist* ll;
 								   nfa* nf;
@@ -229,11 +235,7 @@ void compile_rhs(ll, nf, n, pa, pb)labellist* ll;
 	}
 }
 
-compile_alt(ll, nf, n, pa, pb)labellist* ll;
-							  nfa* nf;
-							  node* n;
-							  int* pa, * pb;
-{
+void compile_alt(labellist* ll, nfa* nf, node* n, int* pa, int* pb) {
 	int i;
 	int a, b;
 
@@ -258,6 +260,8 @@ compile_alt(ll, nf, n, pa, pb)labellist* ll;
 		*pb = b;
 	}
 }
+
+void compile_atom(labellist* ll, nfa* nf, node* n, int* pa, int* pb);
 
 void compile_item(ll, nf, n, pa, pb)labellist* ll;
 									nfa* nf;
@@ -299,11 +303,7 @@ void compile_item(ll, nf, n, pa, pb)labellist* ll;
 	}
 }
 
-compile_atom(ll, nf, n, pa, pb)labellist* ll;
-							   nfa* nf;
-							   node* n;
-							   int* pa, * pb;
-{
+void compile_atom(labellist* ll, nfa* nf, node* n, int* pa, int* pb) {
 	int i;
 
 	REQ(n, ATOM);
@@ -405,7 +405,15 @@ typedef struct _ss_dfa {
 	ss_state* sd_state;
 } ss_dfa;
 
-static makedfa(gr, nf, d)nfagrammar* gr;
+void printssdfa(
+		int xx_nstates, ss_state* xx_state, int nbits, labellist* ll,
+		char* msg);
+
+void simplify(int xx_nstates, ss_state* xx_state);
+
+void convert(dfa* d, int xx_nstates, ss_state* xx_state);
+
+static void makedfa(gr, nf, d)nfagrammar* gr;
 						 nfa* nf;
 						 dfa* d;
 {
@@ -420,7 +428,7 @@ static makedfa(gr, nf, d)nfagrammar* gr;
 
 	ss = newbitset(nbits);
 	addclosure(ss, nf, nf->nf_start);
-	xx_state = NEW(ss_state, 1);
+	xx_state = malloc(sizeof(ss_state));
 	if(xx_state == NULL) {
 		fatal("no mem for xx_state in makedfa");
 	}
@@ -463,7 +471,9 @@ static makedfa(gr, nf, d)nfagrammar* gr;
 					}
 				}
 				/* Add new arc for this state */
-				RESIZE(yy->ss_arc, ss_arc, yy->ss_narcs + 1);
+				/* TODO: Leaky realloc. */
+				yy->ss_arc = realloc(
+					yy->ss_arc, (yy->ss_narcs + 1) * sizeof(ss_arc));
 				if(yy->ss_arc == NULL) {
 					fatal("out of mem");
 				}
@@ -486,7 +496,7 @@ static makedfa(gr, nf, d)nfagrammar* gr;
 					goto done;
 				}
 			}
-			RESIZE(xx_state, ss_state, xx_nstates + 1);
+			xx_state = realloc(xx_state, (xx_nstates + 1) * sizeof(ss_state));
 			if(xx_state == NULL) {
 				fatal("out of mem");
 			}
@@ -518,12 +528,10 @@ static makedfa(gr, nf, d)nfagrammar* gr;
 	/* XXX cleanup */
 }
 
-printssdfa(xx_nstates, xx_state, nbits, ll, msg)int xx_nstates;
-												ss_state* xx_state;
-												int nbits;
-												labellist* ll;
-												char* msg;
-{
+void printssdfa(
+		int xx_nstates, ss_state* xx_state, int nbits, labellist* ll,
+		char* msg) {
+
 	int i, ibit, iarc;
 	ss_state* yy;
 	ss_arc* zz;
@@ -601,9 +609,7 @@ static void renamestates(xx_nstates, xx_state, from, to)int xx_nstates;
 	}
 }
 
-simplify(xx_nstates, xx_state)int xx_nstates;
-							  ss_state* xx_state;
-{
+void simplify(int xx_nstates, ss_state* xx_state) {
 	int changes;
 	int i, j, k;
 
@@ -633,10 +639,7 @@ simplify(xx_nstates, xx_state)int xx_nstates;
 
 /* Convert the DFA into a grammar that can be used by our parser */
 
-convert(d, xx_nstates, xx_state)dfa* d;
-								int xx_nstates;
-								ss_state* xx_state;
-{
+void convert(dfa* d, int xx_nstates, ss_state* xx_state) {
 	int i, j;
 	ss_state* yy;
 	ss_arc* zz;

@@ -297,7 +297,7 @@ extern object NoObject; /* Don't use this directly */
 
 #define None (&NoObject)
 
-static void pyobject_free(object* p) { free(p); }
+void pyobject_free(object* p);
 
 FILE* pyopen_r(const char* path);
 

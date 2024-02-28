@@ -122,9 +122,9 @@ static void fixstate(grammar* g, dfa* d, state* s) {
 	if(k < nl) {
 		int i;
 
-		s->s_accel = malloc(nl - k * sizeof(int));
+		s->s_accel = malloc((nl - k) * sizeof(int));
 		/* TODO: Leaky realloc. */
-		freelist = realloc(freelist, sizeof(int*) * ++freelist_len);
+		freelist = realloc(freelist, ++freelist_len * sizeof(int*));
 
 		if(s->s_accel == NULL || freelist == NULL) {
 			fprintf(stderr, "no mem to add parser accelerators\n");

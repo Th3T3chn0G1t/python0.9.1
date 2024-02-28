@@ -41,12 +41,8 @@ object with n extra items.  The size is computer as tp_basicsize plus
 n * tp_itemsize.  This fills in the ob_size field as well.
 */
 
-extern object* newobject
-PROTO((typeobject
-*));
-extern varobject* newvarobject
-PROTO((typeobject
-*, unsigned int));
+extern object* newobject(typeobject*);
+extern varobject* newvarobject(typeobject*, unsigned int);
 
 #define NEWOBJ(type, typeobj) ((type *) newobject(typeobj))
 #define NEWVAROBJ(type, typeobj, n) ((type *) newvarobject(typeobj, n))

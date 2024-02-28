@@ -32,10 +32,10 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 /* Return the DFA for the given type */
 
 dfa* finddfa(g, type)grammar* g;
-					 register int type;
+					 int type;
 {
-	register int i;
-	register dfa* d;
+	int i;
+	dfa* d;
 
 	for(i = g->g_ndfas, d = g->g_dfa; --i >= 0; d++) {
 		if(d->d_type == type) {

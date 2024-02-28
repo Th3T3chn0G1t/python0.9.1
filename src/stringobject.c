@@ -24,13 +24,14 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 /* String object implementation */
 
+#include <stdlib.h>
+
 #include "allobjects.h"
 
 object* newsizedstringobject(str, size)char* str;
 									   int size;
 {
-	register stringobject* op = (stringobject*) malloc(
-			sizeof(stringobject) + size * sizeof(char));
+	stringobject* op = malloc(sizeof(stringobject) + size * sizeof(char));
 	if(op == NULL) {
 		return err_nomem();
 	}
@@ -46,9 +47,8 @@ object* newsizedstringobject(str, size)char* str;
 
 object* newstringobject(str)char* str;
 {
-	register unsigned int size = strlen(str);
-	register stringobject* op = (stringobject*) malloc(
-			sizeof(stringobject) + size * sizeof(char));
+	unsigned int size = strlen(str);
+	stringobject* op = malloc(sizeof(stringobject) + size * sizeof(char));
 	if(op == NULL) {
 		return err_nomem();
 	}
@@ -59,7 +59,7 @@ object* newstringobject(str)char* str;
 	return (object*) op;
 }
 
-unsigned int getstringsize(op)register object* op;
+unsigned int getstringsize(op)object* op;
 {
 	if(!is_stringobject(op)) {
 		err_badcall();
@@ -68,7 +68,7 @@ unsigned int getstringsize(op)register object* op;
 	return ((stringobject*) op)->ob_size;
 }
 
-/*const*/ char* getstringvalue(op)register object* op;
+/*const*/ char* getstringvalue(op)object* op;
 {
 	if(!is_stringobject(op)) {
 		err_badcall();
@@ -105,7 +105,7 @@ static void stringprint(op, fp, flags)stringobject* op;
 	fprintf(fp, "'");
 }
 
-static object* stringrepr(op)register stringobject* op;
+static object* stringrepr(op)stringobject* op;
 {
 	/* XXX overflow? */
 	int newsize = 2 + 4 * op->ob_size * sizeof(char);
@@ -114,9 +114,9 @@ static object* stringrepr(op)register stringobject* op;
 		return err_nomem();
 	}
 	else {
-		register int i;
-		register char c;
-		register char* p;
+		int i;
+		char c;
+		char* p;
 		NEWREF(v);
 		v->ob_type = &Stringtype;
 		((stringobject*) v)->ob_size = newsize;
@@ -149,11 +149,11 @@ static int stringlength(a)stringobject* a;
 	return a->ob_size;
 }
 
-static object* stringconcat(a, bb)register stringobject* a;
-								  register object* bb;
+static object* stringconcat(a, bb)stringobject* a;
+								  object* bb;
 {
-	register unsigned int size;
-	register stringobject* op;
+	unsigned int size;
+	stringobject* op;
 	if(!is_stringobject(bb)) {
 		err_badarg();
 		return NULL;
@@ -169,7 +169,7 @@ static object* stringconcat(a, bb)register stringobject* a;
 		return (object*) a;
 	}
 	size = a->ob_size + b->ob_size;
-	op = (stringobject*) malloc(sizeof(stringobject) + size * sizeof(char));
+	op = malloc(sizeof(stringobject) + size * sizeof(char));
 	if(op == NULL) {
 		return err_nomem();
 	}
@@ -183,12 +183,12 @@ static object* stringconcat(a, bb)register stringobject* a;
 #undef b
 }
 
-static object* stringrepeat(a, n)register stringobject* a;
-								 register int n;
+static object* stringrepeat(a, n)stringobject* a;
+								 int n;
 {
-	register int i;
-	register unsigned int size;
-	register stringobject* op;
+	int i;
+	unsigned int size;
+	stringobject* op;
 	if(n < 0) {
 		n = 0;
 	}
@@ -197,7 +197,7 @@ static object* stringrepeat(a, n)register stringobject* a;
 		INCREF(a);
 		return (object*) a;
 	}
-	op = (stringobject*) malloc(sizeof(stringobject) + size * sizeof(char));
+	op = malloc(sizeof(stringobject) + size * sizeof(char));
 	if(op == NULL) {
 		return err_nomem();
 	}
@@ -213,8 +213,8 @@ static object* stringrepeat(a, n)register stringobject* a;
 
 /* String slice a[i:j] consists of characters a[i] ... a[j-1] */
 
-static object* stringslice(a, i, j)register stringobject* a;
-								   register int i, j; /* May be negative! */
+static object* stringslice(a, i, j)stringobject* a;
+								   int i, j; /* May be negative! */
 {
 	if(i < 0) {
 		i = 0;
@@ -236,7 +236,7 @@ static object* stringslice(a, i, j)register stringobject* a;
 }
 
 static object* stringitem(a, i)stringobject* a;
-							   register int i;
+							   int i;
 {
 	if(i < 0 || i >= a->ob_size) {
 		err_setstr(IndexError, "string index out of range");
@@ -279,10 +279,10 @@ typeobject Stringtype = {
 		0,              /*tp_as_mapping*/
 };
 
-void joinstring(pv, w)register object** pv;
-					  register object* w;
+void joinstring(pv, w)object** pv;
+					  object* w;
 {
-	register object* v;
+	object* v;
 	if(*pv == NULL || w == NULL || !is_stringobject(*pv)) {
 		return;
 	}
@@ -301,8 +301,8 @@ void joinstring(pv, w)register object** pv;
 int resizestring(pv, newsize)object** pv;
 							 int newsize;
 {
-	register object* v;
-	register stringobject* sv;
+	object* v;
+	stringobject* sv;
 	v = *pv;
 	if(!is_stringobject(v) || v->ob_refcnt != 1) {
 		*pv = 0;

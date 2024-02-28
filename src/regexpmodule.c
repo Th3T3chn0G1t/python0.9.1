@@ -60,7 +60,7 @@ static regexpobject* newregexpobject(string, prog)object* string;
 static void regexp_dealloc(re)regexpobject* re;
 {
 	XDECREF(re->re_string);
-	XDEL(re->re_prog);
+	free(re->re_prog);
 	free(re);
 }
 

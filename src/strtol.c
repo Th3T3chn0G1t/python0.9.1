@@ -40,12 +40,12 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 #include "ctype.h"
 
-long strtol(str, ptr, base)register char* str;
+long strtol(str, ptr, base)char* str;
 						   char** ptr;
 						   int base;
 {
-	register long result; /* return value of the function */
-	register int c;      /* current input character */
+	long result; /* return value of the function */
+	int c;      /* current input character */
 	int minus;  /* true if a leading minus was found */
 
 	result = 0;

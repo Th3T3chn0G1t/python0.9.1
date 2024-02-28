@@ -171,7 +171,7 @@ static
 sleep(msecs)
 	   int msecs;
 {
-	   register long deadline;
+	   long deadline;
 
 	   deadline = MacTicks + msecs * 60;
 	   while (MacTicks < deadline) {
@@ -184,7 +184,7 @@ static
 millisleep(msecs)
 	   long msecs;
 {
-	   register long deadline;
+	   long deadline;
 
 	   deadline = MacTicks + msecs * 3 / 50; /* msecs * 60 / 1000 */
 	   while (MacTicks < deadline) {

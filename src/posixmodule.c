@@ -50,14 +50,11 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #include "allobjects.h"
 #include "modsupport.h"
 
-extern char* strerror
-PROTO((int));
-
 #if defined(AMOEBA) || defined(_WIN32)
 #define NO_LSTAT
 #endif
 
-
+#ifndef _WIN32
 /* Return a dictionary corresponding to the POSIX environment table */
 
 extern char** environ;
@@ -91,6 +88,7 @@ static object* convertenviron() {
 	return d;
 }
 
+#endif
 
 static object* PosixError; /* Exception posix.error */
 
@@ -104,9 +102,7 @@ static object* posix_error() {
 /* POSIX generic methods */
 
 static object* posix_1str(args, func)object* args;
-		int (* func)
-
-FPROTO((const char *));
+		int (* func)(const char *);
 {
 object* path1;
 if (!
@@ -124,9 +120,7 @@ return None;
 }
 
 static object* posix_2str(args, func)object* args;
-		int (* func)
-
-FPROTO((const char *, const char *));
+		int (* func)(const char *, const char *);
 {
 object* path1, * path2;
 if (!
@@ -144,9 +138,7 @@ return None;
 }
 
 static object* posix_strint(args, func)object* args;
-		int (* func)
-
-FPROTO((const char *, int));
+		int (* func)(const char *, int);
 {
 object* path1;
 int i;
@@ -166,9 +158,7 @@ return None;
 
 static object* posix_do_stat(self, args, statfunc)object* self;
 												  object* args;
-		int (* statfunc)
-
-FPROTO((const char *, struct stat *));
+		int (* statfunc)(const char *, struct stat *);
 {
 struct stat st;
 object* path;
@@ -217,9 +207,7 @@ v;
 static object* posix_chdir(self, args)object* self;
 									  object* args;
 {
-	extern int chdir
-	PROTO((
-	const char *));
+	extern int chdir(const char *);
 	return posix_1str(args, chdir);
 }
 
@@ -227,11 +215,9 @@ static object* posix_chmod(self, args)object* self;
 									  object* args;
 {
 #ifdef _WIN32
-	extern int chmod
-	PROTO((
-	const char *, int));
+	extern int chmod(const char *, int);
 #else
-	extern int chmod PROTO((const char *, mode_t));
+	extern int chmod(const char *, mode_t);
 #endif
 	return posix_strint(args, chmod);
 }
@@ -240,9 +226,7 @@ static object* posix_getcwd(self, args)object* self;
 									   object* args;
 {
 	char buf[1026];
-	extern char* getcwd
-	PROTO((
-	char *, int));
+	extern char* getcwd(char *, int);
 	if(!getnoarg(args)) {
 		return NULL;
 	}
@@ -258,7 +242,7 @@ posix_link(self, args)
 	   object *self;
 	   object *args;
 {
-	   extern int link PROTO((const char *, const char *));
+	   extern int link (const char *, const char *);
 	   return posix_2str(args, link);
 }
 #endif
@@ -313,7 +297,7 @@ static object* posix_mkdir(self, args)object* self;
 									  object* args;
 {
 #ifndef _WIN32
-	extern int mkdir PROTO((const char *, mode_t));
+	extern int mkdir (const char *, mode_t);
 	return posix_strint(args, mkdir);
 #else
 	return posix_strint(args, winmkdir);
@@ -323,27 +307,21 @@ static object* posix_mkdir(self, args)object* self;
 static object* posix_rename(self, args)object* self;
 									   object* args;
 {
-	extern int rename
-	PROTO((
-	const char *, const char *));
+	extern int rename(const char *, const char *);
 	return posix_2str(args, rename);
 }
 
 static object* posix_rmdir(self, args)object* self;
 									  object* args;
 {
-	extern int rmdir
-	PROTO((
-	const char *));
+	extern int rmdir(const char *);
 	return posix_1str(args, rmdir);
 }
 
 static object* posix_stat(self, args)object* self;
 									 object* args;
 {
-	extern int stat
-	PROTO((
-	const char *, struct stat *));
+	extern int stat(const char *, struct stat *);
 	return posix_do_stat(self, args, stat);
 }
 
@@ -376,9 +354,7 @@ static object* posix_umask(self, args)object* self;
 static object* posix_unlink(self, args)object* self;
 									   object* args;
 {
-	extern int unlink
-	PROTO((
-	const char *));
+	extern int unlink(const char *);
 	return posix_1str(args, unlink);
 }
 
@@ -413,7 +389,7 @@ posix_lstat(self, args)
 	   object *self;
 	   object *args;
 {
-	   extern int lstat PROTO((const char *, struct stat *));
+	   extern int lstat (const char *, struct stat *);
 	   return posix_do_stat(self, args, lstat);
 }
 
@@ -438,7 +414,7 @@ posix_symlink(self, args)
 	   object *self;
 	   object *args;
 {
-	   extern int symlink PROTO((const char *, const char *));
+	   extern int symlink (const char *, const char *);
 	   return posix_2str(args, symlink);
 }
 
@@ -477,11 +453,13 @@ void initposix() {
 	d = getmoduledict(m);
 
 	/* Initialize posix.environ dictionary */
+#ifndef _WIN32
 	v = convertenviron();
 	if(v == NULL || dictinsert(d, "environ", v) != 0) {
 		fatal("can't define posix.environ");
 	}
 	DECREF(v);
+#endif
 
 	/* Initialize posix.error exception */
 	PosixError = newstringobject("posix.error");

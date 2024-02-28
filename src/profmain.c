@@ -90,8 +90,8 @@ static int runtokenizer(fp)FILE* fp;
 	tok = tok_setupf(fp, "Tokenizing", ".");
 	for(;;) {
 		char* a, * b;
-		register char* str;
-		register int len;
+		char* str;
+		int len;
 		(void) tok_get(tok, &a, &b);
 		if(tok->done != E_OK) {
 			break;

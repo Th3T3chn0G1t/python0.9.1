@@ -54,7 +54,7 @@ object* mknewcharobject(c)int c;
    since the argument list is a tuple only of there is more than
    one argument. */
 
-int getiobjectarg(args, nargs, i, p_arg)register object* args;
+int getiobjectarg(args, nargs, i, p_arg)object* args;
 										int nargs, i;
 										object** p_arg;
 {
@@ -74,7 +74,7 @@ int getiobjectarg(args, nargs, i, p_arg)register object* args;
 	return 1;
 }
 
-int getilongarg(args, nargs, i, p_arg)register object* args;
+int getilongarg(args, nargs, i, p_arg)object* args;
 									  int nargs, i;
 									  long* p_arg;
 {
@@ -92,7 +92,7 @@ int getilongarg(args, nargs, i, p_arg)register object* args;
 	return 1;
 }
 
-int getishortarg(args, nargs, i, p_arg)register object* args;
+int getishortarg(args, nargs, i, p_arg)object* args;
 									   int nargs, i;
 									   short* p_arg;
 {
@@ -104,7 +104,7 @@ int getishortarg(args, nargs, i, p_arg)register object* args;
 	return 1;
 }
 
-static int extractdouble(v, p_arg)register object* v;
+static int extractdouble(v, p_arg)object* v;
 								  double* p_arg;
 {
 	if(v == NULL) {
@@ -121,7 +121,7 @@ static int extractdouble(v, p_arg)register object* v;
 	return err_badarg();
 }
 
-static int extractfloat(v, p_arg)register object* v;
+static int extractfloat(v, p_arg)object* v;
 								 float* p_arg;
 {
 	if(v == NULL) {
@@ -138,7 +138,7 @@ static int extractfloat(v, p_arg)register object* v;
 	return err_badarg();
 }
 
-int getifloatarg(args, nargs, i, p_arg)register object* args;
+int getifloatarg(args, nargs, i, p_arg)object* args;
 									   int nargs, i;
 									   float* p_arg;
 {

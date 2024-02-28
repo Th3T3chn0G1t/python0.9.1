@@ -45,9 +45,9 @@ extern typeobject Codetype;
 
 #define is_codeobject(op) ((op)->ob_type == &Codetype)
 
+struct _node;
 
 /* Public interface */
-codeobject* compile
-PROTO((struct _node *, char *));
+codeobject* compile(struct _node *, char *);
 
 #endif

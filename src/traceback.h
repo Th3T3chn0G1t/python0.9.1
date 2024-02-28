@@ -24,6 +24,8 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 /* Traceback interface */
 
+struct _frame;
+
 int tb_here(struct _frame*, int, int);
 
 object* tb_fetch(void);

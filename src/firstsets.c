@@ -24,6 +24,8 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 /* Computation of FIRST stets */
 
+#include <stdlib.h>
+
 #include "pgenheaders.h"
 #include "grammar.h"
 #include "token.h"
@@ -32,8 +34,7 @@ extern int debugging;
 
 /* Forward */
 static void calcfirstset
-PROTO((grammar
-*, dfa *));
+(grammar*, dfa *);
 
 void addfirstsets(g)grammar* g;
 {
@@ -85,8 +86,7 @@ static void calcfirstset(g, d)grammar* g;
 	nbits = g->g_ll.ll_nlabels;
 	result = newbitset(nbits);
 
-	sym = NEW(
-	int, 1);
+	sym = malloc(sizeof(int));
 	if(sym == NULL) {
 		fatal("no mem for new sym in calcfirstset");
 	}
@@ -102,8 +102,8 @@ static void calcfirstset(g, d)grammar* g;
 			}
 		}
 		if(j >= nsyms) { /* New label */
-			RESIZE(sym,
-			int, nsyms + 1);
+			/* TODO: Leaky realloc. */
+			sym = realloc(sym, (nsyms + 1) * sizeof(int));
 			if(sym == NULL) {
 				fatal("no mem to resize sym in calcfirstset");
 			}

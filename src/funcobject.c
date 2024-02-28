@@ -24,6 +24,8 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 /* Function object implementation */
 
+#include <stdlib.h>
+
 #include "allobjects.h"
 
 #include "structmember.h"

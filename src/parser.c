@@ -55,11 +55,11 @@ static void s_reset(s)stack* s;
 
 #define s_empty(s) ((s)->s_top == &(s)->s_base[MAXSTACK])
 
-static int s_push(s, d, parent)register stack* s;
+static int s_push(s, d, parent)stack* s;
 							   dfa* d;
 							   node* parent;
 {
-	register stackentry* top;
+	stackentry* top;
 	if(s->s_top == s->s_base) {
 		fprintf(stderr, "s_push: parser stack overflow\n");
 		return -1;
@@ -73,7 +73,7 @@ static int s_push(s, d, parent)register stack* s;
 
 #ifdef _DEBUG
 
-static void s_pop(s)register stack* s;
+static void s_pop(s)stack* s;
 {
 	if(s_empty(s)) {
 		fprintf(stderr, "s_pop: parser stack underflow -- FATAL\n");
@@ -125,7 +125,7 @@ void delparser(ps)parser_state* ps;
 
 /* PARSER STACK OPERATIONS */
 
-static int shift(s, type, str, newstate, lineno)register stack* s;
+static int shift(s, type, str, newstate, lineno)stack* s;
 												int type;
 												char* str;
 												int newstate;
@@ -140,13 +140,13 @@ static int shift(s, type, str, newstate, lineno)register stack* s;
 	return 0;
 }
 
-static int push(s, type, d, newstate, lineno)register stack* s;
+static int push(s, type, d, newstate, lineno)stack* s;
 											 int type;
 											 dfa* d;
 											 int newstate;
 											 int lineno;
 {
-	register node* n;
+	node* n;
 	n = s->s_top->s_parent;
 	assert(!s_empty(s));
 	if(addchild(n, type, (char*) NULL, lineno) == NULL) {
@@ -161,15 +161,15 @@ static int push(s, type, d, newstate, lineno)register stack* s;
 /* PARSER PROPER */
 
 static int classify(g, type, str)grammar* g;
-								 register int type;
+								 int type;
 								 char* str;
 {
-	register int n = g->g_ll.ll_nlabels;
+	int n = g->g_ll.ll_nlabels;
 
 	if(type == NAME) {
-		register char* s = str;
-		register label* l = g->g_ll.ll_label;
-		register int i;
+		char* s = str;
+		label* l = g->g_ll.ll_label;
+		int i;
 		for(i = n; i > 0; i--, l++) {
 			if(l->lb_type == NAME && l->lb_str != NULL &&
 			   l->lb_str[0] == s[0] && strcmp(l->lb_str, s) == 0) {
@@ -180,8 +180,8 @@ static int classify(g, type, str)grammar* g;
 	}
 
 	{
-		register label* l = g->g_ll.ll_label;
-		register int i;
+		label* l = g->g_ll.ll_label;
+		int i;
 		for(i = n; i > 0; i--, l++) {
 			if(l->lb_type == type && l->lb_str == NULL) {
 				D(printf("It's a token we know\n"));
@@ -194,12 +194,12 @@ static int classify(g, type, str)grammar* g;
 	return -1;
 }
 
-int addtoken(ps, type, str, lineno)register parser_state* ps;
-								   register int type;
+int addtoken(ps, type, str, lineno)parser_state* ps;
+								   int type;
 								   char* str;
 								   int lineno;
 {
-	register int ilabel;
+	int ilabel;
 
 	D(printf("Token %s/'%s' ... ", tok_name[type], str));
 
@@ -212,15 +212,15 @@ int addtoken(ps, type, str, lineno)register parser_state* ps;
 	/* Loop until the token is shifted or an error occurred */
 	for(;;) {
 		/* Fetch the current dfa and state */
-		register dfa* d = ps->p_stack.s_top->s_dfa;
-		register state* s = &d->d_state[ps->p_stack.s_top->s_state];
+		dfa* d = ps->p_stack.s_top->s_dfa;
+		state* s = &d->d_state[ps->p_stack.s_top->s_state];
 
 		D(printf(
 				" DFA '%s', state %d:", d->d_name, ps->p_stack.s_top->s_state));
 
 		/* Check accelerator */
 		if(s->s_lower <= ilabel && ilabel < s->s_upper) {
-			register int x = s->s_accel[ilabel - s->s_lower];
+			int x = s->s_accel[ilabel - s->s_lower];
 			if(x != -1) {
 				if(x & (1 << 7)) {
 					/* Push non-terminal */

@@ -24,6 +24,8 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 /* Generic object operations; and implementation of None (NoObject) */
 
+#include <stdlib.h>
+
 #include "allobjects.h"
 
 #ifdef REF_DEBUG
@@ -36,7 +38,7 @@ long ref_total;
 
 object* newobject(tp)typeobject* tp;
 {
-	object* op = (object*) malloc(tp->tp_basicsize);
+	object* op = malloc(tp->tp_basicsize);
 	if(op == NULL) {
 		return err_nomem();
 	}
@@ -224,6 +226,7 @@ static typeobject Notype = {
 object NoObject = {
 		OB_HEAD_INIT(&Notype) };
 
+void pyobject_free(object* p) { free(p); }
 
 #ifdef TRACE_REFS
 
@@ -241,9 +244,9 @@ NEWREF(op)
 }
 
 UNREF(op)
-	   register object *op;
+	   object *op;
 {
-	   register object *p;
+	   object *p;
 	   int dbg;
 	   if (op->ob_refcnt < 0) {
 			   fprintf(stderr, "UNREF negative refcnt\n");

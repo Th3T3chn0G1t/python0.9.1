@@ -24,4 +24,28 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 /* Module support interface */
 
-extern object* initmodule(char*, struct methodlist*);
+object* initmodule(char*, struct methodlist*);
+
+int getnoarg(object* v);
+int getintarg(object* v, int* a);
+int getintintarg(object* v, int* a, int* b);
+int getlongarg(object* v, long* a);
+int getlonglongargs(object* v, long* a, long* b);
+int getlonglongobjectargs(object* v, long* a, long* b, object** c);
+int getstrarg(object* v, object** a);
+int getstrstrarg(object* v, object** a, object** b);
+int getstrstrintarg(object* v, object** a, object** b, int* c);
+int getstrintarg(object* v, object** a, int* b);
+int getintstrarg(object* v, int* a, object** b);
+int getpointarg(object* v, int* a /* [2] */);
+int get3pointarg(object* v, int* a);
+int getrectarg(object* v, int* a);
+int getrectintarg(object* v, int* a /* [4+1] */);
+int getpointintarg(object* v, int* a /* [2+1] */);
+int getpointstrarg(object* v, int* a /* [2] */, object** b);
+int getstrintintarg(object* v, object* a, int* b, int* c);
+int getrectpointarg(object* v, int* a /* [4+2] */);
+int getlongtuplearg(object* args, long* a /* [n] */, int n);
+int getshorttuplearg(object* args, short* a /* [n] */, int n);
+int getlonglistarg(object* args, long* a /* [n] */, int n);
+int getshortlistarg(object* args, short* a /* [n] */, int n);

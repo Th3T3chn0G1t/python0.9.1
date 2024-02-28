@@ -134,7 +134,7 @@ void tok_free(tok)struct tok_state* tok;
 
 /* Get next char, updating state; error code goes into tok->done */
 
-static int tok_nextc(tok)register struct tok_state* tok;
+static int tok_nextc(tok)struct tok_state* tok;
 {
 	if(tok->done != E_OK) {
 		return EOF;
@@ -227,8 +227,8 @@ static int tok_nextc(tok)register struct tok_state* tok;
 
 /* Back-up one character */
 
-static void tok_backup(tok, c)register struct tok_state* tok;
-							  register int c;
+static void tok_backup(tok, c)struct tok_state* tok;
+							  int c;
 {
 	if(c != EOF && c != 0xFF) {
 		if(--tok->cur < tok->buf) {
@@ -276,14 +276,14 @@ int tok_1char(c)int c;
 /* Get next token, after space stripping etc. */
 
 int tok_get(tok, p_start, p_end)
-		register struct tok_state* tok; /* In/out: tokenizer state */
+		struct tok_state* tok; /* In/out: tokenizer state */
 		char** p_start, ** p_end; /* Out: point to start/end of token */
 {
-	register int c;
+	int c;
 
 	/* Get indentation level */
 	if(tok->atbol) {
-		register int col = 0;
+		int col = 0;
 		tok->atbol = 0;
 		tok->lineno++;
 		for(;;) {

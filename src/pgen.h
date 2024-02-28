@@ -24,6 +24,8 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 /* Parser generator interface */
 
+#include "node.h"
+
 extern grammar gram;
 
 extern grammar* meta_grammar(void);

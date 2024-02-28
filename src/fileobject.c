@@ -30,13 +30,10 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
    It should also cooperate with posix to support popen(), which should
    share most code but have a special close function. */
 
+#include <stdlib.h>
+#include <errno.h>
+
 #include "allobjects.h"
-
-#include "errno.h"
-
-#ifndef errno
-extern int errno;
-#endif
 
 typedef struct {
 	OB_HEAD
@@ -109,7 +106,7 @@ static void file_dealloc(f)fileobject* f;
 		DECREF(f->f_name);
 	if(f->f_mode != NULL)
 		DECREF(f->f_mode);
-	free((char*) f);
+	free(f);
 }
 
 static void file_print(f, fp, flags)fileobject* f;

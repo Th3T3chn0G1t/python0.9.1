@@ -28,17 +28,10 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #include "grammar.h"
 
 /* Forward */
-static void printarcs
-PROTO((int, dfa *, FILE *));
-static void printstates
-PROTO((grammar
-*, FILE *));
-static void printdfas
-PROTO((grammar
-*, FILE *));
-static void printlabels
-PROTO((grammar
-*, FILE *));
+static void printarcs (int, dfa *, FILE *);
+static void printstates(grammar*, FILE *);
+static void printdfas(grammar*, FILE *);
+static void printlabels(grammar*, FILE *);
 
 void printgrammar(g, fp)grammar* g;
 						FILE* fp;
