@@ -27,6 +27,11 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #ifndef PY_BLTINMODULE_H
 #define PY_BLTINMODULE_H
 
+void initbuiltin(void);
+void donebuiltin(void);
+
+void doneerrors(void);
+
 object* getbuiltin(char*);
 
 #endif

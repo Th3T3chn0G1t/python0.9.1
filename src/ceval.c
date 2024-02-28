@@ -47,10 +47,14 @@ static int needspace;
 
 #ifdef TRACE
 
-static int prtrace(object* v, char* str) {
+static int prtrace(object* v, char* str, int trace) {
+	if(!trace) return 0;
+
 	printf("%s ", str);
 	printobject(v, stdout, 0);
 	printf("\n");
+
+	return 0;
 }
 
 #endif
@@ -72,7 +76,7 @@ void printtraceback(FILE* fp) {
 	if(v != NULL) {
 		fprintf(fp, "Stack backtrace (innermost last):\n");
 		tb_print(v, fp);
-		DECREF(v);
+		PY_DECREF(v);
 	}
 }
 
@@ -207,7 +211,7 @@ static object* not(object* v) {
 	int outcome = testbool(v);
 	object* w = outcome == 0 ? PyTrue : PyFalse;
 
-	INCREF(w);
+	PY_INCREF(w);
 	return w;
 }
 
@@ -249,8 +253,8 @@ object* call_function(object* func, object* arg) {
 
 			if(newarg == NULL) return NULL;
 
-			INCREF(self);
-			INCREF(arg);
+			PY_INCREF(self);
+			PY_INCREF(arg);
 			settupleitem(newarg, 0, self);
 			settupleitem(newarg, 1, arg);
 			arg = newarg;
@@ -279,12 +283,12 @@ object* call_function(object* func, object* arg) {
 	}
 
 	newglobals = getfuncglobals(func);
-	INCREF(newglobals);
+	PY_INCREF(newglobals);
 
 	v = eval_code((codeobject*) co, newglobals, newlocals, arg);
 
-	DECREF(newlocals);
-	DECREF(newglobals);
+	PY_DECREF(newlocals);
+	PY_DECREF(newglobals);
 
 	XDECREF(newarg);
 
@@ -517,6 +521,7 @@ static object* cmp_outcome(enum cmp_op op, object* v, object* w) {
 			cmp = cmpobject(v, w);
 
 			switch(op) {
+				default: break;
 				case LT: res = cmp < 0;
 					break;
 				case LE: res = cmp <= 0;
@@ -535,7 +540,7 @@ static object* cmp_outcome(enum cmp_op op, object* v, object* w) {
 	}
 
 	v = res ? PyTrue : PyFalse;
-	INCREF(v);
+	PY_INCREF(v);
 
 	return v;
 }
@@ -652,6 +657,8 @@ object* eval_code(
 
 	/* Stack manipulation macros */
 
+/* TODO: These could largely be functions. */
+
 #define STACK_LEVEL() (stack_pointer - f->f_valuestack)
 #define EMPTY() (STACK_LEVEL() == 0)
 #define TOP() (stack_pointer[-1])
@@ -659,8 +666,8 @@ object* eval_code(
 #define BASIC_POP() (*--stack_pointer)
 
 #ifdef TRACE
-# define PUSH(v) (BASIC_PUSH(v), trace && prtrace(TOP(), "push"))
-# define POP() (trace && prtrace(TOP(), "pop"), BASIC_POP())
+# define PUSH(v) (BASIC_PUSH(v), prtrace(TOP(), "push", trace))
+# define POP() (prtrace(TOP(), "pop", trace), BASIC_POP())
 #else
 # define PUSH(v) BASIC_PUSH(v)
 # define POP() BASIC_POP()
@@ -680,7 +687,7 @@ object* eval_code(
 	stack_pointer = f->f_valuestack;
 
 	if(arg != NULL) {
-		INCREF(arg);
+		PY_INCREF(arg);
 		PUSH(arg);
 	}
 
@@ -740,7 +747,7 @@ object* eval_code(
 
 			case POP_TOP: {
 				v = POP();
-				DECREF(v);
+				PY_DECREF(v);
 
 				break;
 			}
@@ -767,7 +774,7 @@ object* eval_code(
 
 			case DUP_TOP: {
 				v = TOP();
-				INCREF(v);
+				PY_INCREF(v);
 				PUSH(v);
 
 				break;
@@ -776,7 +783,7 @@ object* eval_code(
 			case UNARY_POSITIVE: {
 				v = POP();
 				x = pos(v);
-				DECREF(v);
+				PY_DECREF(v);
 				PUSH(x);
 
 				break;
@@ -785,7 +792,7 @@ object* eval_code(
 			case UNARY_NEGATIVE: {
 				v = POP();
 				x = neg(v);
-				DECREF(v);
+				PY_DECREF(v);
 				PUSH(x);
 
 				break;
@@ -794,7 +801,7 @@ object* eval_code(
 			case UNARY_NOT: {
 				v = POP();
 				x = not(v);
-				DECREF(v);
+				PY_DECREF(v);
 				PUSH(x);
 
 				break;
@@ -803,7 +810,7 @@ object* eval_code(
 			case UNARY_CONVERT: {
 				v = POP();
 				x = reprobject(v);
-				DECREF(v);
+				PY_DECREF(v);
 				PUSH(x);
 
 				break;
@@ -817,7 +824,7 @@ object* eval_code(
 				}
 				else { x = call_builtin(v, (object*) NULL); }
 
-				DECREF(v);
+				PY_DECREF(v);
 				PUSH(x);
 
 				break;
@@ -827,8 +834,8 @@ object* eval_code(
 				w = POP();
 				v = POP();
 				x = mul(v, w);
-				DECREF(v);
-				DECREF(w);
+				PY_DECREF(v);
+				PY_DECREF(w);
 				PUSH(x);
 
 				break;
@@ -838,8 +845,8 @@ object* eval_code(
 				w = POP();
 				v = POP();
 				x = divide(v, w);
-				DECREF(v);
-				DECREF(w);
+				PY_DECREF(v);
+				PY_DECREF(w);
 				PUSH(x);
 
 				break;
@@ -849,8 +856,8 @@ object* eval_code(
 				w = POP();
 				v = POP();
 				x = rem(v, w);
-				DECREF(v);
-				DECREF(w);
+				PY_DECREF(v);
+				PY_DECREF(w);
 				PUSH(x);
 
 				break;
@@ -860,8 +867,8 @@ object* eval_code(
 				w = POP();
 				v = POP();
 				x = add(v, w);
-				DECREF(v);
-				DECREF(w);
+				PY_DECREF(v);
+				PY_DECREF(w);
 				PUSH(x);
 
 				break;
@@ -871,8 +878,8 @@ object* eval_code(
 				w = POP();
 				v = POP();
 				x = sub(v, w);
-				DECREF(v);
-				DECREF(w);
+				PY_DECREF(v);
+				PY_DECREF(w);
 				PUSH(x);
 
 				break;
@@ -882,8 +889,8 @@ object* eval_code(
 				w = POP();
 				v = POP();
 				x = apply_subscript(v, w);
-				DECREF(v);
-				DECREF(w);
+				PY_DECREF(v);
+				PY_DECREF(w);
 				PUSH(x);
 
 				break;
@@ -898,8 +905,8 @@ object* eval_code(
 				}
 				else { x = call_builtin(v, w); }
 
-				DECREF(v);
-				DECREF(w);
+				PY_DECREF(v);
+				PY_DECREF(w);
 				PUSH(x);
 
 				break;
@@ -926,7 +933,7 @@ object* eval_code(
 
 				u = POP();
 				x = apply_slice(u, v, w);
-				DECREF(u);
+				PY_DECREF(u);
 				XDECREF(v);
 				XDECREF(w);
 				PUSH(x);
@@ -956,8 +963,8 @@ object* eval_code(
 				u = POP();
 				t = POP();
 				err = assign_slice(u, v, w, t); /* u[v:w] = t */
-				DECREF(t);
-				DECREF(u);
+				PY_DECREF(t);
+				PY_DECREF(u);
 				XDECREF(v);
 				XDECREF(w);
 
@@ -986,7 +993,7 @@ object* eval_code(
 				u = POP();
 				err = assign_slice(u, v, w, (object*) NULL);
 				/* del u[v:w] */
-				DECREF(u);
+				PY_DECREF(u);
 				XDECREF(v);
 				XDECREF(w);
 
@@ -999,9 +1006,9 @@ object* eval_code(
 				u = POP();
 				/* v[w] = u */
 				err = assign_subscript(v, w, u);
-				DECREF(u);
-				DECREF(v);
-				DECREF(w);
+				PY_DECREF(u);
+				PY_DECREF(v);
+				PY_DECREF(w);
 
 				break;
 			}
@@ -1011,8 +1018,8 @@ object* eval_code(
 				v = POP();
 				/* del v[w] */
 				err = assign_subscript(v, w, (object*) NULL);
-				DECREF(v);
-				DECREF(w);
+				PY_DECREF(v);
+				PY_DECREF(w);
 
 				break;
 			}
@@ -1028,7 +1035,7 @@ object* eval_code(
 					fprintf(fp, "\n");
 				}
 
-				DECREF(v);
+				PY_DECREF(v);
 
 				break;
 			}
@@ -1053,7 +1060,7 @@ object* eval_code(
 					needspace = 1;
 				}
 
-				DECREF(v);
+				PY_DECREF(v);
 
 				break;
 			}
@@ -1080,8 +1087,8 @@ object* eval_code(
 				}
 				else { err_setval(w, v); }
 
-				DECREF(v);
-				DECREF(w);
+				PY_DECREF(v);
+				PY_DECREF(w);
 				why = WHY_EXCEPTION;
 
 				break;
@@ -1089,7 +1096,7 @@ object* eval_code(
 
 			case LOAD_LOCALS: {
 				v = f->f_locals;
-				INCREF(v);
+				PY_INCREF(v);
 				PUSH(v);
 
 				break;
@@ -1123,7 +1130,7 @@ object* eval_code(
 			case BUILD_FUNCTION: {
 				v = POP();
 				x = newfuncobject(v, f->f_globals);
-				DECREF(v);
+				PY_DECREF(v);
 				PUSH(x);
 
 				break;
@@ -1134,7 +1141,7 @@ object* eval_code(
 
 				while(STACK_LEVEL() > b->b_level) {
 					v = POP();
-					DECREF(v);
+					PY_DECREF(v);
 				}
 
 				break;
@@ -1150,10 +1157,10 @@ object* eval_code(
 				else if(is_stringobject(v)) {
 					w = POP();
 					err_setval(v, w);
-					DECREF(w);
+					PY_DECREF(w);
 					w = POP();
 					tb_store(w);
-					DECREF(w);
+					PY_DECREF(w);
 					why = WHY_RERAISE;
 				}
 				else if(v != None) {
@@ -1161,7 +1168,7 @@ object* eval_code(
 					why = WHY_EXCEPTION;
 				}
 
-				DECREF(v);
+				PY_DECREF(v);
 
 				break;
 			}
@@ -1171,8 +1178,8 @@ object* eval_code(
 				v = POP();
 				x = build_class(v, w);
 				PUSH(x);
-				DECREF(v);
-				DECREF(w);
+				PY_DECREF(v);
+				PY_DECREF(w);
 
 				break;
 			}
@@ -1181,7 +1188,7 @@ object* eval_code(
 				name = GETNAME(oparg);
 				v = POP();
 				err = dictinsert(f->f_locals, name, v);
-				DECREF(v);
+				PY_DECREF(v);
 
 				break;
 			}
@@ -1209,12 +1216,12 @@ object* eval_code(
 				else {
 					for(; --oparg >= 0;) {
 						w = gettupleitem(v, oparg);
-						INCREF(w);
+						PY_INCREF(w);
 						PUSH(w);
 					}
 				}
 
-				DECREF(v);
+				PY_DECREF(v);
 
 				break;
 			}
@@ -1233,12 +1240,12 @@ object* eval_code(
 				else {
 					for(; --oparg >= 0;) {
 						w = getlistitem(v, oparg);
-						INCREF(w);
+						PY_INCREF(w);
 						PUSH(w);
 					}
 				}
 
-				DECREF(v);
+				PY_DECREF(v);
 
 				break;
 			}
@@ -1248,8 +1255,8 @@ object* eval_code(
 				v = POP();
 				u = POP();
 				err = setattr(v, name, u); /* v.name = u */
-				DECREF(v);
-				DECREF(u);
+				PY_DECREF(v);
+				PY_DECREF(u);
 
 				break;
 			}
@@ -1259,14 +1266,14 @@ object* eval_code(
 				v = POP();
 				err = setattr(v, name, (object*) NULL);
 				/* del v.name */
-				DECREF(v);
+				PY_DECREF(v);
 
 				break;
 			}
 
 			case LOAD_CONST: {
 				x = GETCONST(oparg);
-				INCREF(x);
+				PY_INCREF(x);
 				PUSH(x);
 
 				break;
@@ -1285,7 +1292,7 @@ object* eval_code(
 					err_setstr(NameError, name);
 				}
 				else
-					INCREF(x);
+					PY_INCREF(x);
 
 				PUSH(x);
 
@@ -1337,7 +1344,7 @@ object* eval_code(
 				name = GETNAME(oparg);
 				v = POP();
 				x = getattr(v, name);
-				DECREF(v);
+				PY_DECREF(v);
 				PUSH(x);
 
 				break;
@@ -1346,8 +1353,8 @@ object* eval_code(
 			case COMPARE_OP:w = POP();
 				v = POP();
 				x = cmp_outcome((enum cmp_op) oparg, v, w);
-				DECREF(v);
-				DECREF(w);
+				PY_DECREF(v);
+				PY_DECREF(w);
 				PUSH(x);
 				break;
 
@@ -1391,12 +1398,12 @@ object* eval_code(
 					PUSH(v);
 					x = newintobject(getintvalue(w) + 1);
 					PUSH(x);
-					DECREF(w);
+					PY_DECREF(w);
 					PUSH(u);
 				}
 				else {
-					DECREF(v);
-					DECREF(w);
+					PY_DECREF(v);
+					PY_DECREF(w);
 					/* A NULL can mean "s exhausted"
 					but also an error: */
 					if(err_occurred()) {
@@ -1491,13 +1498,13 @@ object* eval_code(
 				break;
 			}
 			if(b->b_type == SETUP_FINALLY ||
-			   b->b_type == SETUP_EXCEPT && why == WHY_EXCEPTION) {
+			   (b->b_type == SETUP_EXCEPT && why == WHY_EXCEPTION)) {
 				if(why == WHY_EXCEPTION) {
 					object* exc, * val;
 					err_get(&exc, &val);
 					if(val == NULL) {
 						val = None;
-						INCREF(val);
+						PY_INCREF(val);
 					}
 					v = tb_fetch();
 					/* Make the raw exception data
@@ -1547,7 +1554,7 @@ object* eval_code(
 	/* Restore previous frame and release the current one */
 
 	current_frame = f->f_back;
-	DECREF(f);
+	PY_DECREF(f);
 
 	if(why == WHY_RETURN) {
 		return retval;

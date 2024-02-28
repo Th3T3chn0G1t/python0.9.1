@@ -116,7 +116,7 @@ Type objects contain a string containing the type name (to help somewhat
 in debugging), the allocation parameters (see newobj() and newvarobj()),
 and methods for accessing objects of the type.  Methods are optional,a
 nil pointer meaning that particular kind of access is not available for
-this type.  The DECREF() macro uses the tp_dealloc method without
+this type.  The PY_DECREF() macro uses the tp_dealloc method without
 checking for a nil pointer; it should always be implemented except if
 the implementation can guarantee that the reference count will never
 reach zero (e.g., for type objects).
@@ -214,8 +214,8 @@ extern int setattr(object*, char*, object*);
 /*
 123456789-123456789-123456789-123456789-123456789-123456789-123456789-12
 
-The macros INCREF(op) and DECREF(op) are used to increment or decrement
-reference counts.  DECREF calls the object's deallocator function; for
+The macros PY_INCREF(op) and PY_DECREF(op) are used to increment or decrement
+reference counts.  PY_DECREF calls the object's deallocator function; for
 objects that don't contain references to other objects or heap memory
 this can be the standard function free().  Both macros can be used
 whereever a void expression is allowed.  The argument shouldn't be a
@@ -233,7 +233,7 @@ complications in the deallocation function.  (This is actually a
 decision that's up to the implementer of each new type so if you want,
 you can count such references to the type object.)
 
-*** WARNING*** The DECREF macro must have a side-effect-free argument
+*** WARNING*** The PY_DECREF macro must have a side-effect-free argument
 since it may evaluate its argument multiple times.  (The alternative
 would be to mace it a proper function or assign it to a global temporary
 variable first, both of which are slower; and in a multi-threaded
@@ -256,18 +256,15 @@ extern long ref_total;
 #ifndef TRACE_REFS
 #define NEWREF(op) (ref_total++, (op)->ob_refcnt = 1)
 #endif
-#define INCREF(op) (ref_total++, (op)->ob_refcnt++)
-#define DECREF(op) \
-       if (--ref_total, --(op)->ob_refcnt > 0) \
-               ; \
-       else \
-               DELREF(op)
+#define PY_INCREF(op) (ref_total++, (op)->ob_refcnt++)
+#define PY_DECREF(op) \
+       if(--ref_total, !(--(op)->ob_refcnt > 0)) DELREF(op)
 #else
 #define NEWREF(op) ((op)->ob_refcnt = 1)
-#undef INCREF
-#define INCREF(op) ((op)->ob_refcnt++)
-#undef DECREF
-#define DECREF(op) \
+#undef PY_INCREF
+#define PY_INCREF(op) ((op)->ob_refcnt++)
+#undef PY_DECREF
+#define PY_DECREF(op) \
 	   if (--(op)->ob_refcnt > 0) \
 			   ; \
 	   else \
@@ -276,8 +273,8 @@ extern long ref_total;
 
 /* Macros to use in case the object pointer may be NULL: */
 
-#define XINCREF(op) if ((op) == NULL) ; else INCREF(op)
-#define XDECREF(op) if ((op) == NULL) ; else DECREF(op)
+#define XINCREF(op) if ((op) == NULL) ; else PY_INCREF(op)
+#define XDECREF(op) if ((op) == NULL) ; else PY_DECREF(op)
 
 /* Definition of NULL, so you don't have to include <stdio.h> */
 
@@ -290,7 +287,7 @@ extern long ref_total;
 NoObject is an object of undefined type which can be used in contexts
 where NULL (nil) is not suitable (since NULL often means 'error').
 
-Don't forget to apply INCREF() when returning this value!!!
+Don't forget to apply PY_INCREF() when returning this value!!!
 */
 
 extern object NoObject; /* Don't use this directly */
@@ -343,14 +340,14 @@ Reference Counts
 It takes a while to get used to the proper usage of reference counts.
 
 Functions that create an object set the reference count to 1; such new
-objects must be stored somewhere or destroyed again with DECREF().
+objects must be stored somewhere or destroyed again with PY_DECREF().
 Functions that 'store' objects such as settupleitem() and dictinsert()
 don't increment the reference count of the object, since the most
 frequent use is to store a fresh object.  Functions that 'retrieve'
 objects such as gettupleitem() and dictlookup() also don't increment
 the reference count, since most frequently the object is only looked at
 quickly.  Thus, to retrieve an object and store it again, the caller
-must call INCREF() explicitly.
+must call PY_INCREF() explicitly.
 
 NOTE: functions that 'consume' a reference count like dictinsert() even
 consume the reference if the object wasn't stored, to simplify error
@@ -359,7 +356,7 @@ handling.
 It seems attractive to make other functions that take an object as
 argument consume a reference count; however this may quickly get
 confusing (even the current practice is already confusing).  Consider
-it carefully, it may safe lots of calls to INCREF() and DECREF() at
+it carefully, it may safe lots of calls to PY_INCREF() and PY_DECREF() at
 times.
 
 123456789-123456789-123456789-123456789-123456789-123456789-123456789-12

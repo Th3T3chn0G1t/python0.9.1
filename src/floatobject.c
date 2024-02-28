@@ -93,6 +93,9 @@ static void float_print(v, fp, flags)floatobject* v;
 									 int flags;
 {
 	char buf[100];
+
+	(void) flags;
+
 	float_buf_repr(buf, v);
 	fputs(buf, fp);
 }

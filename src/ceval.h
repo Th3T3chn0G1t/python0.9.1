@@ -36,3 +36,5 @@ object* getlocals(void);
 void flushline(void);
 
 void printtraceback(FILE*);
+
+object* call_function(object* func, object* arg);

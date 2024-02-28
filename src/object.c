@@ -27,6 +27,7 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #include <stdlib.h>
 
 #include "allobjects.h"
+#include "fgetsintr.h"
 
 #ifdef REF_DEBUG
 long ref_total;
@@ -91,8 +92,8 @@ void printobject(op, fp, flags)object* op;
 			}
 			if(op->ob_type->tp_print == NULL) {
 				fprintf(
-						fp, "<%s object at %lx>", op->ob_type->tp_name,
-						(long) op);
+						fp, "<%s object at %p>", op->ob_type->tp_name,
+						(void*) op);
 			}
 			else {
 				(*op->ob_type->tp_print)(op, fp, flags);
@@ -121,8 +122,8 @@ object* reprobject(v)object* v;
 		else if(v->ob_type->tp_repr == NULL) {
 			char buf[100];
 			sprintf(
-					buf, "<%.80s object at %lx>", v->ob_type->tp_name,
-					(long) v);
+					buf, "<%.80s object at %p>", v->ob_type->tp_name,
+					(void*) v);
 			w = newstringobject(buf);
 		}
 		else {
@@ -202,11 +203,16 @@ static void none_print(op, fp, flags)object* op;
 									 FILE* fp;
 									 int flags;
 {
+	(void) op;
+	(void) flags;
+
 	fprintf(fp, "None");
 }
 
 static object* none_repr(op)object* op;
 {
+	(void) op;
+
 	return newstringobject("None");
 }
 

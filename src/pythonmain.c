@@ -24,7 +24,9 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 /* Python interpreter main program */
 
-#ifdef AGA_SCRIPT_H
+#ifdef _WIN32
+# include <io.h> /* For `isatty'. */
+#endif
 
 #include "patchlevel.h"
 
@@ -41,20 +43,14 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #include "ceval.h"
 #include "pythonrun.h"
 #include "import.h"
-
-extern char* getpythonpath();
+#include "bltinmodule.h"
+#include "fgetsintr.h"
 
 extern grammar gram; /* From graminit.c */
-
-#ifdef _DEBUG
-int debugging; /* Needed by parser.c */
-#endif
 
 int main(int argc, char** argv) {
 	char* filename = NULL;
 	FILE* fp = stdin;
-
-	initargs(&argc, &argv);
 
 	if(argc > 1 && strcmp(argv[1], "-") != 0) {
 		filename = argv[1];
@@ -70,16 +66,17 @@ int main(int argc, char** argv) {
 
 	initall();
 
-	setpythonpath(getpythonpath());
 	setpythonargv(argc - 1, argv + 1);
 
 	goaway(run(fp, filename == NULL ? "<stdin>" : filename));
 	/*NOTREACHED*/
+
+	return 0;
 }
 
 /* Initialize all */
 
-void initall() {
+void initall(void) {
 	static int inited;
 
 	if(inited) {
@@ -96,8 +93,6 @@ void initall() {
 
 	initbuiltin(); /* Also initializes builtin exceptions */
 	initsys();
-
-	initcalls(); /* Configuration-dependent initializations */
 
 	initintr(); /* For intrcheck() */
 }
@@ -158,7 +153,7 @@ int run_tty_1(fp, filename)FILE* fp;
 	v = sysget("ps1");
 	w = sysget("ps2");
 	if(v != NULL && is_stringobject(v)) {
-		INCREF(v);
+		PY_INCREF(v);
 		ps1 = getstringvalue(v);
 	}
 	else {
@@ -166,7 +161,7 @@ int run_tty_1(fp, filename)FILE* fp;
 		ps1 = "";
 	}
 	if(w != NULL && is_stringobject(w)) {
-		INCREF(w);
+		PY_INCREF(w);
 		ps2 = getstringvalue(w);
 	}
 	else {
@@ -195,7 +190,7 @@ int run_tty_1(fp, filename)FILE* fp;
 		print_error();
 		return -1;
 	}
-	DECREF(v);
+	PY_DECREF(v);
 	return 0;
 }
 
@@ -214,7 +209,7 @@ int run_script(fp, filename)FILE* fp;
 		print_error();
 		return -1;
 	}
-	DECREF(v);
+	PY_DECREF(v);
 	return 0;
 }
 
@@ -297,7 +292,7 @@ object* eval_node(n, filename, globals, locals)node* n;
 		return NULL;
 	}
 	v = eval_code(co, globals, locals, (object*) NULL);
-	DECREF(co);
+	PY_DECREF(co);
 	return v;
 }
 
@@ -344,17 +339,11 @@ void goaway(sts)int sts;
 	/* XXX Call doneimport() before donecalls(), since donecalls()
 	   calls wdone(), and doneimport() may close windows */
 	doneimport();
-	donecalls();
 
 	err_clear();
 
 #ifdef REF_DEBUG
 	fprintf(stderr, "[%ld refs]\n", ref_total);
-#endif
-
-#ifdef THINK_C_3_0
-	if (sts == 0)
-			Click_On(0);
 #endif
 
 #ifdef TRACE_REFS
@@ -370,25 +359,25 @@ void goaway(sts)int sts;
 	/*NOTREACHED*/
 }
 
-static finaloutput() {
+/* TODO: Fix trace refs. */
+/*
+void finaloutput(void) {
 #ifdef TRACE_REFS
 	if (!askyesno("Print left references?"))
 			return;
-#ifdef THINK_C_3_0
-	Click_On(1);
-#endif
 	printrefs(stderr);
-#endif /* TRACE_REFS */
+#endif
 }
+ */
 
 /* Ask a yes/no question */
 
-static int askyesno(prompt)char* prompt;
-{
+int askyesno(char* prompt);
+int askyesno(char* prompt) {
 	char buf[256];
 
 	printf("%s [ny] ", prompt);
-	if(fgets(buf, sizeof buf, stdin) == NULL) {
+	if(fgets(buf, sizeof(buf), stdin) == NULL) {
 		return 0;
 	}
 	return buf[0] == 'y' || buf[0] == 'Y';
@@ -419,5 +408,3 @@ isatty(fd)
 */
 
 /* "Floccinaucinihilipilification" */
-
-#endif

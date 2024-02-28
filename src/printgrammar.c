@@ -44,7 +44,8 @@ void printgrammar(g, fp)grammar* g;
 	fprintf(fp, "\t%d,\n", g->g_ndfas);
 	fprintf(fp, "\tdfas,\n");
 	fprintf(fp, "\t{%d, labels},\n", g->g_ll.ll_nlabels);
-	fprintf(fp, "\t%d\n", g->g_start);
+	fprintf(fp, "\t%d,\n", g->g_start);
+	fprintf(fp, "\t0\n");
 	fprintf(fp, "};\n");
 }
 
@@ -95,7 +96,7 @@ static void printstates(g, fp)grammar* g;
 		s = d->d_state;
 		for(j = 0; j < d->d_nstates; j++, s++) {
 			fprintf(
-					fp, "\t{%d, arcs_%d_%d},\n", s->s_narcs, i, j);
+					fp, "\t{%d, arcs_%d_%d, 0, 0, 0, 0},\n", s->s_narcs, i, j);
 		}
 		fprintf(fp, "};\n");
 	}
@@ -115,7 +116,7 @@ static void printdfas(g, fp)grammar* g;
 				fp, "\t{%d, \"%s\", %d, %d, states_%d,\n", d->d_type, d->d_name,
 				d->d_initial, d->d_nstates, i);
 		fprintf(fp, "\t \"");
-		for(j = 0; j < PY_NBYTES(g->g_ll.ll_nlabels); j++) {
+		for(j = 0; j < (int) PY_NBYTES(g->g_ll.ll_nlabels); j++) {
 			fprintf(fp, "\\%03o", d->d_first[j] & 0xff);
 		}
 		fprintf(fp, "\"},\n");

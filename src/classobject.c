@@ -24,6 +24,8 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 /* Class object implementation */
 
+#include <stdlib.h>
+
 #include "allobjects.h"
 
 #include "structmember.h"
@@ -44,9 +46,9 @@ object* newclassobject(bases, methods)
 		return NULL;
 	}
 	if(bases != NULL)
-		INCREF(bases);
+		PY_INCREF(bases);
 	op->cl_bases = bases;
-	INCREF(methods);
+	PY_INCREF(methods);
 	op->cl_methods = methods;
 	return (object*) op;
 }
@@ -55,11 +57,9 @@ object* newclassobject(bases, methods)
 
 static void class_dealloc(op)classobject* op;
 {
-	int i;
-	if(op->cl_bases != NULL)
-		DECREF(op->cl_bases);
-	DECREF(op->cl_methods);
-	free((void*) op);
+	if(op->cl_bases != NULL) PY_DECREF(op->cl_bases);
+	PY_DECREF(op->cl_methods);
+	free(op);
 }
 
 static object* class_getattr(op, name)classobject* op;
@@ -68,7 +68,7 @@ static object* class_getattr(op, name)classobject* op;
 	object* v;
 	v = dictlookup(op->cl_methods, name);
 	if(v != NULL) {
-		INCREF(v);
+		PY_INCREF(v);
 		return v;
 	}
 	if(op->cl_bases != NULL) {
@@ -119,11 +119,11 @@ object* newclassmemberobject(class)object* class;
 	if(cm == NULL) {
 		return NULL;
 	}
-	INCREF(class);
+	PY_INCREF(class);
 	cm->cm_class = (classobject*) class;
 	cm->cm_attr = newdictobject();
 	if(cm->cm_attr == NULL) {
-		DECREF(cm);
+		PY_DECREF(cm);
 		return NULL;
 	}
 	return (object*) cm;
@@ -133,10 +133,10 @@ object* newclassmemberobject(class)object* class;
 
 static void classmember_dealloc(cm)classmemberobject* cm;
 {
-	DECREF(cm->cm_class);
+	PY_DECREF(cm->cm_class);
 	if(cm->cm_attr != NULL)
-		DECREF(cm->cm_attr);
-	free((void*) cm);
+		PY_DECREF(cm->cm_attr);
+	free(cm);
 }
 
 static object* classmember_getattr(cm, name)classmemberobject* cm;
@@ -144,7 +144,7 @@ static object* classmember_getattr(cm, name)classmemberobject* cm;
 {
 	object* v = dictlookup(cm->cm_attr, name);
 	if(v != NULL) {
-		INCREF(v);
+		PY_INCREF(v);
 		return v;
 	}
 	v = class_getattr(cm->cm_class, name);
@@ -153,10 +153,10 @@ static object* classmember_getattr(cm, name)classmemberobject* cm;
 	} /* class_getattr() has set the error */
 	if(is_funcobject(v)) {
 		object* w = newclassmethodobject(v, (object*) cm);
-		DECREF(v);
+		PY_DECREF(v);
 		return w;
 	}
-	DECREF(v);
+	PY_DECREF(v);
 	err_setstr(NameError, name);
 	return NULL;
 }
@@ -208,9 +208,9 @@ object* newclassmethodobject(func, self)object* func;
 	if(cm == NULL) {
 		return NULL;
 	}
-	INCREF(func);
+	PY_INCREF(func);
 	cm->cm_func = func;
-	INCREF(self);
+	PY_INCREF(self);
 	cm->cm_self = self;
 	return (object*) cm;
 }
@@ -238,9 +238,9 @@ object* classmethodgetself(cm)object* cm;
 #define OFF(x) offsetof(classmethodobject, x)
 
 static struct memberlist classmethod_memberlist[] = {
-		{ "cm_func", T_OBJECT, OFF(cm_func) },
-		{ "cm_self", T_OBJECT, OFF(cm_self) },
-		{ NULL }  /* Sentinel */
+		{ "cm_func", T_OBJECT, OFF(cm_func), 0 },
+		{ "cm_self", T_OBJECT, OFF(cm_self), 0 },
+		{ NULL, 0, 0, 0 }  /* Sentinel */
 };
 
 static object* classmethod_getattr(cm, name)classmethodobject* cm;
@@ -251,9 +251,9 @@ static object* classmethod_getattr(cm, name)classmethodobject* cm;
 
 static void classmethod_dealloc(cm)classmethodobject* cm;
 {
-	DECREF(cm->cm_func);
-	DECREF(cm->cm_self);
-	free((void*) cm);
+	PY_DECREF(cm->cm_func);
+	PY_DECREF(cm->cm_self);
+	free(cm);
 }
 
 typeobject Classmethodtype = {

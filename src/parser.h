@@ -55,4 +55,6 @@ int addtoken(parser_state* ps, int type, char* str, int lineno);
 
 void addaccelerators(grammar* g);
 
+void freeaccel(void);
+
 #endif

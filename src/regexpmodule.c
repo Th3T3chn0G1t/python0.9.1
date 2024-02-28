@@ -25,6 +25,8 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 /* Regular expression objects */
 /* This needs V8 or Henry Spencer's regexp! */
 
+#include <stdlib.h>
+
 #include "allobjects.h"
 #include "modsupport.h"
 
@@ -84,7 +86,7 @@ static object* makeresult(prog, buffer)regexp* prog;
 			   settupleitem(w, 0, u) != 0 || (u = newintobject(end)) == NULL ||
 			   settupleitem(w, 1, u) != 0) {
 				XDECREF(w);
-				DECREF(v);
+				PY_DECREF(v);
 				return NULL;
 			}
 			settupleitem(v, i, w);
@@ -117,7 +119,7 @@ static object* regexp_exec(re, args)regexpobject* re;
 }
 
 static struct methodlist regexp_methods[] = {
-		"exec", regexp_exec, { NULL, NULL }           /* sentinel */
+		{ "exec", regexp_exec }, { NULL, NULL }           /* sentinel */
 };
 
 static object* regexp_getattr(re, name)regexpobject* re;
@@ -138,6 +140,7 @@ static typeobject Regexptype = {
 		0,                      /*tp_setattr*/
 		0,                      /*tp_compare*/
 		0,                      /*tp_repr*/
+		0, 0, 0
 };
 
 void regerror(str)char* str;
@@ -150,6 +153,9 @@ static object* regexp_compile(self, args)object* self;
 {
 	object* string;
 	regexp* prog;
+
+	(void) self;
+
 	if(!getstrarg(args, &string)) {
 		return NULL;
 	}
@@ -165,7 +171,7 @@ static struct methodlist regexp_global_methods[] = {
 		{ NULL, NULL }           /* sentinel */
 };
 
-initregexp() {
+void initregexp() {
 	object* m, * d;
 
 	m = initmodule("regexp", regexp_global_methods);

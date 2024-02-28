@@ -32,6 +32,8 @@ static void type_print(v, fp, flags)typeobject* v;
 									FILE* fp;
 									int flags;
 {
+	(void) flags;
+
 	fprintf(fp, "<type '%s'>", v->tp_name);
 }
 
@@ -54,4 +56,5 @@ typeobject Typetype = {
 		0,                      /*tp_setattr*/
 		0,                      /*tp_compare*/
 		type_repr,              /*tp_repr*/
+		0, 0, 0
 };

@@ -24,6 +24,8 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 /* Interfaces to parse and execute pieces of python code */
 
+struct _node;
+
 void initall(void);
 
 int run(FILE*, char*);

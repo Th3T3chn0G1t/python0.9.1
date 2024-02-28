@@ -135,7 +135,6 @@ int findlabel(ll, type, str)labellist* ll;
 							char* str;
 {
 	int i;
-	label* lb;
 
 	for(i = 0; i < ll->ll_nlabels; i++) {
 		if(ll->ll_label[i].lb_type == type /*&&

@@ -38,7 +38,7 @@ A similar module that I saw by Chris Torek:
 #include <stdlib.h>
 
 #include "allobjects.h"
-
+#include "modsupport.h"
 
 /*
 Table of primes suitable as keys, in ascending order.
@@ -172,14 +172,14 @@ static void insertdict(dictobject* dp, stringobject* key, object* value) {
 	dictentry* ep;
 	ep = lookdict(dp, GETSTRINGVALUE(key));
 	if(ep->de_value != NULL) {
-		DECREF(ep->de_value);
-		DECREF(key);
+		PY_DECREF(ep->de_value);
+		PY_DECREF(key);
 	}
 	else {
 		if(ep->de_key == NULL) {
 			dp->di_fill++;
 		}
-		else DECREF(ep->de_key);
+		else PY_DECREF(ep->de_key);
 		ep->de_key = key;
 		dp->di_used++;
 	}
@@ -201,7 +201,7 @@ static int dictresize(dictobject* dp) {
 	int i;
 	newsize = dp->di_size;
 	for(i = 0;; i++) {
-		if(primes[i] > dp->di_used * 2) {
+		if(primes[i] > (unsigned) (dp->di_used * 2)) {
 			newsize = primes[i];
 			break;
 		}
@@ -220,7 +220,7 @@ static int dictresize(dictobject* dp) {
 			insertdict(dp, ep->de_key, ep->de_value);
 		}
 		else if(ep->de_key != NULL)
-			DECREF(ep->de_key);
+			PY_DECREF(ep->de_key);
 	}
 	free(oldtable);
 	return 0;
@@ -282,8 +282,8 @@ static int dict2insert(op, key, value)object* op;
 			}
 		}
 	}
-	INCREF(keyobj);
-	INCREF(value);
+	PY_INCREF(keyobj);
+	PY_INCREF(value);
 	insertdict(dp, keyobj, value);
 	return 0;
 }
@@ -300,7 +300,7 @@ int dictinsert(op, key, value)object* op;
 		return -1;
 	}
 	err = dict2insert(op, keyobj, value);
-	DECREF(keyobj);
+	PY_DECREF(keyobj);
 	return err;
 }
 
@@ -319,10 +319,10 @@ int dictremove(op, key)object* op;
 		err_setstr(KeyError, "key not in dictionary");
 		return -1;
 	}
-	DECREF(ep->de_key);
-	INCREF(dummy);
+	PY_DECREF(ep->de_key);
+	PY_INCREF(dummy);
 	ep->de_key = dummy;
-	DECREF(ep->de_value);
+	PY_DECREF(ep->de_value);
 	ep->de_value = NULL;
 	dp->di_used--;
 	return 0;
@@ -387,9 +387,9 @@ static void dict_dealloc(dp)dictobject* dp;
 	dictentry* ep;
 	for(i = 0, ep = dp->di_table; i < dp->di_size; i++, ep++) {
 		if(ep->de_key != NULL)
-			DECREF(ep->de_key);
+			PY_DECREF(ep->de_key);
 		if(ep->de_value != NULL)
-			DECREF(ep->de_value);
+			PY_DECREF(ep->de_value);
 	}
 	if(dp->di_table != NULL) {
 		free(dp->di_table);
@@ -424,7 +424,7 @@ static void js(pv, w)object** pv;
 {
 	joinstring(pv, w);
 	if(w != NULL)
-		DECREF(w);
+		PY_DECREF(w);
 }
 
 static object* dict_repr(dp)dictobject* dp;
@@ -451,9 +451,9 @@ static object* dict_repr(dp)dictobject* dp;
 	}
 	js(&v, w = newstringobject("}"));
 	if(semi != NULL)
-		DECREF(semi);
+		PY_DECREF(semi);
 	if(colon != NULL)
-		DECREF(colon);
+		PY_DECREF(colon);
 	return v;
 }
 
@@ -474,7 +474,7 @@ static object* dict_subscript(dp, v)dictobject* dp;
 		err_setstr(KeyError, "key not in dictionary");
 	}
 	else
-		INCREF(v);
+		PY_INCREF(v);
 	return v;
 }
 
@@ -510,7 +510,7 @@ static object* dict_keys(dp, args)dictobject* dp;
 	for(i = 0, j = 0; i < dp->di_size; i++) {
 		if(dp->di_table[i].de_value != NULL) {
 			stringobject* key = dp->di_table[i].de_key;
-			INCREF(key);
+			PY_INCREF(key);
 			setlistitem(v, j, (object*) key);
 			j++;
 		}
@@ -551,10 +551,8 @@ static object* dict_getattr(dp, name)dictobject* dp;
 	return findmethod(dict_methods, (object*) dp, name);
 }
 
-extern void donedict();
-
-void donedict() {
-	DECREF(dummy);
+void donedict(void) {
+	PY_DECREF(dummy);
 }
 
 typeobject Dicttype = {

@@ -64,46 +64,50 @@ static int get2doublearg(args, px, py)object* args;
 }
 
 static object* math_1(args, func)object* args;
-		double (* func)(double);
+								 double (* func)(double);
 {
-double x;
-if (!
-getdoublearg(args,
-&x))
-return NULL;
-errno = 0;
-x = (*func)(x);
-if (errno != 0)
-return NULL;
-else
-return
-newfloatobject(x);
+	double x;
+	if(!getdoublearg(
+			args, &x)) {
+		return NULL;
+	}
+	errno = 0;
+	x = (*func)(x);
+	if(errno != 0) {
+		return NULL;
+	}
+	else {
+		return newfloatobject(x);
+	}
 }
 
 static object* math_2(args, func)object* args;
-		double (* func)(double, double);
+								 double (* func)(double, double);
 {
-double x, y;
-if (!
-get2doublearg(args,
-&x, &y))
-return NULL;
-errno = 0;
-x = (*func)(x, y);
-if (errno != 0)
-return NULL;
-else
-return
-newfloatobject(x);
+	double x, y;
+	if(!get2doublearg(
+			args, &x, &y)) {
+		return NULL;
+	}
+	errno = 0;
+	x = (*func)(x, y);
+	if(errno != 0) {
+		return NULL;
+	}
+	else {
+		return newfloatobject(x);
+	}
 }
 
 #define FUNC1(stubname, func) \
-       static object * stubname(self, args) object *self, *args; { \
+       static object* stubname(self, args) object *self, *args; { \
+               (void) self; \
                return math_1(args, func); \
        }
 
 #define FUNC2(stubname, func) \
-       static object * stubname(self, args) object *self, *args; { \
+       static object* stubname(self, args) object *self, *args; { \
+               (void) self; \
                return math_2(args, func); \
        }
 
@@ -162,7 +166,7 @@ void initmath() {
 	m = initmodule("math", math_methods);
 	d = getmoduledict(m);
 	dictinsert(d, "pi", v = newfloatobject(atan(1.0) * 4.0));
-	DECREF(v);
+	PY_DECREF(v);
 	dictinsert(d, "e", v = newfloatobject(exp(1.0)));
-	DECREF(v);
+	PY_DECREF(v);
 }

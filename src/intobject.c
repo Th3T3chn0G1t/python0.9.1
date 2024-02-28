@@ -113,6 +113,8 @@ static void int_print(v, fp, flags)intobject* v;
 								   FILE* fp;
 								   int flags;
 {
+	(void) flags;
+
 	fprintf(fp, "%ld", v->ob_ival);
 }
 
@@ -168,14 +170,14 @@ static object* int_mul(v, w)intobject* v;
 							object* w;
 {
 	long a, b;
-	double x;
+	/* double x; */
 	if(!is_intobject(w)) {
 		err_badarg();
 		return NULL;
 	}
 	a = v->ob_ival;
 	b = ((intobject*) w)->ob_ival;
-	x = (double) a * (double) b;
+	/* x = (double) a * (double) b; */
 /* TODO: Need sensible overflow detection logic
        if (x > 0x7fffffff || x < (double) (long) 0x80000000)
                return err_ovf();
@@ -251,7 +253,7 @@ static object* int_neg(v)intobject* v;
 
 static object* int_pos(v)intobject* v;
 {
-	INCREF(v);
+	PY_INCREF(v);
 	return (object*) v;
 }
 

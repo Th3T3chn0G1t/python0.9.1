@@ -28,30 +28,24 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 #include "modsupport.h"
 
-#include "sigtype.h"
 
 #include <signal.h>
 #include <setjmp.h>
-
-#if defined(__STDC__) || defined(_MSC_VER)
-
 #include <time.h>
 
-#ifdef _MSC_VER
-#include <direct.h>
+#ifdef _WIN32
+# include <windows.h>
+# define sleep Sleep
 #endif
-#else /* !__STDC__ */
-typedef unsigned long time_t;
-extern time_t time();
-#endif /* !__STDC__ */
 
 
 /* Time methods */
 
-static object* time_time(self, args)object* self;
-									object* args;
-{
+static object* time_time(object* self, object* args) {
 	long secs;
+
+	(void) self;
+
 	if(!getnoarg(args)) {
 		return NULL;
 	}
@@ -61,35 +55,36 @@ static object* time_time(self, args)object* self;
 
 static jmp_buf sleep_intr;
 
-static void sleep_catcher(sig)int sig;
-{
+static void sleep_catcher(int sig) {
+	(void) sig;
+
 	longjmp(sleep_intr, 1);
 }
 
-static object* time_sleep(self, args)object* self;
-									 object* args;
-{
+static object* time_sleep(object* self, object* args) {
 	int secs;
-	SIGTYPE (* sigsave)();
+	void (*sigsave)(int);
+
+	(void) self;
+
 	if(!getintarg(args, &secs)) {
 		return NULL;
 	}
+
 	if(setjmp(sleep_intr)) {
 		signal(SIGINT, sigsave);
 		err_set(KeyboardInterrupt);
 		return NULL;
 	}
+
 	sigsave = signal(SIGINT, SIG_IGN);
-	if(sigsave != (SIGTYPE (*)()) SIG_IGN) {
+	if(sigsave != (void (*)(int)) SIG_IGN) {
 		signal(SIGINT, sleep_catcher);
 	}
-#ifdef _MSC_VER
-	_sleep(secs);
-#else
 	sleep(secs);
-#endif
+
 	signal(SIGINT, sigsave);
-	INCREF(None);
+	PY_INCREF(None);
 	return None;
 }
 
@@ -115,7 +110,7 @@ time_millisleep(self, args)
 	   object *args;
 {
 	   long msecs;
-	   SIGTYPE (*sigsave)();
+	   void (*sigsave)();
 	   if (!getlongarg(args, &msecs))
 			   return NULL;
 	   if (setjmp(sleep_intr)) {
@@ -124,11 +119,11 @@ time_millisleep(self, args)
 			   return NULL;
 	   }
 	   sigsave = signal(SIGINT, SIG_IGN);
-	   if (sigsave != (SIGTYPE (*)()) SIG_IGN)
+	   if (sigsave != (void (*)()) SIG_IGN)
 			   signal(SIGINT, sleep_catcher);
 	   millisleep(msecs);
 	   signal(SIGINT, sigsave);
-	   INCREF(None);
+	   PY_INCREF(None);
 	   return None;
 }
 

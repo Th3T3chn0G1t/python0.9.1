@@ -184,7 +184,7 @@ static object* makepoint(a, b)int a, b;
 	}
 	if((w = newintobject((long) a)) == NULL || settupleitem(v, 0, w) != 0 ||
 	   (w = newintobject((long) b)) == NULL || settupleitem(v, 1, w) != 0) {
-		DECREF(v);
+		PY_DECREF(v);
 		return NULL;
 	}
 	return v;
@@ -199,7 +199,7 @@ static object* makerect(a, b, c, d)int a, b, c, d;
 	}
 	if((w = makepoint(a, b)) == NULL || settupleitem(v, 0, w) != 0 ||
 	   (w = makepoint(c, d)) == NULL || settupleitem(v, 1, w) != 0) {
-		DECREF(v);
+		PY_DECREF(v);
 		return NULL;
 	}
 	return v;
@@ -219,7 +219,7 @@ static object* makemouse(hor, ver, clicks, button, mask)
 	   (w = newintobject((long) button)) == NULL ||
 	   settupleitem(v, 2, w) != 0 || (w = newintobject((long) mask)) == NULL ||
 	   settupleitem(v, 3, w) != 0) {
-		DECREF(v);
+		PY_DECREF(v);
 		return NULL;
 	}
 	return v;
@@ -233,10 +233,10 @@ static object* makemenu(mp, item)object* mp;
 	if((v = newtupleobject(2)) == NULL) {
 		return NULL;
 	}
-	INCREF(mp);
+	PY_INCREF(mp);
 	if(settupleitem(v, 0, mp) != 0 || (w = newintobject((long) item)) == NULL ||
 	   settupleitem(v, 1, w) != 0) {
-		DECREF(v);
+		PY_DECREF(v);
 		return NULL;
 	}
 	return v;
@@ -258,8 +258,8 @@ static void drawing_dealloc(dp)drawingobject* dp;
 {
 	wenddrawing(dp->d_ref->w_win);
 	Drawing = NULL;
-	DECREF(dp->d_ref);
-	free((char*) dp);
+	PY_DECREF(dp->d_ref);
+	free(dp);
 }
 
 static object* drawing_generic(dp, args, func)drawingobject* dp;
@@ -274,7 +274,7 @@ getrectarg(args, a
 ))
 return NULL;
 (*func)(a[0], a[1], a[2], a[3]);
-INCREF(None);
+PY_INCREF(None);
 return None;
 }
 
@@ -298,7 +298,7 @@ static object* drawing_circle(dp, args)drawingobject* dp;
 		return NULL;
 	}
 	wdrawcircle(a[0], a[1], a[2]);
-	INCREF(None);
+	PY_INCREF(None);
 	return None;
 }
 
@@ -310,7 +310,7 @@ static object* drawing_elarc(dp, args)drawingobject* dp;
 		return NULL;
 	}
 	wdrawelarc(a[0], a[1], a[2], a[3], a[4], a[5]);
-	INCREF(None);
+	PY_INCREF(None);
 	return None;
 }
 
@@ -351,7 +351,7 @@ static object* drawing_noclip(dp, args)drawingobject* dp;
 		return NULL;
 	}
 	wnoclip();
-	INCREF(None);
+	PY_INCREF(None);
 	return None;
 }
 
@@ -363,7 +363,7 @@ static object* drawing_shade(dp, args)drawingobject* dp;
 		return NULL;
 	}
 	wshade(a[0], a[1], a[2], a[3], a[4]);
-	INCREF(None);
+	PY_INCREF(None);
 	return None;
 }
 
@@ -376,7 +376,7 @@ static object* drawing_text(dp, args)drawingobject* dp;
 		return NULL;
 	}
 	wdrawtext(a[0], a[1], getstringvalue(s), (int) getstringsize(s));
-	INCREF(None);
+	PY_INCREF(None);
 	return None;
 }
 
@@ -486,11 +486,11 @@ static textobject* newtextobject(wp, left, top, right, bottom)windowobject* wp;
 		return NULL;
 	}
 	tp->t_attr = NULL;
-	INCREF(wp);
+	PY_INCREF(wp);
 	tp->t_ref = wp;
 	tp->t_text = tecreate(wp->w_win, left, top, right, bottom);
 	if(tp->t_text == NULL) {
-		DECREF(tp);
+		PY_DECREF(tp);
 		return (textobject*) err_nomem();
 	}
 	return tp;
@@ -504,8 +504,8 @@ static void text_dealloc(tp)textobject* tp;
 		tefree(tp->t_text);
 	}
 	if(tp->t_attr != NULL)
-		DECREF(tp->t_attr);
-	DECREF(tp->t_ref);
+		PY_DECREF(tp->t_attr);
+	PY_DECREF(tp->t_ref);
 	free(tp);
 }
 
@@ -517,7 +517,7 @@ static object* text_arrow(self, args)textobject* self;
 		return NULL;
 	}
 	tearrow(self->t_text, code);
-	INCREF(None);
+	PY_INCREF(None);
 	return None;
 }
 
@@ -556,7 +556,7 @@ static object* text_draw(self, args)textobject* self;
 		wenddrawing(self->t_ref->w_win);
 		teshowfocus(tp);
 	}
-	INCREF(None);
+	PY_INCREF(None);
 	return None;
 }
 
@@ -640,7 +640,7 @@ static object* text_move(self, args)textobject* self;
 		return NULL;
 	}
 	temovenew(self->t_text, a[0], a[1], a[2], a[3]);
-	INCREF(None);
+	PY_INCREF(None);
 	return None;
 }
 
@@ -652,7 +652,7 @@ static object* text_setfocus(self, args)textobject* self;
 		return NULL;
 	}
 	tesetfocus(self->t_text, a[0], a[1]);
-	INCREF(None);
+	PY_INCREF(None);
 	return None;
 }
 
@@ -664,7 +664,7 @@ static object* text_replace(self, args)textobject* self;
 		return NULL;
 	}
 	tereplace(self->t_text, getstringvalue(text));
-	INCREF(None);
+	PY_INCREF(None);
 	return None;
 }
 
@@ -682,7 +682,7 @@ static object* text_getattr(tp, name)textobject* tp;
 	if(tp->t_attr != NULL) {
 		object* v = dictlookup(tp->t_attr, name);
 		if(v != NULL) {
-			INCREF(v);
+			PY_INCREF(v);
 			return v;
 		}
 	}
@@ -769,7 +769,7 @@ static void menu_dealloc(mp)menuobject* mp;
 	}
 	wmenudelete(mp->m_menu);
 	if(mp->m_attr != NULL)
-		DECREF(mp->m_attr);
+		PY_DECREF(mp->m_attr);
 	free(mp);
 }
 
@@ -796,7 +796,7 @@ static object* menu_additem(self, args)menuobject* self;
 		shortcut = -1;
 	}
 	wmenuadditem(self->m_menu, getstringvalue(text), shortcut);
-	INCREF(None);
+	PY_INCREF(None);
 	return None;
 }
 
@@ -809,7 +809,7 @@ static object* menu_setitem(self, args)menuobject* self;
 		return NULL;
 	}
 	wmenusetitem(self->m_menu, index, getstringvalue(text));
-	INCREF(None);
+	PY_INCREF(None);
 	return None;
 }
 
@@ -822,7 +822,7 @@ static object* menu_enable(self, args)menuobject* self;
 		return NULL;
 	}
 	wmenuenable(self->m_menu, index, flag);
-	INCREF(None);
+	PY_INCREF(None);
 	return None;
 }
 
@@ -835,7 +835,7 @@ static object* menu_check(self, args)menuobject* self;
 		return NULL;
 	}
 	wmenucheck(self->m_menu, index, flag);
-	INCREF(None);
+	PY_INCREF(None);
 	return None;
 }
 
@@ -850,7 +850,7 @@ static object* menu_getattr(mp, name)menuobject* mp;
 	if(mp->m_attr != NULL) {
 		object* v = dictlookup(mp->m_attr, name);
 		if(v != NULL) {
-			INCREF(v);
+			PY_INCREF(v);
 			return v;
 		}
 	}
@@ -910,10 +910,10 @@ static void window_dealloc(wp)windowobject* wp;
 		}
 		wclose(wp->w_win);
 	}
-	DECREF(wp->w_title);
+	PY_DECREF(wp->w_title);
 	if(wp->w_attr != NULL)
-		DECREF(wp->w_attr);
-	free((char*) wp);
+		PY_DECREF(wp->w_attr);
+	free(wp);
 }
 
 static void window_print(wp, fp, flags)windowobject* wp;
@@ -939,7 +939,7 @@ static object* window_begindrawing(wp, args)windowobject* wp;
 		return NULL;
 	}
 	Drawing = dp;
-	INCREF(wp);
+	PY_INCREF(wp);
 	dp->d_ref = wp;
 	wbegindrawing(wp->w_win);
 	return (object*) dp;
@@ -953,7 +953,7 @@ static object* window_change(wp, args)windowobject* wp;
 		return NULL;
 	}
 	wchange(wp->w_win, a[0], a[1], a[2], a[3]);
-	INCREF(None);
+	PY_INCREF(None);
 	return None;
 }
 
@@ -963,7 +963,7 @@ static object* window_gettitle(wp, args)windowobject* wp;
 	if(!getnoarg(args)) {
 		return NULL;
 	}
-	INCREF(wp->w_title);
+	PY_INCREF(wp->w_title);
 	return wp->w_title;
 }
 
@@ -1008,7 +1008,7 @@ static object* window_scroll(wp, args)windowobject* wp;
 		return NULL;
 	}
 	wscroll(wp->w_win, a[0], a[1], a[2], a[3], a[4], a[5]);
-	INCREF(None);
+	PY_INCREF(None);
 	return None;
 }
 
@@ -1020,7 +1020,7 @@ static object* window_setdocsize(wp, args)windowobject* wp;
 		return NULL;
 	}
 	wsetdocsize(wp->w_win, a[0], a[1]);
-	INCREF(None);
+	PY_INCREF(None);
 	return None;
 }
 
@@ -1032,7 +1032,7 @@ static object* window_setorigin(wp, args)windowobject* wp;
 		return NULL;
 	}
 	wsetorigin(wp->w_win, a[0], a[1]);
-	INCREF(None);
+	PY_INCREF(None);
 	return None;
 }
 
@@ -1043,11 +1043,11 @@ static object* window_settitle(wp, args)windowobject* wp;
 	if(!getstrarg(args, &title)) {
 		return NULL;
 	}
-	DECREF(wp->w_title);
-	INCREF(title);
+	PY_DECREF(wp->w_title);
+	PY_INCREF(title);
 	wp->w_title = title;
 	wsettitle(wp->w_win, getstringvalue(title));
-	INCREF(None);
+	PY_INCREF(None);
 	return None;
 }
 
@@ -1059,7 +1059,7 @@ static object* window_show(wp, args)windowobject* wp;
 		return NULL;
 	}
 	wshow(wp->w_win, a[0], a[1], a[2], a[3]);
-	INCREF(None);
+	PY_INCREF(None);
 	return None;
 }
 
@@ -1071,7 +1071,7 @@ static object* window_settimer(wp, args)windowobject* wp;
 		return NULL;
 	}
 	wsettimer(wp->w_win, a);
-	INCREF(None);
+	PY_INCREF(None);
 	return None;
 }
 
@@ -1131,7 +1131,7 @@ static object* window_setwincursor(self, args)windowobject* self;
 		return NULL;
 	}
 	wsetwincursor(self->w_win, c);
-	INCREF(None);
+	PY_INCREF(None);
 	return None;
 }
 
@@ -1161,7 +1161,7 @@ static object* window_getattr(wp, name)windowobject* wp;
 	if(wp->w_attr != NULL) {
 		object* v = dictlookup(wp->w_attr, name);
 		if(v != NULL) {
-			INCREF(v);
+			PY_INCREF(v);
 			return v;
 		}
 	}
@@ -1223,12 +1223,12 @@ static object* stdwin_open(sw, args)object* sw;
 	if(wp == NULL) {
 		return NULL;
 	}
-	INCREF(title);
+	PY_INCREF(title);
 	wp->w_title = title;
 	wp->w_win = wopen(getstringvalue(title), (void (*)()) NULL);
 	wp->w_attr = NULL;
 	if(wp->w_win == NULL) {
-		DECREF(wp);
+		PY_DECREF(wp);
 		return NULL;
 	}
 	windowlist[tag] = wp;
@@ -1251,7 +1251,7 @@ static object* stdwin_get_poll_event(poll, args)int poll;
 /* again: */
 	if(poll) {
 		if(!wpollevent(&e)) {
-			INCREF(None);
+			PY_INCREF(None);
 			return None;
 		}
 	}
@@ -1276,7 +1276,7 @@ static object* stdwin_get_poll_event(poll, args)int poll;
 		return NULL;
 	}
 	if((w = newintobject((long) e.type)) == NULL) {
-		DECREF(v);
+		PY_DECREF(v);
 		return NULL;
 	}
 	settupleitem(v, 0, w);
@@ -1300,7 +1300,7 @@ static object* stdwin_get_poll_event(poll, args)int poll;
 		}
 #endif
 	}
-	INCREF(w);
+	PY_INCREF(w);
 	settupleitem(v, 1, w);
 	switch(e.type) {
 		case WE_CHAR: {
@@ -1336,11 +1336,11 @@ static object* stdwin_get_poll_event(poll, args)int poll;
 		case WE_LOST_SEL:w = newintobject((long) e.u.sel);
 			break;
 		default:w = None;
-			INCREF(w);
+			PY_INCREF(w);
 			break;
 	}
 	if(w == NULL) {
-		DECREF(v);
+		PY_DECREF(v);
 		return NULL;
 	}
 	settupleitem(v, 2, w);
@@ -1367,7 +1367,7 @@ static object* stdwin_setdefwinpos(sw, args)object* sw;
 		return NULL;
 	}
 	wsetdefwinpos(a[0], a[1]);
-	INCREF(None);
+	PY_INCREF(None);
 	return None;
 }
 
@@ -1379,7 +1379,7 @@ static object* stdwin_setdefwinsize(sw, args)object* sw;
 		return NULL;
 	}
 	wsetdefwinsize(a[0], a[1]);
-	INCREF(None);
+	PY_INCREF(None);
 	return None;
 }
 
@@ -1478,7 +1478,7 @@ static object* stdwin_message(self, args)object* self;
 		return NULL;
 	}
 	wmessage(getstringvalue(msg));
-	INCREF(None);
+	PY_INCREF(None);
 	return None;
 }
 
@@ -1489,7 +1489,7 @@ static object* stdwin_fleep(self, args)object* self;
 		return NULL;
 	}
 	wfleep();
-	INCREF(None);
+	PY_INCREF(None);
 	return None;
 }
 
@@ -1502,7 +1502,7 @@ static object* stdwin_setcutbuffer(self, args)object* self;
 		return NULL;
 	}
 	wsetcutbuffer(i, getstringvalue(str), getstringsize(str));
-	INCREF(None);
+	PY_INCREF(None);
 	return None;
 }
 
@@ -1531,7 +1531,7 @@ static object* stdwin_rotatecutbuffers(self, args)object* self;
 		return NULL;
 	}
 	wrotatecutbuffers(i);
-	INCREF(None);
+	PY_INCREF(None);
 	return None;
 }
 
@@ -1560,7 +1560,7 @@ static object* stdwin_resetselection(self, args)object* self;
 		return NULL;
 	}
 	wresetselection(sel);
-	INCREF(None);
+	PY_INCREF(None);
 	return None;
 }
 

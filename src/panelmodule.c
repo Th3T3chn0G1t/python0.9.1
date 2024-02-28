@@ -134,7 +134,7 @@ static object* panel_getmember(addr, mlist, name)char* addr;
 					break;
 				case T_STRING:
 					if(*(char**) addr == NULL) {
-						INCREF(None);
+						PY_INCREF(None);
 						v = None;
 					}
 					else {
@@ -245,7 +245,7 @@ static object* panel_addpanel(self, args)panelobject* self;
 		return NULL;
 	}
 	pnl_addpanel(self->ob_panel);
-	INCREF(None);
+	PY_INCREF(None);
 	return None;
 }
 
@@ -256,7 +256,7 @@ static object* panel_endgroup(self, args)panelobject* self;
 		return NULL;
 	}
 	pnl_endgroup(self->ob_panel);
-	INCREF(None);
+	PY_INCREF(None);
 	return None;
 }
 
@@ -267,7 +267,7 @@ static object* panel_fixpanel(self, args)panelobject* self;
 		return NULL;
 	}
 	pnl_fixpanel(self->ob_panel);
-	INCREF(None);
+	PY_INCREF(None);
 	return None;
 }
 
@@ -299,7 +299,7 @@ static object* newpanelobject() {
 	}
 	p->ob_panel = pnl_mkpanel();
 	if((p->ob_paneldict = newdictobject()) == NULL) {
-		DECREF(p);
+		PY_DECREF(p);
 		return NULL;
 	}
 	return (object*) p;
@@ -309,7 +309,7 @@ static void panel_dealloc(p)panelobject* p;
 {
 	pnl_delpanel(p->ob_panel);
 	if(p->ob_paneldict != NULL)
-		DECREF(p->ob_paneldict);
+		PY_DECREF(p->ob_paneldict);
 	free(p);
 }
 
@@ -369,7 +369,7 @@ static object* panel_getattr(p, name)panelobject* p;
 
 	v = dictlookup(p->ob_paneldict, name);
 	if(v != NULL) {
-		INCREF(v);
+		PY_INCREF(v);
 		return v;
 	}
 
@@ -671,7 +671,7 @@ static object* actuator_addact(self, args)actuatorobject* self;
 	}
 	p = ((panelobject*) args)->ob_panel;
 	pnl_addact(self->ob_actuator, p);
-	INCREF(None);
+	PY_INCREF(None);
 	return None;
 }
 
@@ -685,7 +685,7 @@ static object* actuator_addsubact(self, args)actuatorobject* self;
 	}
 	a = ((actuatorobject*) args)->ob_actuator;
 	pnl_addsubact(self->ob_actuator, a);
-	INCREF(None);
+	PY_INCREF(None);
 	return None;
 }
 
@@ -697,7 +697,7 @@ static object* actuator_delact(self, args)actuatorobject* self;
 		return NULL;
 	}
 	pnl_delact(self->ob_actuator);
-	INCREF(None);
+	PY_INCREF(None);
 	return None;
 }
 
@@ -709,7 +709,7 @@ static object* actuator_fixact(self, args)actuatorobject* self;
 		return NULL;
 	}
 	pnl_fixact(self->ob_actuator);
-	INCREF(None);
+	PY_INCREF(None);
 	return None;
 }
 
@@ -726,7 +726,7 @@ static object* actuator_tprint(self, args)actuatorobject* self;
 	}
 	tprint(self->ob_actuator, getstringvalue(str));
 	/* XXX Can't turn tprint's errors into exceptions, sorry */
-	INCREF(None);
+	PY_INCREF(None);
 	return None;
 }
 
@@ -743,7 +743,7 @@ static object* newactuatorobject(act)Actuator* act;
 {
 	actuatorobject* a;
 	if(act == NULL) {
-		INCREF(None);
+		PY_INCREF(None);
 		return None;
 	}
 	a = NEWOBJ(actuatorobject, &Actuatortype);
@@ -843,7 +843,7 @@ static object* actuator_getattr(a, name)actuatorobject* a;
 		if(u->dict != NULL) {
 			v = dictlookup(u->dict, name);
 			if(v != NULL) {
-				INCREF(v);
+				PY_INCREF(v);
 				return v;
 			}
 		}
@@ -985,7 +985,7 @@ static object* module_drawpanel(self, args)object* self;
 		return NULL;
 	}
 	pnl_drawpanel();
-	INCREF(None);
+	PY_INCREF(None);
 	return None;
 }
 
@@ -996,7 +996,7 @@ static object* module_needredraw(self, args)object* self;
 		return NULL;
 	}
 	pnl_needredraw();
-	INCREF(None);
+	PY_INCREF(None);
 	return None;
 }
 
@@ -1019,7 +1019,7 @@ static object* module_block(self, args)object* self;
 		return NULL;
 	}
 	pnl_block = flag;
-	INCREF(None);
+	PY_INCREF(None);
 	return None;
 }
 

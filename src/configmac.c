@@ -52,15 +52,6 @@ void initargs(p_argc, p_argv)int* p_argc;
 #endif
 }
 
-void initcalls() {
-}
-
-void donecalls() {
-#ifdef USE_STDWIN
-	wdone();
-#endif
-}
-
 #ifndef PYTHONPATH
 /* On the Mac, the search path is a space-separated list of directories */
 #define PYTHONPATH ": :lib :lib:stdwin :lib:mac :lib:demo"

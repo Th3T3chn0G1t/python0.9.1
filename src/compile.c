@@ -46,11 +46,11 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #define OFF(x) offsetof(codeobject, x)
 
 static struct memberlist code_memberlist[] = {
-		{ "co_code",     T_OBJECT, OFF(co_code) },
-		{ "co_consts",   T_OBJECT, OFF(co_consts) },
-		{ "co_names",    T_OBJECT, OFF(co_names) },
-		{ "co_filename", T_OBJECT, OFF(co_filename) },
-		{ NULL }  /* Sentinel */
+		{ "co_code",     T_OBJECT, OFF(co_code), 0 },
+		{ "co_consts",   T_OBJECT, OFF(co_consts), 0 },
+		{ "co_names",    T_OBJECT, OFF(co_names), 0 },
+		{ "co_filename", T_OBJECT, OFF(co_filename), 0 },
+		{ NULL, 0, 0, 0 }  /* Sentinel */
 };
 
 static object* code_getattr(co, name)codeobject* co;
@@ -106,14 +106,14 @@ static codeobject* newcodeobject(code, consts, names, filename)object* code;
 	}
 	co = NEWOBJ(codeobject, &Codetype);
 	if(co != NULL) {
-		INCREF(code);
+		PY_INCREF(code);
 		co->co_code = (stringobject*) code;
-		INCREF(consts);
+		PY_INCREF(consts);
 		co->co_consts = consts;
-		INCREF(names);
+		PY_INCREF(names);
 		co->co_names = names;
 		if((co->co_filename = newstringobject(filename)) == NULL) {
-			DECREF(co);
+			PY_DECREF(co);
 			co = NULL;
 		}
 	}
@@ -168,9 +168,9 @@ static int com_init(c, filename)struct compiling* c;
 	return 1;
 
 	fail_1:
-	DECREF(c->c_consts);
+	PY_DECREF(c->c_consts);
 	fail_2:
-	DECREF(c->c_code);
+	PY_DECREF(c->c_code);
 	fail_3:
 	return 0;
 }
@@ -246,7 +246,6 @@ static void com_backpatch(c, anchor)struct compiling* c;
 {
 	unsigned char* code = (unsigned char*) getstringvalue(c->c_code);
 	int target = c->c_nexti;
-	int lastanchor = 0;
 	int dist;
 	int prev;
 	for(;;) {
@@ -258,7 +257,6 @@ static void com_backpatch(c, anchor)struct compiling* c;
 		if(!prev) {
 			break;
 		}
-		lastanchor = anchor;
 		anchor -= prev;
 	}
 }
@@ -315,7 +313,7 @@ static void com_addopname(c, op, n)struct compiling* c;
 	}
 	else {
 		i = com_addname(c, v);
-		DECREF(v);
+		PY_DECREF(v);
 	}
 	com_addoparg(c, op, i);
 }
@@ -405,7 +403,7 @@ static object* parsestr(s)char* s;
 				break;
 			case 'x':
 				if(isxdigit(*s)) {
-					sscanf(s, "%x", &c);
+					sscanf(s, "%x", (unsigned int*) &c);
 					*p++ = c;
 					do {
 						s++;
@@ -427,7 +425,6 @@ static void com_list_constructor(c, n)struct compiling* c;
 {
 	int len;
 	int i;
-	object * v, *w;
 	if(TYPE(n) != testlist) REQ(n, exprlist);
 	/* exprlist: expr (',' expr)* [',']; likewise for testlist */
 	len = (NCH(n) + 1) / 2;
@@ -474,7 +471,7 @@ static void com_atom(c, n)struct compiling* c;
 			}
 			else {
 				i = com_addconst(c, v);
-				DECREF(v);
+				PY_DECREF(v);
 			}
 			com_addoparg(c, LOAD_CONST, i);
 			break;
@@ -485,7 +482,7 @@ static void com_atom(c, n)struct compiling* c;
 			}
 			else {
 				i = com_addconst(c, v);
-				DECREF(v);
+				PY_DECREF(v);
 			}
 			com_addoparg(c, LOAD_CONST, i);
 			break;
@@ -859,7 +856,6 @@ static void com_assign_trailer(c, n, assigning)struct compiling* c;
 											   node* n;
 											   int assigning;
 {
-	char* name;
 	REQ(n, trailer);
 	switch(TYPE(CHILD(n, 0))) {
 		case LPAR: /* '(' [exprlist] ')' */
@@ -1402,14 +1398,14 @@ static void com_funcdef(c, n)struct compiling* c;
 		com_addoparg(c, LOAD_CONST, i);
 		com_addbyte(c, BUILD_FUNCTION);
 		com_addopname(c, STORE_NAME, CHILD(n, 1));
-		DECREF(v);
+		PY_DECREF(v);
 	}
 }
 
 static void com_bases(c, n)struct compiling* c;
 						   node* n;
 {
-	int i, nbases;
+	int i;
 	REQ(n, baselist);
 	/*
 	baselist: atom arguments (',' atom arguments)*
@@ -1448,7 +1444,7 @@ static void com_classdef(c, n)struct compiling* c;
 		com_addbyte(c, UNARY_CALL);
 		com_addbyte(c, BUILD_CLASS);
 		com_addopname(c, STORE_NAME, CHILD(n, 1));
-		DECREF(v);
+		PY_DECREF(v);
 	}
 }
 

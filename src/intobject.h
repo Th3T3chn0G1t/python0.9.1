@@ -61,7 +61,7 @@ All values of type Boolean must point to either of these; but in
 contexts where integers are required they are integers (valued 0 and 1).
 Hope these macros don't conflict with other people's.
 
-Don't forget to apply INCREF() when returning True or False!!!
+Don't forget to apply PY_INCREF() when returning True or False!!!
 */
 
 extern intobject FalseObject, TrueObject; /* Don't use these directly */

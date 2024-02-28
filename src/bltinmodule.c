@@ -50,6 +50,8 @@ object* SystemError;
 object* KeyboardInterrupt;
 
 static object* builtin_abs(object* self, object* v) {
+	(void) self;
+
 	/* XXX This should be a method in the as_number struct in the type */
 	if(v == NULL) {
 		/* */
@@ -75,6 +77,8 @@ static object* builtin_chr(object* self, object* v) {
 	long x;
 	char s[1];
 
+	(void) self;
+
 	if(v == NULL || !is_intobject(v)) {
 		err_setstr(TypeError, "chr() must have int argument");
 		return NULL;
@@ -94,7 +98,9 @@ static object* builtin_chr(object* self, object* v) {
 static object* builtin_dir(object* self, object* v) {
 	object* d;
 
-	if(v == NULL) { d = getlocals(); }
+	(void) self;
+
+	if(v == NULL) d = getlocals();
 	else {
 		if(!is_moduleobject(v)) {
 			err_setstr(TypeError, "dir() argument, must be module or absent");
@@ -106,7 +112,7 @@ static object* builtin_dir(object* self, object* v) {
 
 	v = getdictkeys(d);
 	if(sortlist(v) != 0) {
-		DECREF(v);
+		PY_DECREF(v);
 		v = NULL;
 	}
 
@@ -117,6 +123,8 @@ static object* builtin_divmod(object* self, object* v) {
 	object* x;
 	object* y;
 	long xi, yi, xdivy, xmody;
+
+	(void) self;
 
 	if(v == NULL || !is_tupleobject(v) || gettuplesize(v) != 2) {
 		err_setstr(TypeError, "divmod() requires 2 int arguments");
@@ -144,7 +152,7 @@ static object* builtin_divmod(object* self, object* v) {
 
 	xmody = xi - xdivy * yi;
 
-	if(xmody < 0 && yi > 0 || xmody > 0 && yi < 0) {
+	if((xmody < 0 && yi > 0) || (xmody > 0 && yi < 0)) {
 		xmody += yi;
 		xdivy -= 1;
 	}
@@ -183,8 +191,8 @@ static object* exec_eval(object* v, int start) {
 	}
 
 	if(str == NULL || !is_stringobject(str) ||
-	   globals != NULL && !is_dictobject(globals) ||
-	   locals != NULL && !is_dictobject(locals)) {
+	   (globals != NULL && !is_dictobject(globals)) ||
+	   (locals != NULL && !is_dictobject(locals))) {
 
 		err_setstr(
 				TypeError, "exec/eval arguments must be string[,dict[,dict]]");
@@ -195,19 +203,25 @@ static object* exec_eval(object* v, int start) {
 }
 
 static object* builtin_eval(object* self, object* v) {
+	(void) self;
+
 	return exec_eval(v, eval_input);
 }
 
 static object* builtin_exec(object* self, object* v) {
+	(void) self;
+
 	return exec_eval(v, file_input);
 }
 
 static object* builtin_float(object* self, object* v) {
+	(void) self;
+
 	if(v == NULL) {
 		/* */
 	}
 	else if(is_floatobject(v)) {
-		INCREF(v);
+		PY_INCREF(v);
 		return v;
 	}
 	else if(is_intobject(v)) {
@@ -222,10 +236,10 @@ static object* builtin_float(object* self, object* v) {
 static object* builtin_input(object* self, object* v) {
 	FILE* in = sysgetfile("stdin", stdin);
 	FILE* out = sysgetfile("stdout", stdout);
-	node* n;
-	int err;
 	object* m;
 	object* d;
+
+	(void) self;
 
 	flushline();
 
@@ -238,11 +252,13 @@ static object* builtin_input(object* self, object* v) {
 }
 
 static object* builtin_int(object* self, object* v) {
+	(void) self;
+
 	if(v == NULL) {
 		/* */
 	}
 	else if(is_intobject(v)) {
-		INCREF(v);
+		PY_INCREF(v);
 		return v;
 	}
 	else if(is_floatobject(v)) {
@@ -257,6 +273,8 @@ static object* builtin_int(object* self, object* v) {
 static object* builtin_len(object* self, object* v) {
 	long len;
 	typeobject * tp;
+
+	(void) self;
 
 	if(v == NULL) {
 		err_setstr(TypeError, "len() without argument");
@@ -305,33 +323,39 @@ static object* min_max(object* v, int sign) {
 		return NULL;
 	}
 
-	w = (*sq->sq_item)(v, 0); /* Implies INCREF */
+	w = (*sq->sq_item)(v, 0); /* Implies PY_INCREF */
 
 	for(i = 1; i < n; i++) {
-		x = (*sq->sq_item)(v, i); /* Implies INCREF */
+		x = (*sq->sq_item)(v, i); /* Implies PY_INCREF */
 		cmp = cmpobject(x, w);
 
 		if(cmp * sign > 0) {
-			DECREF(w);
+			PY_DECREF(w);
 			w = x;
 		}
-		else DECREF(x);
+		else PY_DECREF(x);
 	}
 
 	return w;
 }
 
 static object* builtin_min(object* self, object* v) {
+	(void) self;
+
 	return min_max(v, -1);
 }
 
 static object* builtin_max(object* self, object* v) {
+	(void) self;
+
 	return min_max(v, 1);
 }
 
 static object* builtin_open(object* self, object* v) {
 	object* name;
 	object* mode;
+
+	(void) self;
 
 	if(v == NULL || !is_tupleobject(v) || gettuplesize(v) != 2 ||
 	   !is_stringobject(name = gettupleitem(v, 0)) ||
@@ -346,6 +370,8 @@ static object* builtin_open(object* self, object* v) {
 }
 
 static object* builtin_ord(object* self, object* v) {
+	(void) self;
+
 	if(v == NULL || !is_stringobject(v)) {
 		err_setstr(TypeError, "ord() must have string argument");
 		return NULL;
@@ -363,6 +389,8 @@ static object* builtin_range(object* self, object* v) {
 	static char* errmsg = "range() requires 1-3 int arguments";
 	int i, n;
 	long ilow, ihigh, istep;
+
+	(void) self;
 
 	if(v != NULL && is_intobject(v)) {
 		ilow = 0;
@@ -418,7 +446,7 @@ static object* builtin_range(object* self, object* v) {
 		object* w = newintobject(ilow);
 
 		if(w == NULL) {
-			DECREF(v);
+			PY_DECREF(v);
 			return NULL;
 		}
 
@@ -432,9 +460,10 @@ static object* builtin_range(object* self, object* v) {
 static object* builtin_raw_input(object* self, object* v) {
 	FILE* in = sysgetfile("stdin", stdin);
 	FILE* out = sysgetfile("stdout", stdout);
-	char* p;
 	int err;
 	int n = 1000;
+
+	(void) self;
 
 	flushline();
 
@@ -445,7 +474,7 @@ static object* builtin_raw_input(object* self, object* v) {
 	if(v != NULL) {
 		if((err = fgets_intr(getstringvalue(v), n + 1, in)) != E_OK) {
 			err_input(err);
-			DECREF(v);
+			PY_DECREF(v);
 			return NULL;
 		}
 		else {
@@ -461,17 +490,21 @@ static object* builtin_raw_input(object* self, object* v) {
 }
 
 static object* builtin_reload(object* self, object* v) {
+	(void) self;
+
 	return reload_module(v);
 }
 
 static object* builtin_type(object* self, object* v) {
+	(void) self;
+
 	if(v == NULL) {
 		err_setstr(TypeError, "type() requres an argument");
 		return NULL;
 	}
 
 	v = (object*) v->ob_type;
-	INCREF(v);
+	PY_INCREF(v);
 	return v;
 }
 
@@ -525,13 +558,13 @@ static void initerrors(void) {
 }
 
 void doneerrors(void) {
-	DECREF(RuntimeError);
-	DECREF(EOFError);
-	DECREF(TypeError);
-	DECREF(MemoryError);
-	DECREF(NameError);
-	DECREF(SystemError);
-	DECREF(KeyboardInterrupt);
+	PY_DECREF(RuntimeError);
+	PY_DECREF(EOFError);
+	PY_DECREF(TypeError);
+	PY_DECREF(MemoryError);
+	PY_DECREF(NameError);
+	PY_DECREF(SystemError);
+	PY_DECREF(KeyboardInterrupt);
 }
 
 void initbuiltin(void) {
@@ -539,12 +572,12 @@ void initbuiltin(void) {
 
 	m = initmodule("builtin", builtin_methods);
 	builtin_dict = getmoduledict(m);
-	INCREF(builtin_dict);
+	PY_INCREF(builtin_dict);
 
 	initerrors();
 	(void) dictinsert(builtin_dict, "None", None);
 }
 
 void donebuiltin(void) {
-	DECREF(builtin_dict);
+	PY_DECREF(builtin_dict);
 }

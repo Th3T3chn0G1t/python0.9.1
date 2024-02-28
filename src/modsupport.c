@@ -48,7 +48,7 @@ object* initmodule(name, methods)char* name;
 			fprintf(stderr, "initializing module: %s\n", name);
 			fatal("can't initialize module");
 		}
-		DECREF(v);
+		PY_DECREF(v);
 	}
 	return m;
 }
@@ -192,7 +192,7 @@ int getstrintintarg(object* v, object* a, int* b, int* c) {
 	if(v == NULL || !is_tupleobject(v) || gettuplesize(v) != 3) {
 		return err_badarg();
 	}
-	return getstrarg(gettupleitem(v, 0), a) &&
+	return getstrarg(gettupleitem(v, 0), &a) &&
 		   getintarg(gettupleitem(v, 1), b) && getintarg(gettupleitem(v, 2), c);
 }
 

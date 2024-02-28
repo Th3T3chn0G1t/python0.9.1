@@ -70,7 +70,7 @@ static object* xx_demo(self, args)xxobject* self;
 	if(!getnoarg(args)) {
 		return NULL;
 	}
-	INCREF(None);
+	PY_INCREF(None);
 	return None;
 }
 
@@ -84,7 +84,7 @@ static object* xx_getattr(xp, name)xxobject* xp;
 	if(xp->x_attr != NULL) {
 		object* v = dictlookup(xp->x_attr, name);
 		if(v != NULL) {
-			INCREF(v);
+			PY_INCREF(v);
 			return v;
 		}
 	}

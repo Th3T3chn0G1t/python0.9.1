@@ -54,19 +54,14 @@ int main(argc, argv)int argc;
 					char** argv;
 {
 	grammar* g;
-	node* n;
 	FILE* fp;
 	char* filename;
 
-#ifdef THINK_C
-	filename = askfile();
-#else
 	if(argc != 4) {
 		fprintf(stderr, "usage: %s grammar outsource outheader\n", argv[0]);
 		exit(2);
 	}
 	filename = argv[1];
-#endif
 	g = getgrammar(filename);
 	fp = fopen(argv[2], "w");
 	if(fp == NULL) {

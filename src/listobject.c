@@ -47,7 +47,7 @@ object* newlistobject(size)int size;
 	else {
 		op->ob_item = malloc(size * sizeof(object*));
 		if(op->ob_item == NULL) {
-			free((void*) op);
+			free(op);
 			return err_nomem();
 		}
 	}
@@ -78,7 +78,7 @@ object* getlistitem(op, i)object* op;
 		err_badcall();
 		return NULL;
 	}
-	if(i < 0 || i >= ((listobject*) op)->ob_size) {
+	if(i < 0 || i >= (int) ((listobject*) op)->ob_size) {
 		err_setstr(IndexError, "list index out of range");
 		return NULL;
 	}
@@ -92,20 +92,20 @@ int setlistitem(op, i, newitem)object* op;
 	object* olditem;
 	if(!is_listobject(op)) {
 		if(newitem != NULL)
-			DECREF(newitem);
+			PY_DECREF(newitem);
 		err_badcall();
 		return -1;
 	}
-	if(i < 0 || i >= ((listobject*) op)->ob_size) {
+	if(i < 0 || i >= (int) ((listobject*) op)->ob_size) {
 		if(newitem != NULL)
-			DECREF(newitem);
+			PY_DECREF(newitem);
 		err_setstr(IndexError, "list assignment index out of range");
 		return -1;
 	}
 	olditem = ((listobject*) op)->ob_item[i];
 	((listobject*) op)->ob_item[i] = newitem;
 	if(olditem != NULL)
-		DECREF(olditem);
+		PY_DECREF(olditem);
 	return 0;
 }
 
@@ -129,13 +129,14 @@ static int ins1(self, where, v)listobject* self;
 	if(where < 0) {
 		where = 0;
 	}
-	if(where > self->ob_size) {
-		where = self->ob_size;
+	/* TODO: Address massive amount of `(int)' casting from old code. */
+	if(where > (int) self->ob_size) {
+		where = (int) self->ob_size;
 	}
-	for(i = self->ob_size; --i >= where;) {
+	for(i = (int) self->ob_size; --i >= where;) {
 		items[i + 1] = items[i];
 	}
-	INCREF(v);
+	PY_INCREF(v);
 	items[where] = v;
 	self->ob_item = items;
 	self->ob_size++;
@@ -169,14 +170,14 @@ int addlistitem(op, newitem)object* op;
 static void list_dealloc(op)listobject* op;
 {
 	int i;
-	for(i = 0; i < op->ob_size; i++) {
+	for(i = 0; i < (int) op->ob_size; i++) {
 		if(op->ob_item[i] != NULL)
-			DECREF(op->ob_item[i]);
+			PY_DECREF(op->ob_item[i]);
 	}
 	if(op->ob_item != NULL) {
-		free((void*) op->ob_item);
+		free(op->ob_item);
 	}
-	free((void*) op);
+	free(op);
 }
 
 static void list_print(op, fp, flags)listobject* op;
@@ -185,7 +186,7 @@ static void list_print(op, fp, flags)listobject* op;
 {
 	int i;
 	fprintf(fp, "[");
-	for(i = 0; i < op->ob_size && !StopPrint; i++) {
+	for(i = 0; i < (int) op->ob_size && !StopPrint; i++) {
 		if(i > 0) {
 			fprintf(fp, ", ");
 		}
@@ -200,18 +201,18 @@ object* list_repr(v)listobject* v;
 	int i;
 	s = newstringobject("[");
 	comma = newstringobject(", ");
-	for(i = 0; i < v->ob_size && s != NULL; i++) {
+	for(i = 0; i < (int) v->ob_size && s != NULL; i++) {
 		if(i > 0) {
 			joinstring(&s, comma);
 		}
 		t = reprobject(v->ob_item[i]);
 		joinstring(&s, t);
-		DECREF(t);
+		PY_DECREF(t);
 	}
-	DECREF(comma);
+	PY_DECREF(comma);
 	t = newstringobject("]");
 	joinstring(&s, t);
-	DECREF(t);
+	PY_DECREF(t);
 	return s;
 }
 
@@ -236,11 +237,11 @@ static int list_length(a)listobject* a;
 static object* list_item(a, i)listobject* a;
 							  int i;
 {
-	if(i < 0 || i >= a->ob_size) {
+	if(i < 0 || i >= (int) a->ob_size) {
 		err_setstr(IndexError, "list index out of range");
 		return NULL;
 	}
-	INCREF(a->ob_item[i]);
+	PY_INCREF(a->ob_item[i]);
 	return a->ob_item[i];
 }
 
@@ -252,8 +253,8 @@ static object* list_slice(a, ilow, ihigh)listobject* a;
 	if(ilow < 0) {
 		ilow = 0;
 	}
-	else if(ilow > a->ob_size) {
-		ilow = a->ob_size;
+	else if(ilow > (int) a->ob_size) {
+		ilow = (int) a->ob_size;
 	}
 	if(ihigh < 0) {
 		ihigh = 0;
@@ -261,8 +262,8 @@ static object* list_slice(a, ilow, ihigh)listobject* a;
 	if(ihigh < ilow) {
 		ihigh = ilow;
 	}
-	else if(ihigh > a->ob_size) {
-		ihigh = a->ob_size;
+	else if(ihigh > (int) a->ob_size) {
+		ihigh = (int) a->ob_size;
 	}
 	np = (listobject*) newlistobject(ihigh - ilow);
 	if(np == NULL) {
@@ -270,7 +271,7 @@ static object* list_slice(a, ilow, ihigh)listobject* a;
 	}
 	for(i = ilow; i < ihigh; i++) {
 		object* v = a->ob_item[i];
-		INCREF(v);
+		PY_INCREF(v);
 		np->ob_item[i - ilow] = v;
 	}
 	return (object*) np;
@@ -282,60 +283,64 @@ static object* list_concat(a, bb)listobject* a;
 	int size;
 	int i;
 	listobject* np;
+	listobject* b;
 	if(!is_listobject(bb)) {
 		err_badarg();
 		return NULL;
 	}
-#define b ((listobject *)bb)
+	b = ((listobject*) bb);
 	size = a->ob_size + b->ob_size;
 	np = (listobject*) newlistobject(size);
 	if(np == NULL) {
 		return err_nomem();
 	}
-	for(i = 0; i < a->ob_size; i++) {
+	for(i = 0; i < (int) a->ob_size; i++) {
 		object* v = a->ob_item[i];
-		INCREF(v);
+		PY_INCREF(v);
 		np->ob_item[i] = v;
 	}
-	for(i = 0; i < b->ob_size; i++) {
+	for(i = 0; i < (int) b->ob_size; i++) {
 		object* v = b->ob_item[i];
-		INCREF(v);
+		PY_INCREF(v);
 		np->ob_item[i + a->ob_size] = v;
 	}
 	return (object*) np;
-#undef b
 }
 
 /* Added by Andrew Dalke, 27 March 2009 to handle the needed forward declaration for gcc*/
-static int list_ass_slice(listobject* a, int ilow, int ihigh, object* v);
+static int list_ass_slice(object* a, int ilow, int ihigh, object* v);
 
 
 static int list_ass_item(a, i, v)listobject* a;
 								 int i;
 								 object* v;
 {
-	if(i < 0 || i >= a->ob_size) {
+	if(i < 0 || i >= (int) a->ob_size) {
 		err_setstr(IndexError, "list assignment index out of range");
 		return -1;
 	}
 	if(v == NULL) {
-		return list_ass_slice(a, i, i + 1, v);
+		return list_ass_slice((object*) a, i, i + 1, v);
 	}
-	INCREF(v);
-	DECREF(a->ob_item[i]);
+	PY_INCREF(v);
+	PY_DECREF(a->ob_item[i]);
 	a->ob_item[i] = v;
 	return 0;
 }
 
-static int list_ass_slice(a, ilow, ihigh, v)listobject* a;
+static int list_ass_slice(aa, ilow, ihigh, v)object* aa;
 											int ilow, ihigh;
 											object* v;
 {
 	object** item;
+	listobject* a;
+	listobject* b;
 	int n; /* Size of replacement list */
 	int d; /* Change in size */
 	int k; /* Loop index */
-#define b ((listobject *)v)
+
+	a = ((listobject*) aa);
+	b = ((listobject*) v);
 	if(v == NULL) {
 		n = 0;
 	}
@@ -349,8 +354,8 @@ static int list_ass_slice(a, ilow, ihigh, v)listobject* a;
 	if(ilow < 0) {
 		ilow = 0;
 	}
-	else if(ilow > a->ob_size) {
-		ilow = a->ob_size;
+	else if(ilow > (int) a->ob_size) {
+		ilow = (int) a->ob_size;
 	}
 	if(ihigh < 0) {
 		ihigh = 0;
@@ -358,16 +363,16 @@ static int list_ass_slice(a, ilow, ihigh, v)listobject* a;
 	if(ihigh < ilow) {
 		ihigh = ilow;
 	}
-	else if(ihigh > a->ob_size) {
-		ihigh = a->ob_size;
+	else if(ihigh > (int) a->ob_size) {
+		ihigh = (int) a->ob_size;
 	}
 	item = a->ob_item;
 	d = n - (ihigh - ilow);
-	if(d <= 0) { /* Delete -d items; DECREF ihigh-ilow items */
+	if(d <= 0) { /* Delete -d items; PY_DECREF ihigh-ilow items */
 		for(k = ilow; k < ihigh; k++)
-			DECREF(item[k]);
+			PY_DECREF(item[k]);
 		if(d < 0) {
-			for(/*k = ihigh*/; k < a->ob_size; k++) {
+			for(/*k = ihigh*/; k < (int) a->ob_size; k++) {
 				item[k + d] = item[k];
 			}
 			a->ob_size += d;
@@ -376,7 +381,7 @@ static int list_ass_slice(a, ilow, ihigh, v)listobject* a;
 			a->ob_item = item;
 		}
 	}
-	else { /* Insert d items; DECREF ihigh-ilow items */
+	else { /* Insert d items; PY_DECREF ihigh-ilow items */
 		/* TODO: Leaky realloc. */
 		item = realloc(item, (a->ob_size + d) * sizeof(object*));
 		if(item == NULL) {
@@ -387,17 +392,16 @@ static int list_ass_slice(a, ilow, ihigh, v)listobject* a;
 			item[k + d] = item[k];
 		}
 		for(/*k = ihigh-1*/; k >= ilow; --k)
-			DECREF(item[k]);
+			PY_DECREF(item[k]);
 		a->ob_item = item;
 		a->ob_size += d;
 	}
 	for(k = 0; k < n; k++, ilow++) {
 		object* w = b->ob_item[k];
-		INCREF(w);
+		PY_INCREF(w);
 		item[ilow] = w;
 	}
 	return 0;
-#undef b
 }
 
 static object* ins(self, where, v)listobject* self;
@@ -407,7 +411,7 @@ static object* ins(self, where, v)listobject* self;
 	if(ins1(self, where, v) != 0) {
 		return NULL;
 	}
-	INCREF(None);
+	PY_INCREF(None);
 	return None;
 }
 
@@ -452,7 +456,7 @@ static object* listsort(self, args)listobject* self;
 	if(err_occurred()) {
 		return NULL;
 	}
-	INCREF(None);
+	PY_INCREF(None);
 	return None;
 }
 
@@ -466,7 +470,7 @@ int sortlist(v)object* v;
 	if(v == NULL) {
 		return -1;
 	}
-	DECREF(v);
+	PY_DECREF(v);
 	return 0;
 }
 

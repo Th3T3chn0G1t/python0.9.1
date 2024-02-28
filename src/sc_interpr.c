@@ -86,11 +86,11 @@ static void xCleanUpLoops(sc_pb)struct sc_ProcessBlock* sc_pb;
 	prev = sc_pb->loops;
 	this = sc_pb->loops->l_next;
 	while(this) {
-		free((char*) prev);
+		free(prev);
 		prev = this;
 		this = this->l_next;
 	}
-	free((char*) prev);
+	free(prev);
 }
 
 static int findendloop(label, sc_pb)TscOperand label;
@@ -143,7 +143,7 @@ static int findloop(ret, label, sc_pb)TpsLoop* ret;
 		**       the instruction after the XXXLoop.
 		*/
 		if((newloop->l_endaddr = findendloop(label, sc_pb)) < 0) {
-			free((char*) newloop);
+			free(newloop);
 			err_scerr(NoEndLoop);
 			return -1;
 		}
@@ -216,7 +216,7 @@ static void reinit(sc_pb)struct sc_ProcessBlock* sc_pb;
 
 	sc_pb->bp = 0;
 	for(i = 0; i < sc_pb->sp; i++) {
-		DECREF(sc_pb->stack[i]);
+		PY_DECREF(sc_pb->stack[i]);
 	}
 	sc_pb->sp = 0;
 }
@@ -228,7 +228,7 @@ static void UnInit(self, sc_pb)object* self;
 
 	free(sc_pb->buffer);
 	reinit(sc_pb);
-	free((char*) sc_pb->stack);
+	free(sc_pb->stack);
 	xCleanUpLoops(sc_pb);
 }
 
@@ -259,7 +259,7 @@ static int xPush(element, sc_pb)object* element;
 		err_scerr(ElementIsNull);
 		return -1;
 	}
-	INCREF(element);
+	PY_INCREF(element);
 #ifdef STACK_TRACE
 	printf("pushed :");
 	printobject(element, stdout, 0);
@@ -325,7 +325,7 @@ static int xTrans(self, cmd, sc_pb)object* self;
 			return -1;
 		}
 		err_scerrset(TransError, v, "Trans");
-		DECREF(v);
+		PY_DECREF(v);
 		return -1;
 	}
 	reinit(sc_pb);
@@ -371,22 +371,22 @@ static int xUnpack(size, sc_pb)TscOperand size;
 	if((tuple = stacktop(sc_pb)) == NULL) {
 		return -1;
 	}
-	INCREF(tuple);
+	PY_INCREF(tuple);
 	if(xPop((TscOperand) 1, sc_pb) != 0) {
-		DECREF(tuple);
+		PY_DECREF(tuple);
 		return -1;
 	}
 	for(i = 0; i < (int) size; i++) {
 		if((element = gettupleitem(tuple, i)) == NULL) {
-			DECREF(tuple);
+			PY_DECREF(tuple);
 			return -1;
 		}
 		if(xPush(element, sc_pb) != 0) {
-			DECREF(tuple);
+			PY_DECREF(tuple);
 			return -1;
 		}
 	}
-	DECREF(tuple);
+	PY_DECREF(tuple);
 	return 0;
 }
 
@@ -440,10 +440,10 @@ static int xStringS(sc_pb)struct sc_ProcessBlock* sc_pb;
 		return -1;
 	}
 	if(xPush(size, sc_pb) != 0) {
-		DECREF(size);
+		PY_DECREF(size);
 		return -1;
 	}
-	DECREF(size);
+	PY_DECREF(size);
 	return 0;
 }
 
@@ -471,10 +471,10 @@ static int xListS(sc_pb)struct sc_ProcessBlock* sc_pb;
 		return -1;
 	}
 	if(xPush(size, sc_pb) != 0) {
-		DECREF(size);
+		PY_DECREF(size);
 		return -1;
 	}
-	DECREF(size);
+	PY_DECREF(size);
 	return 0;
 }
 
@@ -679,7 +679,7 @@ static int xLoopGet(label, sc_pb)TscOperand label;
 
 		sc_pb->pc = this->l_endaddr;
 		ret = xPush(this->l_list, sc_pb);
-		DECREF(this->l_list);
+		PY_DECREF(this->l_list);
 		return ret;
 	}
 	return 0;
@@ -734,7 +734,7 @@ static int xPutI(flags, sc_pb)TscOperand flags;
 					return -1;
 				}
 				err_scerrset(FlagError, integer, "Ailword");
-				DECREF(integer);
+				PY_DECREF(integer);
 				return -1;
 		}
 	}
@@ -802,7 +802,7 @@ static int xPutI(flags, sc_pb)TscOperand flags;
 					return -1;
 				}
 				err_scerrset(FlagError, x, "PutI");
-				DECREF(x);
+				PY_DECREF(x);
 				return -1;
 			}
 		}
@@ -844,7 +844,7 @@ static int xDup(n, sc_pb)TscOperand n;
 			return -1;
 		}
 		err_scerrset(RangeError, i, "Dup");
-		DECREF(i);
+		PY_DECREF(i);
 		return -1;
 	}
 	return xPush(sc_pb->stack[sc_pb->sp - n], sc_pb);
@@ -866,7 +866,7 @@ static int xPop(n, sc_pb)TscOperand n;
 		printobject(sc_pb->stack[sc_pb->sp], stdout, 0);
 		printf("\n");
 #endif
-		DECREF(sc_pb->stack[sc_pb->sp]);
+		PY_DECREF(sc_pb->stack[sc_pb->sp]);
 	}
 	return 0;
 }
@@ -902,13 +902,13 @@ static int xPack(size, sc_pb)TscOperand size;
 		if(settupleitem(tuple, (int) size - i - 1, element) != 0) {
 			return -1;
 		}
-		INCREF(element);
+		PY_INCREF(element);
 		if(xPop((TscOperand) 1, sc_pb) != 0) {
 			return -1;
 		}
 	}
 	ret = xPush(tuple, sc_pb);
-	DECREF(tuple);
+	PY_DECREF(tuple);
 	return ret;
 }
 
@@ -939,7 +939,7 @@ static int xGetVS(sc_pb)struct sc_ProcessBlock* sc_pb;
 	if(xPush(string, sc_pb) != 0) {
 		return -1;
 	}
-	DECREF(string);
+	PY_DECREF(string);
 	return 0;
 }
 
@@ -960,7 +960,7 @@ static int xGetFS(size, sc_pb)TscOperand size;
 	if(xPush(string, sc_pb) != 0) {
 		return -1;
 	}
-	DECREF(string);
+	PY_DECREF(string);
 	return 0;
 }
 
@@ -988,7 +988,7 @@ static int xGetI(flags, sc_pb)TscOperand flags;
 					return -1;
 				}
 				err_scerrset(FlagError, integer, "Ailword");
-				DECREF(integer);
+				PY_DECREF(integer);
 				return -1;
 		}
 	}
@@ -1051,7 +1051,7 @@ static int xGetI(flags, sc_pb)TscOperand flags;
 					return -1;
 				}
 				err_scerrset(FlagError, integer, "GetI");
-				DECREF(integer);
+				PY_DECREF(integer);
 				return -1;
 			}
 		}
@@ -1060,10 +1060,10 @@ static int xGetI(flags, sc_pb)TscOperand flags;
 		return -1;
 	}
 	if(xPush(integer, sc_pb) != 0) {
-		DECREF(integer);
+		PY_DECREF(integer);
 		return -1;
 	}
-	DECREF(integer);
+	PY_DECREF(integer);
 	return 0;
 }
 
@@ -1120,15 +1120,15 @@ static int xEqual(sc_pb)struct sc_ProcessBlock* sc_pb;
 		if((tmptuple = newtupleobject(2)) == NULL) {
 			return -1;
 		}
-		INCREF(int1);
+		PY_INCREF(int1);
 		if(settupleitem(tmptuple, 0, int1) != 0) {
-			DECREF(tmptuple);
-			DECREF(int1);
+			PY_DECREF(tmptuple);
+			PY_DECREF(int1);
 			return -1;
 		}
 		if(settupleitem(tmptuple, 1, int2) != 0) {
-			DECREF(tmptuple);
-			DECREF(int2);
+			PY_DECREF(tmptuple);
+			PY_DECREF(int2);
 			return -1;
 		}
 		return err_scerrset(SizeError, tmptuple, "Equal");
@@ -1151,7 +1151,7 @@ object* sc_interpreter(self, args)object* self, * args;
 	sc_pb.datsize = datasize;
 	sc_pb.pc += sizeof(TscOpcode);
 	if(opcode != BufSize) {
-		free((char*) sc_pb.stack);
+		free(sc_pb.stack);
 		return err_scerr(NoBufSize);
 	}
 	memcpy(&operand, &sc_pb.data[sc_pb.pc], sizeof(TscOperand));
@@ -1159,7 +1159,7 @@ object* sc_interpreter(self, args)object* self, * args;
 	sc_pb.buffer = malloc(operand);
 	sc_pb.maxbufsize = (int) operand;
 	if(sc_pb.buffer == NULL) {
-		free((char*) sc_pb.stack);
+		free(sc_pb.stack);
 		return err_nomem();
 	}
 	memcpy(&opcode, &sc_pb.data[sc_pb.pc], sizeof(TscOpcode));
@@ -1295,7 +1295,7 @@ object* sc_interpreter(self, args)object* self, * args;
 				}
 				ret = xPush(element, &sc_pb);
 				if(ret == 0)
-					DECREF(element);
+					PY_DECREF(element);
 			}
 				break;
 
@@ -1317,11 +1317,11 @@ object* sc_interpreter(self, args)object* self, * args;
 		}
 	}
 	if(sc_pb.sp > 0) {
-		INCREF(sc_pb.stack[sc_pb.sp - 1]);
+		PY_INCREF(sc_pb.stack[sc_pb.sp - 1]);
 		returnobject = sc_pb.stack[sc_pb.sp - 1];
 	}
 	else {
-		INCREF(None);
+		PY_INCREF(None);
 		returnobject = None;
 	}
 	UnInit(self, &sc_pb);

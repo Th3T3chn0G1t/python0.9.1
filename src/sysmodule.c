@@ -37,9 +37,12 @@ Data members:
 - ps1, ps2: optional primary and secondary prompts (strings)
 */
 
+#include <stdlib.h>
+
 #include "allobjects.h"
 
 #include "sysmodule.h"
+#include "pythonrun.h"
 #include "import.h"
 #include "modsupport.h"
 
@@ -61,13 +64,11 @@ object* sysget(name)char* name;
 	return dictlookup(sysdict, name);
 }
 
-extern void donesys();
-
-void donesys() {
-	DECREF(sysin);
-	DECREF(sysout);
-	DECREF(syserr);
-	DECREF(sysdict);
+void donesys(void) {
+	PY_DECREF(sysin);
+	PY_DECREF(sysout);
+	PY_DECREF(syserr);
+	PY_DECREF(sysdict);
 }
 
 FILE* sysgetfile(name, def)char* name;
@@ -95,11 +96,12 @@ int sysset(name, v)char* name;
 	}
 }
 
-static object* sys_exit(self, args)object* self;
-								   object* args;
-{
+static object* sys_exit(object* self, object* args) {
 	int sts;
-	DECREF(sysdict);
+
+	(void) self;
+
+	PY_DECREF(sysdict);
 	if(!getintarg(args, &sts)) {
 		return NULL;
 	}
@@ -116,7 +118,7 @@ static struct methodlist sys_methods[] = {
 void initsys() {
 	object* m = initmodule("sys", sys_methods);
 	sysdict = getmoduledict(m);
-	INCREF(sysdict);
+	PY_INCREF(sysdict);
 	/* NB keep an extra ref to the std files to avoid closing them
 	   when the user deletes them */
 	/* XXX File objects should have a "don't close" flag instead */
@@ -159,7 +161,7 @@ static object* makepathobject(path, delim)char* path;
 		} /* End of string */
 		w = newsizedstringobject(path, (int) (p - path));
 		if(w == NULL) {
-			DECREF(v);
+			PY_DECREF(v);
 			return NULL;
 		}
 		setlistitem(v, i, w);
@@ -171,8 +173,7 @@ static object* makepathobject(path, delim)char* path;
 	return v;
 }
 
-void setpythonpath(path)char* path;
-{
+void setpythonpath(char* path) {
 	object* v;
 	if((v = makepathobject(path, DELIM)) == NULL) {
 		fatal("can't create sys.path");
@@ -180,7 +181,7 @@ void setpythonpath(path)char* path;
 	if(sysset("path", v) != 0) {
 		fatal("can't assign sys.path");
 	}
-	DECREF(v);
+	PY_DECREF(v);
 }
 
 static object* makeargvobject(argc, argv)int argc;
@@ -196,7 +197,7 @@ static object* makeargvobject(argc, argv)int argc;
 		for(i = 0; i < argc; i++) {
 			object* v = newstringobject(argv[i]);
 			if(v == NULL) {
-				DECREF(av);
+				PY_DECREF(av);
 				av = NULL;
 				break;
 			}
@@ -206,9 +207,7 @@ static object* makeargvobject(argc, argv)int argc;
 	return av;
 }
 
-void setpythonargv(argc, argv)int argc;
-							  char** argv;
-{
+void setpythonargv(int argc, char** argv) {
 	object* av = makeargvobject(argc, argv);
 	if(av == NULL) {
 		fatal("no mem for sys.argv");
@@ -216,5 +215,5 @@ void setpythonargv(argc, argv)int argc;
 	if(sysset("argv", av) != 0) {
 		fatal("can't assign sys.argv");
 	}
-	DECREF(av);
+	PY_DECREF(av);
 }

@@ -24,12 +24,16 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 /* Traceback implementation */
 
+#include <stdlib.h>
+
 #include "allobjects.h"
 
 #include "compile.h"
 #include "frameobject.h"
 #include "traceback.h"
 #include "structmember.h"
+#include "sysmodule.h"
+#include "fgetsintr.h"
 
 typedef struct _tracebackobject {
 	OB_HEAD
@@ -42,11 +46,11 @@ typedef struct _tracebackobject {
 #define OFF(x) offsetof(tracebackobject, x)
 
 static struct memberlist tb_memberlist[] = {
-		{ "tb_next",   T_OBJECT, OFF(tb_next) },
-		{ "tb_frame",  T_OBJECT, OFF(tb_frame) },
-		{ "tb_lasti",  T_INT,    OFF(tb_lasti) },
-		{ "tb_lineno", T_INT,    OFF(tb_lineno) },
-		{ NULL }  /* Sentinel */
+		{ "tb_next",   T_OBJECT, OFF(tb_next), 0 },
+		{ "tb_frame",  T_OBJECT, OFF(tb_frame), 0 },
+		{ "tb_lasti",  T_INT,    OFF(tb_lasti), 0 },
+		{ "tb_lineno", T_INT,    OFF(tb_lineno), 0 },
+		{ NULL, 0, 0, 0 }  /* Sentinel */
 };
 
 static object* tb_getattr(tb, name)tracebackobject* tb;

@@ -50,7 +50,7 @@ object* newmethodobject(name, meth, self, heapname)
 		op->m_name = name;
 		op->m_meth = meth;
 		if(self != NULL)
-			INCREF(self);
+			PY_INCREF(self);
 		op->m_self = self;
 	}
 	return (object*) op;
@@ -80,15 +80,17 @@ static void meth_dealloc(m)methodobject* m;
 {
 	if(m->m_heap_name) free(m->m_name);
 	if(m->m_self != NULL) {
-		DECREF(m->m_self);
+		PY_DECREF(m->m_self);
 	}
-	free((char*) m);
+	free(m);
 }
 
 static void meth_print(m, fp, flags)methodobject* m;
 									FILE* fp;
 									int flags;
 {
+	(void) flags;
+
 	if(m->m_self == NULL) {
 		fprintf(fp, "<built-in function '%s'>", m->m_name);
 	}

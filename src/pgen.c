@@ -153,7 +153,7 @@ static char REQNFMT[] = "metacompile: less than %d children\n";
        if (i < count) { \
                fprintf(stderr, REQNFMT, count); \
                abort(); \
-       } else
+       }
 
 #else
 #define REQN(i, count) /* empty */
@@ -179,6 +179,8 @@ static nfagrammar* metacompile(n)node* n;
 	return gr;
 }
 
+void compile_rhs(labellist* ll, nfa* nf, node* n, int* pa, int* pb);
+
 void compile_rule(nfagrammar* gr, node* n) {
 	nfa* nf;
 
@@ -191,7 +193,6 @@ void compile_rule(nfagrammar* gr, node* n) {
 	REQ(n, COLON);
 	n++;
 	REQ(n, RHS);
-	void compile_rhs();
 	compile_rhs(&gr->gr_ll, nf, n, &nf->nf_start, &nf->nf_finish);
 	n++;
 	REQ(n, NEWLINE);
@@ -199,11 +200,7 @@ void compile_rule(nfagrammar* gr, node* n) {
 
 void compile_alt(labellist* ll, nfa* nf, node* n, int* pa, int* pb);
 
-void compile_rhs(ll, nf, n, pa, pb)labellist* ll;
-								   nfa* nf;
-								   node* n;
-								   int* pa, * pb;
-{
+void compile_rhs(labellist* ll, nfa* nf, node* n, int* pa, int* pb) {
 	int i;
 	int a, b;
 
@@ -235,6 +232,8 @@ void compile_rhs(ll, nf, n, pa, pb)labellist* ll;
 	}
 }
 
+void compile_item(labellist* ll, nfa* nf, node* n, int* pa, int* pb);
+
 void compile_alt(labellist* ll, nfa* nf, node* n, int* pa, int* pb) {
 	int i;
 	int a, b;
@@ -244,7 +243,6 @@ void compile_alt(labellist* ll, nfa* nf, node* n, int* pa, int* pb) {
 	REQN(i, 1);
 	n = n->n_child;
 	REQ(n, ITEM);
-	void compile_item();
 	compile_item(ll, nf, n, pa, pb);
 	--i;
 	n++;
@@ -263,11 +261,7 @@ void compile_alt(labellist* ll, nfa* nf, node* n, int* pa, int* pb) {
 
 void compile_atom(labellist* ll, nfa* nf, node* n, int* pa, int* pb);
 
-void compile_item(ll, nf, n, pa, pb)labellist* ll;
-									nfa* nf;
-									node* n;
-									int* pa, * pb;
-{
+void compile_item(labellist* ll, nfa* nf, node* n, int* pa, int* pb) {
 	int i;
 	int a, b;
 
@@ -367,7 +361,7 @@ static void dumpnfa(ll, nf)labellist* ll;
 
 /* PART TWO -- CONSTRUCT DFA -- Algorithm 3.1 from [Aho&Ullman 77] */
 
-static int addclosure(ss, nf, istate)py_bitset_t ss;
+static void addclosure(ss, nf, istate)py_bitset_t ss;
 									 nfa* nf;
 									 int istate;
 {
@@ -611,7 +605,7 @@ static void renamestates(xx_nstates, xx_state, from, to)int xx_nstates;
 
 void simplify(int xx_nstates, ss_state* xx_state) {
 	int changes;
-	int i, j, k;
+	int i, j;
 
 	do {
 		changes = 0;

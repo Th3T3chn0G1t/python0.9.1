@@ -36,11 +36,11 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #define OFF(x) offsetof(frameobject, x)
 
 static struct memberlist frame_memberlist[] = {
-		{ "f_back",    T_OBJECT, OFF(f_back) },
-		{ "f_code",    T_OBJECT, OFF(f_code) },
-		{ "f_globals", T_OBJECT, OFF(f_globals) },
-		{ "f_locals",  T_OBJECT, OFF(f_locals) },
-		{ NULL }  /* Sentinel */
+		{ "f_back",    T_OBJECT, OFF(f_back), 0 },
+		{ "f_code",    T_OBJECT, OFF(f_code), 0 },
+		{ "f_globals", T_OBJECT, OFF(f_globals), 0 },
+		{ "f_locals",  T_OBJECT, OFF(f_locals), 0 },
+		{ NULL, 0, 0, 0 }  /* Sentinel */
 };
 
 static object* frame_getattr(f, name)frameobject* f;
@@ -91,13 +91,13 @@ frameobject* newframeobject(back, code, globals, locals, nvalues, nblocks)
 	f = NEWOBJ(frameobject, &Frametype);
 	if(f != NULL) {
 		if(back)
-			INCREF(back);
+			PY_INCREF(back);
 		f->f_back = back;
-		INCREF(code);
+		PY_INCREF(code);
 		f->f_code = code;
-		INCREF(globals);
+		PY_INCREF(globals);
 		f->f_globals = globals;
-		INCREF(locals);
+		PY_INCREF(locals);
 		f->f_locals = locals;
 		f->f_valuestack = malloc((nvalues + 1) * sizeof(object*));
 		f->f_blockstack = malloc((nblocks + 1) * sizeof(block));
@@ -106,7 +106,7 @@ frameobject* newframeobject(back, code, globals, locals, nvalues, nblocks)
 		f->f_iblock = 0;
 		if(f->f_valuestack == NULL || f->f_blockstack == NULL) {
 			err_nomem();
-			DECREF(f);
+			PY_DECREF(f);
 			f = NULL;
 		}
 	}

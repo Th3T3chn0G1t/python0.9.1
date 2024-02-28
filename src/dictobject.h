@@ -27,7 +27,7 @@ Dictionary object type -- mapping from char * to object.
 NB: the key is given as a char *, not as a stringobject.
 These functions set errno for errors.  Functions dictremove() and
 dictinsert() return nonzero for errors, getdictsize() returns -1,
-the others NULL.  A successful call to dictinsert() calls INCREF()
+the others NULL.  A successful call to dictinsert() calls PY_INCREF()
 for the inserted item.
 */
 
@@ -48,3 +48,5 @@ extern int getdictsize(object* dp);
 extern char* getdictkey(object* dp, int i);
 
 extern object* getdictkeys(object* dp);
+
+void donedict(void);

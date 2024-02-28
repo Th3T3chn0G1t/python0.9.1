@@ -24,6 +24,8 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 /* Module object implementation */
 
+#include <stdlib.h>
+
 #include "allobjects.h"
 
 typedef struct {
@@ -41,7 +43,7 @@ object* newmoduleobject(name)char* name;
 	m->md_name = newstringobject(name);
 	m->md_dict = newdictobject();
 	if(m->md_name == NULL || m->md_dict == NULL) {
-		DECREF(m);
+		PY_DECREF(m);
 		return NULL;
 	}
 	return (object*) m;
@@ -70,16 +72,17 @@ char* getmodulename(m)object* m;
 static void module_dealloc(m)moduleobject* m;
 {
 	if(m->md_name != NULL)
-		DECREF(m->md_name);
+		PY_DECREF(m->md_name);
 	if(m->md_dict != NULL)
-		DECREF(m->md_dict);
-	free((char*) m);
+		PY_DECREF(m->md_dict);
+	free(m);
 }
 
 static void module_print(m, fp, flags)moduleobject* m;
 									  FILE* fp;
 									  int flags;
 {
+	(void) flags;
 	fprintf(fp, "<module '%s'>", getstringvalue(m->md_name));
 }
 
@@ -95,11 +98,11 @@ static object* module_getattr(m, name)moduleobject* m;
 {
 	object* res;
 	if(strcmp(name, "__dict__") == 0) {
-		INCREF(m->md_dict);
+		PY_INCREF(m->md_dict);
 		return m->md_dict;
 	}
 	if(strcmp(name, "__name__") == 0) {
-		INCREF(m->md_name);
+		PY_INCREF(m->md_name);
 		return m->md_name;
 	}
 	res = dictlookup(m->md_dict, name);
@@ -107,7 +110,7 @@ static object* module_getattr(m, name)moduleobject* m;
 		err_setstr(NameError, name);
 	}
 	else
-		INCREF(res);
+		PY_INCREF(res);
 	return res;
 }
 
@@ -138,4 +141,5 @@ typeobject Moduletype = {
 		module_setattr,         /*tp_setattr*/
 		0,                      /*tp_compare*/
 		module_repr,            /*tp_repr*/
+		0, 0, 0
 };

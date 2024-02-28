@@ -24,6 +24,9 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 /* POSIX module implementation */
 
+/* TODO: How this handles includes and feature tests is terrible. */
+
+#include <stdlib.h>
 #include <signal.h>
 #include <string.h>
 #include <setjmp.h>
@@ -31,9 +34,7 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #include <sys/stat.h>
 
 #ifndef _MSC_VER
-
 # include <sys/time.h>
-
 #endif
 
 #ifdef __has_include
@@ -49,10 +50,6 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 #include "allobjects.h"
 #include "modsupport.h"
-
-#if defined(AMOEBA) || defined(_WIN32)
-#define NO_LSTAT
-#endif
 
 #ifndef _WIN32
 /* Return a dictionary corresponding to the POSIX environment table */
@@ -83,7 +80,7 @@ static object* convertenviron() {
 		*p = '\0';
 		(void) dictinsert(d, *e, v);
 		*p = '=';
-		DECREF(v);
+		PY_DECREF(v);
 	}
 	return d;
 }
@@ -102,103 +99,104 @@ static object* posix_error() {
 /* POSIX generic methods */
 
 static object* posix_1str(args, func)object* args;
-		int (* func)(const char *);
+									 int (* func)(const char*);
 {
-object* path1;
-if (!
-getstrarg(args,
-&path1))
-return NULL;
-if ((*func)(
-getstringvalue(path1)
-) < 0)
-return
+	object* path1;
+	if(!getstrarg(args, &path1)) {
+		return NULL;
+	}
+	if((*func)(
+			getstringvalue(path1)) < 0) {
+		return
 
-posix_error();
-INCREF(None);
-return None;
+				posix_error();
+	}
+	PY_INCREF(None);
+	return None;
 }
 
 static object* posix_2str(args, func)object* args;
-		int (* func)(const char *, const char *);
+									 int (* func)(const char*, const char*);
 {
-object* path1, * path2;
-if (!
-getstrstrarg(args,
-&path1, &path2))
-return NULL;
-if ((*func)(
-getstringvalue(path1), getstringvalue(path2)
-) < 0)
-return
+	object* path1, * path2;
+	if(!getstrstrarg(args, &path1, &path2)) {
+		return NULL;
+	}
+	if((*func)(
+			getstringvalue(path1), getstringvalue(path2)) < 0) {
+		return
 
-posix_error();
-INCREF(None);
-return None;
+				posix_error();
+	}
+	PY_INCREF(None);
+	return None;
 }
 
 static object* posix_strint(args, func)object* args;
-		int (* func)(const char *, int);
+									   int (* func)(const char*, int);
 {
-object* path1;
-int i;
-if (!
-getstrintarg(args,
-&path1, &i))
-return NULL;
-if ((*func)(
-getstringvalue(path1), i
-) < 0)
-return
+	object* path1;
+	int i;
+	if(!getstrintarg(args, &path1, &i)) {
+		return NULL;
+	}
+	if((*func)(
+			getstringvalue(path1), i) < 0) {
+		return
 
-posix_error();
-INCREF(None);
-return None;
+				posix_error();
+	}
+	PY_INCREF(None);
+	return None;
 }
 
 static object* posix_do_stat(self, args, statfunc)object* self;
 												  object* args;
-		int (* statfunc)(const char *, struct stat *);
+												  int (* statfunc)(
+														  const char*,
+														  struct stat*);
 {
-struct stat st;
-object* path;
-object* v;
-if (!
-getstrarg(args,
-&path))
-return NULL;
-if ((*statfunc)(
-getstringvalue(path),
-&st) != 0)
-return
+	struct stat st;
+	object* path;
+	object* v;
 
-posix_error();
+	(void) self;
 
-v = newtupleobject(10);
-if (v == NULL)
-return NULL;
+	if(!getstrarg(args, &path)) {
+		return NULL;
+	}
+	if((*statfunc)(
+			getstringvalue(path), &st) != 0) {
+		return
+
+				posix_error();
+	}
+
+	v = newtupleobject(10);
+	if(v == NULL) {
+		return NULL;
+	}
 #define SET(i, st_member) settupleitem(v, i, newintobject((long)st.st_member))
-SET(0, st_mode);
-SET(1, st_ino);
-SET(2, st_dev);
-SET(3, st_nlink);
-SET(4, st_uid);
-SET(5, st_gid);
-SET(6, st_size);
-SET(7, st_atime);
-SET(8, st_mtime);
-SET(9, st_ctime);
+	SET(0, st_mode);
+	SET(1, st_ino);
+	SET(2, st_dev);
+	SET(3, st_nlink);
+	SET(4, st_uid);
+	SET(5, st_gid);
+	SET(6, st_size);
+	SET(7, st_atime);
+	SET(8, st_mtime);
+	SET(9, st_ctime);
 #undef SET
-if (
+	if(
 
-err_occurred()
+			err_occurred()
 
-) {
-DECREF(v);
-return NULL;
-}
-return
-v;
+			) {
+		PY_DECREF(v);
+		return NULL;
+	}
+	return v;
 }
 
 
@@ -207,7 +205,10 @@ v;
 static object* posix_chdir(self, args)object* self;
 									  object* args;
 {
-	extern int chdir(const char *);
+	extern int chdir(const char*);
+
+	(void) self;
+
 	return posix_1str(args, chdir);
 }
 
@@ -215,10 +216,12 @@ static object* posix_chmod(self, args)object* self;
 									  object* args;
 {
 #ifdef _WIN32
-	extern int chmod(const char *, int);
+	extern int chmod(const char*, int);
 #else
 	extern int chmod(const char *, mode_t);
 #endif
+	(void) self;
+
 	return posix_strint(args, chmod);
 }
 
@@ -226,7 +229,10 @@ static object* posix_getcwd(self, args)object* self;
 									   object* args;
 {
 	char buf[1026];
-	extern char* getcwd(char *, int);
+	extern char* getcwd(char*, int);
+
+	(void) self;
+
 	if(!getnoarg(args)) {
 		return NULL;
 	}
@@ -242,8 +248,10 @@ posix_link(self, args)
 	   object *self;
 	   object *args;
 {
-	   extern int link (const char *, const char *);
-	   return posix_2str(args, link);
+	(void) self;
+
+	extern int link (const char *, const char *);
+	return posix_2str(args, link);
 }
 #endif
 
@@ -254,6 +262,9 @@ static object* posix_listdir(self, args)object* self;
 	object* name, * d, * v;
 	DIR* dirp;
 	struct direct* ep;
+
+	(void) self;
+
 	if(!getstrarg(args, &name)) {
 		return NULL;
 	}
@@ -267,17 +278,17 @@ static object* posix_listdir(self, args)object* self;
 	while((ep = readdir(dirp)) != NULL) {
 		v = newstringobject(ep->d_name);
 		if(v == NULL) {
-			DECREF(d);
+			PY_DECREF(d);
 			d = NULL;
 			break;
 		}
 		if(addlistitem(d, v) != 0) {
-			DECREF(v);
-			DECREF(d);
+			PY_DECREF(v);
+			PY_DECREF(d);
 			d = NULL;
 			break;
 		}
-		DECREF(v);
+		PY_DECREF(v);
 	}
 	closedir(dirp);
 	return d;
@@ -298,8 +309,13 @@ static object* posix_mkdir(self, args)object* self;
 {
 #ifndef _WIN32
 	extern int mkdir (const char *, mode_t);
+
+	(void) self;
+
 	return posix_strint(args, mkdir);
 #else
+	(void) self;
+
 	return posix_strint(args, winmkdir);
 #endif
 }
@@ -307,21 +323,30 @@ static object* posix_mkdir(self, args)object* self;
 static object* posix_rename(self, args)object* self;
 									   object* args;
 {
-	extern int rename(const char *, const char *);
+	extern int rename(const char*, const char*);
+
+	(void) self;
+
 	return posix_2str(args, rename);
 }
 
 static object* posix_rmdir(self, args)object* self;
 									  object* args;
 {
-	extern int rmdir(const char *);
+	extern int rmdir(const char*);
+
+	(void) self;
+
 	return posix_1str(args, rmdir);
 }
 
 static object* posix_stat(self, args)object* self;
 									 object* args;
 {
-	extern int stat(const char *, struct stat *);
+	extern int stat(const char*, struct stat*);
+
+	(void) self;
+
 	return posix_do_stat(self, args, stat);
 }
 
@@ -330,6 +355,9 @@ static object* posix_system(self, args)object* self;
 {
 	object* command;
 	int sts;
+
+	(void) self;
+
 	if(!getstrarg(args, &command)) {
 		return NULL;
 	}
@@ -341,6 +369,9 @@ static object* posix_umask(self, args)object* self;
 									  object* args;
 {
 	int i;
+
+	(void) self;
+
 	if(!getintarg(args, &i)) {
 		return NULL;
 	}
@@ -354,7 +385,10 @@ static object* posix_umask(self, args)object* self;
 static object* posix_unlink(self, args)object* self;
 									   object* args;
 {
-	extern int unlink(const char *);
+	extern int unlink(const char*);
+
+	(void) self;
+
 	return posix_1str(args, unlink);
 }
 
@@ -366,6 +400,9 @@ posix_utimes(self, args)
 {
 	   object *path;
 	   struct timeval tv[2];
+
+		(void) self;
+
 	   if (args == NULL || !is_tupleobject(args) || gettuplesize(args) != 2) {
 			   err_badarg();
 			   return NULL;
@@ -377,12 +414,12 @@ posix_utimes(self, args)
 	   tv[0].tv_usec = tv[1].tv_usec = 0;
 	   if (utimes(getstringvalue(path), tv) < 0)
 			   return posix_error();
-	   INCREF(None);
+	   PY_INCREF(None);
 	   return None;
 }
 #endif
 
-#ifndef NO_LSTAT
+#ifndef _WIN32
 
 static object *
 posix_lstat(self, args)
@@ -390,6 +427,9 @@ posix_lstat(self, args)
 	   object *args;
 {
 	   extern int lstat (const char *, struct stat *);
+
+		(void) self;
+
 	   return posix_do_stat(self, args, lstat);
 }
 
@@ -436,8 +476,6 @@ static struct methodlist posix_methods[] = {
 		{ "unlink", posix_unlink },
 #ifndef _WIN32
 		{"utimes",    posix_utimes},
-#endif
-#ifndef NO_LSTAT
 		{"lstat",     posix_lstat},
 		{"readlink",  posix_readlink},
 		{"symlink",   posix_symlink},
@@ -447,7 +485,7 @@ static struct methodlist posix_methods[] = {
 
 
 void initposix() {
-	object* m, * d, * v;
+	object* m, * d;
 
 	m = initmodule("posix", posix_methods);
 	d = getmoduledict(m);
@@ -458,7 +496,7 @@ void initposix() {
 	if(v == NULL || dictinsert(d, "environ", v) != 0) {
 		fatal("can't define posix.environ");
 	}
-	DECREF(v);
+	PY_DECREF(v);
 #endif
 
 	/* Initialize posix.error exception */

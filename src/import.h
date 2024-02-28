@@ -24,6 +24,8 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 /* Module definition and import interface */
 
+void initimport(void);
+
 object* get_modules(void);
 
 object* add_module(char* name);

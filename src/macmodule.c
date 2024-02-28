@@ -31,7 +31,6 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #include "import.h"
 #include "modsupport.h"
 
-#include "sigtype.h"
 
 #include "::unixemu:dir.h"
 #include "::unixemu:stat.h"
@@ -49,7 +48,7 @@ static object* mac_chdir(self, args)object* self;
 	if(chdir(getstringvalue(path)) != 0) {
 		return err_errno(MacError);
 	}
-	INCREF(None);
+	PY_INCREF(None);
 	return None;
 }
 
@@ -90,17 +89,17 @@ static object* mac_listdir(self, args)object* self;
 	while((ep = readdir(dirp)) != NULL) {
 		v = newstringobject(ep->d_name);
 		if(v == NULL) {
-			DECREF(d);
+			PY_DECREF(d);
 			d = NULL;
 			break;
 		}
 		if(addlistitem(d, v) != 0) {
-			DECREF(v);
-			DECREF(d);
+			PY_DECREF(v);
+			PY_DECREF(d);
 			d = NULL;
 			break;
 		}
-		DECREF(v);
+		PY_DECREF(v);
 	}
 	closedir(dirp);
 	return d;
@@ -118,7 +117,7 @@ static object* mac_mkdir(self, args)object* self;
 	if(mkdir(getstringvalue(path), mode) != 0) {
 		return err_errno(MacError);
 	}
-	INCREF(None);
+	PY_INCREF(None);
 	return None;
 }
 
@@ -133,7 +132,7 @@ static object* mac_rename(self, args)object* self;
 	if(rename(getstringvalue(src), getstringvalue(dst)) != 0) {
 		return err_errno(MacError);
 	}
-	INCREF(None);
+	PY_INCREF(None);
 	return None;
 }
 
@@ -148,7 +147,7 @@ static object* mac_rmdir(self, args)object* self;
 	if(rmdir(getstringvalue(path)) != 0) {
 		return err_errno(MacError);
 	}
-	INCREF(None);
+	PY_INCREF(None);
 	return None;
 }
 
@@ -184,7 +183,7 @@ static object* mac_stat(self, args)object* self;
 	SET(10, st.st_rsize); /* Mac-specific: resource size */
 #undef SET
 	if(err_occurred()) {
-		DECREF(v);
+		PY_DECREF(v);
 		return NULL;
 	}
 	return v;
@@ -198,7 +197,7 @@ static object* mac_sync(self, args)object* self;
 		return NULL;
 	}
 	sync();
-	INCREF(None);
+	PY_INCREF(None);
 	return None;
 }
 
@@ -213,7 +212,7 @@ static object* mac_unlink(self, args)object* self;
 	if(unlink(getstringvalue(path)) != 0) {
 		return err_errno(MacError);
 	}
-	INCREF(None);
+	PY_INCREF(None);
 	return None;
 }
 

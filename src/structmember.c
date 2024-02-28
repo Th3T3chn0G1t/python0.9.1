@@ -51,7 +51,7 @@ object* getmember(addr, mlist, name)char* addr;
 					break;
 				case T_STRING:
 					if(*(char**) addr == NULL) {
-						INCREF(None);
+						PY_INCREF(None);
 						v = None;
 					}
 					else {
@@ -62,7 +62,7 @@ object* getmember(addr, mlist, name)char* addr;
 					if(v == NULL) {
 						v = None;
 					}
-					INCREF(v);
+					PY_INCREF(v);
 					break;
 				default:err_setstr(SystemError, "bad memberlist type");
 					v = NULL;

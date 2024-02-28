@@ -67,7 +67,7 @@ object* gettupleitem(op, i)object* op;
 		err_badcall();
 		return NULL;
 	}
-	if(i < 0 || i >= ((tupleobject*) op)->ob_size) {
+	if(i < 0 || i >= (int) ((tupleobject*) op)->ob_size) {
 		err_setstr(IndexError, "tuple index out of range");
 		return NULL;
 	}
@@ -79,22 +79,22 @@ int settupleitem(op, i, newitem)object* op;
 								object* newitem;
 {
 	object* olditem;
+
 	if(!is_tupleobject(op)) {
-		if(newitem != NULL)
-			DECREF(newitem);
+		if(newitem != NULL) PY_DECREF(newitem);
 		err_badcall();
 		return -1;
 	}
-	if(i < 0 || i >= ((tupleobject*) op)->ob_size) {
-		if(newitem != NULL)
-			DECREF(newitem);
+
+	if(i < 0 || i >= (int) ((tupleobject*) op)->ob_size) {
+		if(newitem != NULL) PY_DECREF(newitem);
 		err_setstr(IndexError, "tuple assignment index out of range");
 		return -1;
 	}
 	olditem = ((tupleobject*) op)->ob_item[i];
 	((tupleobject*) op)->ob_item[i] = newitem;
 	if(olditem != NULL)
-		DECREF(olditem);
+		PY_DECREF(olditem);
 	return 0;
 }
 
@@ -103,11 +103,11 @@ int settupleitem(op, i, newitem)object* op;
 static void tupledealloc(op)tupleobject* op;
 {
 	int i;
-	for(i = 0; i < op->ob_size; i++) {
+	for(i = 0; i < (int) op->ob_size; i++) {
 		if(op->ob_item[i] != NULL)
-			DECREF(op->ob_item[i]);
+			PY_DECREF(op->ob_item[i]);
 	}
-	free((void*) op);
+	free(op);
 }
 
 static void tupleprint(op, fp, flags)tupleobject* op;
@@ -116,7 +116,7 @@ static void tupleprint(op, fp, flags)tupleobject* op;
 {
 	int i;
 	fprintf(fp, "(");
-	for(i = 0; i < op->ob_size && !StopPrint; i++) {
+	for(i = 0; i < (int) op->ob_size && !StopPrint; i++) {
 		if(i > 0) {
 			fprintf(fp, ", ");
 		}
@@ -134,24 +134,24 @@ object* tuplerepr(v)tupleobject* v;
 	int i;
 	s = newstringobject("(");
 	comma = newstringobject(", ");
-	for(i = 0; i < v->ob_size && s != NULL; i++) {
+	for(i = 0; i < (int) v->ob_size && s != NULL; i++) {
 		if(i > 0) {
 			joinstring(&s, comma);
 		}
 		t = reprobject(v->ob_item[i]);
 		joinstring(&s, t);
 		if(t != NULL)
-			DECREF(t);
+			PY_DECREF(t);
 	}
-	DECREF(comma);
+	PY_DECREF(comma);
 	if(v->ob_size == 1) {
 		t = newstringobject(",");
 		joinstring(&s, t);
-		DECREF(t);
+		PY_DECREF(t);
 	}
 	t = newstringobject(")");
 	joinstring(&s, t);
-	DECREF(t);
+	PY_DECREF(t);
 	return s;
 }
 
@@ -176,11 +176,11 @@ static int tuplelength(a)tupleobject* a;
 static object* tupleitem(a, i)tupleobject* a;
 							  int i;
 {
-	if(i < 0 || i >= a->ob_size) {
+	if(i < 0 || i >= (int) a->ob_size) {
 		err_setstr(IndexError, "tuple index out of range");
 		return NULL;
 	}
-	INCREF(a->ob_item[i]);
+	PY_INCREF(a->ob_item[i]);
 	return a->ob_item[i];
 }
 
@@ -192,15 +192,15 @@ static object* tupleslice(a, ilow, ihigh)tupleobject* a;
 	if(ilow < 0) {
 		ilow = 0;
 	}
-	if(ihigh > a->ob_size) {
-		ihigh = a->ob_size;
+	if(ihigh > (int) a->ob_size) {
+		ihigh = (int) a->ob_size;
 	}
 	if(ihigh < ilow) {
 		ihigh = ilow;
 	}
-	if(ilow == 0 && ihigh == a->ob_size) {
+	if(ilow == 0 && ihigh == (int) a->ob_size) {
 		/* XXX can only do this if tuples are immutable! */
-		INCREF(a);
+		PY_INCREF(a);
 		return (object*) a;
 	}
 	np = (tupleobject*) newtupleobject(ihigh - ilow);
@@ -209,7 +209,7 @@ static object* tupleslice(a, ilow, ihigh)tupleobject* a;
 	}
 	for(i = ilow; i < ihigh; i++) {
 		object* v = a->ob_item[i];
-		INCREF(v);
+		PY_INCREF(v);
 		np->ob_item[i - ilow] = v;
 	}
 	return (object*) np;
@@ -221,28 +221,31 @@ static object* tupleconcat(a, bb)tupleobject* a;
 	int size;
 	int i;
 	tupleobject* np;
+	tupleobject* b = (tupleobject*) bb;
+
 	if(!is_tupleobject(bb)) {
 		err_badarg();
 		return NULL;
 	}
-#define b ((tupleobject *)bb)
-	size = a->ob_size + b->ob_size;
+
+	size = (int) (a->ob_size + b->ob_size);
 	np = (tupleobject*) newtupleobject(size);
 	if(np == NULL) {
 		return err_nomem();
 	}
-	for(i = 0; i < a->ob_size; i++) {
+	for(i = 0; i < (int) a->ob_size; i++) {
 		object* v = a->ob_item[i];
-		INCREF(v);
+		PY_INCREF(v);
 		np->ob_item[i] = v;
 	}
-	for(i = 0; i < b->ob_size; i++) {
+
+	for(i = 0; i < (int) b->ob_size; i++) {
 		object* v = b->ob_item[i];
-		INCREF(v);
+		PY_INCREF(v);
 		np->ob_item[i + a->ob_size] = v;
 	}
+
 	return (object*) np;
-#undef b
 }
 
 static sequence_methods tuple_as_sequence = {

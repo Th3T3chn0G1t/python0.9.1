@@ -83,23 +83,23 @@ err_scerrset(sc_errno, value, instr)int sc_errno;
 	if(settupleitem(t, 2, str) != 0) {
 		return -1;
 	}
-	INCREF(value);
+	PY_INCREF(value);
 	if(settupleitem(t, 1, value) != 0) {
-		DECREF(t);
+		PY_DECREF(t);
 		return -1;
 	}
 	switch(sc_errno) {
 
 		case TypeFailure:
 			if((str1 = newstringobject("Unexpected type")) == NULL) {
-				DECREF(t);
+				PY_DECREF(t);
 				return -1;
 			}
 			break;
 
 		case RangeError:
 			if((str1 = newstringobject("Value out of range")) == NULL) {
-				DECREF(t);
+				PY_DECREF(t);
 				return -1;
 			}
 			break;
@@ -107,38 +107,38 @@ err_scerrset(sc_errno, value, instr)int sc_errno;
 		case SizeError:
 			if((str1 = newstringobject("Value doesn't have the right size")) ==
 			   NULL) {
-				DECREF(t);
+				PY_DECREF(t);
 				return -1;
 			}
 			break;
 
 		case FlagError:
 			if((str1 = newstringobject("Illegal flag value")) == NULL) {
-				DECREF(t);
+				PY_DECREF(t);
 				return -1;
 			}
 			break;
 
 		case TransError:
 			if((str1 = newstringobject("hdr.h_status != 0")) == NULL) {
-				DECREF(t);
+				PY_DECREF(t);
 				return -1;
 			}
 			break;
 
 		default:
 			if((str1 = newstringobject("sc_errno not found")) == NULL) {
-				DECREF(t);
+				PY_DECREF(t);
 				return -1;
 			}
 			break;
 	}
 	if(settupleitem(t, 0, str1) != 0) {
-		DECREF(t);
+		PY_DECREF(t);
 		return -1;
 	}
 	err_setval(StubcodeError, t);
-	DECREF(t);
+	PY_DECREF(t);
 	return -1;
 }
 

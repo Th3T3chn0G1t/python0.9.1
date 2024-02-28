@@ -47,7 +47,7 @@ static int freelist_len = 0;
 /* Forward references */
 static void fixdfa(grammar*, dfa*);
 
-static void fixstate(grammar*, dfa*, state*);
+static void fixstate(grammar*, state*);
 
 void addaccelerators(grammar* g) {
 	dfa* d;
@@ -63,7 +63,7 @@ static void fixdfa(grammar* g, dfa* d) {
 	int j;
 
 	s = d->d_state;
-	for(j = 0; j < d->d_nstates; j++, s++) fixstate(g, d, s);
+	for(j = 0; j < d->d_nstates; j++, s++) fixstate(g, s);
 }
 
 void freeaccel() {
@@ -72,7 +72,7 @@ void freeaccel() {
 	free(freelist);
 }
 
-static void fixstate(grammar* g, dfa* d, state* s) {
+static void fixstate(grammar* g, state* s) {
 	arc* a;
 	int k;
 	int* accel;

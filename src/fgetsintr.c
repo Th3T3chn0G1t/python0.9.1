@@ -34,18 +34,13 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #include <setjmp.h>
 
 #include "errcode.h"
-#include "sigtype.h"
 #include "fgetsintr.h"
-
-#ifndef AMOEBA
-#define sig_block()    /*empty*/
-#define sig_unblock()  /*empty*/
-#endif
 
 static jmp_buf jback;
 
-static void catcher(sig)int sig;
-{
+static void catcher(int sig) {
+	(void) sig;
+
 	longjmp(jback, 1);
 }
 
@@ -54,38 +49,27 @@ int fgets_intr(buf, size, fp)char* buf;
 							 FILE* fp;
 {
 	int ret;
-	SIGTYPE (* sigsave)();
+	void (* sigsave)();
 
 	if(setjmp(jback)) {
 		clearerr(fp);
 		signal(SIGINT, sigsave);
-#ifdef THINK_C_3_0
-		Set_Echo(1);
-#endif
+
 		return E_INTR;
 	}
 
-	/* The casts to (SIGTYPE(*)()) are needed by THINK_C only */
+	/* The casts to (void(*)()) are needed by THINK_C only */
 
-	sigsave = signal(SIGINT, (SIGTYPE (*)()) SIG_IGN);
-	if(sigsave != (SIGTYPE (*)()) SIG_IGN) {
-		signal(SIGINT, (SIGTYPE (*)()) catcher);
+	sigsave = signal(SIGINT, (void (*)()) SIG_IGN);
+	if(sigsave != (void (*)()) SIG_IGN) {
+		signal(SIGINT, (void (*)()) catcher);
 	}
 
-#ifndef THINK_C
-	if(intrcheck()) {
-		ret = E_INTR;
-	}
-	else
-#endif
-	{
-		sig_block();
-		ret = (fgets(buf, size, fp) == NULL) ? E_EOF : E_OK;
-		sig_unblock();
-	}
+	if(intrcheck()) ret = E_INTR;
+	else ret = (fgets(buf, size, fp) == NULL) ? E_EOF : E_OK;
 
-	if(sigsave != (SIGTYPE (*)()) SIG_IGN) {
-		signal(SIGINT, (SIGTYPE (*)()) sigsave);
+	if(sigsave != (void (*)()) SIG_IGN) {
+		signal(SIGINT, (void (*)()) sigsave);
 	}
 	return ret;
 }

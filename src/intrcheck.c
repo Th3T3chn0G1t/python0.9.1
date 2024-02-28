@@ -56,11 +56,10 @@ intrcheck()
 
 #include <MacHeaders>
 #include <signal.h>
-#include "sigtype.h"
 
 static int interrupted;
 
-static SIGTYPE
+static void
 intcatcher(sig)
 	   int sig;
 {
@@ -113,17 +112,17 @@ intrcheck()
 
 #include <stdio.h>
 #include <signal.h>
-#include "sigtype.h"
 
 static int interrupted;
 
-static SIGTYPE intcatcher(sig)int sig;
-{
+static void intcatcher(int sig) {
+	(void) sig;
+
 	interrupted = 1;
 	signal(SIGINT, intcatcher);
 }
 
-void initintr() {
+void initintr(void) {
 	if(signal(SIGINT, SIG_IGN) != SIG_IGN) {
 		signal(SIGINT, intcatcher);
 	}

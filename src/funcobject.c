@@ -41,9 +41,9 @@ object* newfuncobject(code, globals)object* code;
 {
 	funcobject* op = NEWOBJ(funcobject, &Functype);
 	if(op != NULL) {
-		INCREF(code);
+		PY_INCREF(code);
 		op->func_code = code;
-		INCREF(globals);
+		PY_INCREF(globals);
 		op->func_globals = globals;
 	}
 	return (object*) op;
@@ -72,9 +72,9 @@ object* getfuncglobals(op)object* op;
 #define OFF(x) offsetof(funcobject, x)
 
 static struct memberlist func_memberlist[] = {
-		{ "func_code",    T_OBJECT, OFF(func_code) },
-		{ "func_globals", T_OBJECT, OFF(func_globals) },
-		{ NULL }  /* Sentinel */
+		{ "func_code",    T_OBJECT, OFF(func_code), 0 },
+		{ "func_globals", T_OBJECT, OFF(func_globals), 0 },
+		{ NULL, 0, 0, 0 }  /* Sentinel */
 };
 
 static object* func_getattr(op, name)funcobject* op;
@@ -85,8 +85,8 @@ static object* func_getattr(op, name)funcobject* op;
 
 static void func_dealloc(op)funcobject* op;
 {
-	DECREF(op->func_code);
-	DECREF(op->func_globals);
+	PY_DECREF(op->func_code);
+	PY_DECREF(op->func_globals);
 	free(op);
 }
 
@@ -98,4 +98,5 @@ typeobject Functype = {
 		0,              /*tp_setattr*/
 		0,              /*tp_compare*/
 		0,              /*tp_repr*/
+		0, 0, 0
 };

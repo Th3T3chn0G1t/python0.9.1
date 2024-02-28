@@ -51,8 +51,7 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  * regular-expression syntax might require a total rethink.
  */
 #include <stdio.h>
-
-#undef ANY /* Conflicting identifier defined in malloc.h */
+#include <stdlib.h>
 
 #include <string.h>              /* XXX Remove if not found */
 #include "regexp.h"
@@ -323,7 +322,7 @@ regexp* regcomp(exp)char* exp;
 			longest = NULL;
 			len = 0;
 			for(; scan != NULL; scan = regnext(scan)) {
-				if(OP(scan) == EXACTLY && strlen(OPERAND(scan)) >= len) {
+				if(OP(scan) == EXACTLY && (int) strlen(OPERAND(scan)) >= len) {
 					longest = OPERAND(scan);
 					len = strlen(OPERAND(scan));
 				}
@@ -872,6 +871,7 @@ int regexec(prog, string)regexp* prog;
  */
 int reglexec(prog, string, offset)regexp* prog;
 								  char* string;
+								  int offset;
 {
 	char* s;
 	extern char* strchr();
@@ -1000,7 +1000,7 @@ regmatch(prog)char* prog;
 			case BOL:
 #ifdef MULTILINE
 				if(!(reginput == regbol ||
-					 reginput > regbol && *(reginput - 1) == '\n'))
+					( reginput > regbol && *(reginput - 1) == '\n')))
 #else
 					if (reginput != regbol)
 #endif

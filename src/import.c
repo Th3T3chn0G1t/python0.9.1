@@ -32,33 +32,24 @@ static int init_builtin(char* name);
 
 #include "node.h"
 #include "token.h"
+#include "config.h"
 #include "graminit.h"
 #include "import.h"
 #include "errcode.h"
 #include "sysmodule.h"
 #include "pythonrun.h"
 
-/* Define pathname separator used in file names */
-
-#ifdef THINK_C
-#define SEP ':'
-#endif
-
-#ifndef SEP
-#define SEP '/'
-#endif
-
 static object* modules;
 
 /* Initialization */
 
-void initimport() {
+void initimport(void) {
 	if((modules = newdictobject()) == NULL) {
 		fatal("no mem for dictionary of modules");
 	}
 }
 
-object* get_modules() {
+object* get_modules(void) {
 	return modules;
 }
 
@@ -73,10 +64,10 @@ object* add_module(name)char* name;
 		return NULL;
 	}
 	if(dictinsert(modules, name, m) != 0) {
-		DECREF(m);
+		PY_DECREF(m);
 		return NULL;
 	}
-	DECREF(m); /* Yes, it still exists, in modules! */
+	PY_DECREF(m); /* Yes, it still exists, in modules! */
 	return m;
 }
 
@@ -105,8 +96,8 @@ static FILE* open_module(name, suffix, namebuf)char* name;
 			}
 			strcpy(namebuf, getstringvalue(v));
 			len = getstringsize(v);
-			if(len > 0 && namebuf[len - 1] != SEP) {
-				namebuf[len++] = SEP;
+			if(len > 0 && namebuf[len - 1] != '/') {
+				namebuf[len++] = '/';
 			}
 			strcpy(namebuf + len, name);
 			strcat(namebuf, suffix);
@@ -165,7 +156,7 @@ static object* load_module(name)char* name;
 	if(v == NULL) {
 		return NULL;
 	}
-	DECREF(v);
+	PY_DECREF(v);
 	return m;
 }
 
@@ -229,17 +220,11 @@ void doneimport() {
 		}
 		cleardict(modules);
 	}
-	DECREF(modules);
+	PY_DECREF(modules);
 }
 
 
 /* Initialize built-in modules when first imported */
-
-extern struct {
-	char* name;
-
-	void (* initfunc)();
-} inittab[];
 
 static int init_builtin(name)char* name;
 {

@@ -90,7 +90,7 @@ static void stringprint(op, fp, flags)stringobject* op;
 		return;
 	}
 	fprintf(fp, "'");
-	for(i = 0; i < op->ob_size; i++) {
+	for(i = 0; i < (int) op->ob_size; i++) {
 		c = op->ob_sval[i];
 		if(c == '\'' || c == '\\') {
 			fprintf(fp, "\\%c", c);
@@ -122,7 +122,7 @@ static object* stringrepr(op)stringobject* op;
 		((stringobject*) v)->ob_size = newsize;
 		p = ((stringobject*) v)->ob_sval;
 		*p++ = '\'';
-		for(i = 0; i < op->ob_size; i++) {
+		for(i = 0; i < (int) op->ob_size; i++) {
 			c = op->ob_sval[i];
 			if(c == '\'' || c == '\\') {
 				*p++ = '\\', *p++ = c;
@@ -154,18 +154,19 @@ static object* stringconcat(a, bb)stringobject* a;
 {
 	unsigned int size;
 	stringobject* op;
+	stringobject* b;
 	if(!is_stringobject(bb)) {
 		err_badarg();
 		return NULL;
 	}
-#define b ((stringobject *)bb)
+	b = ((stringobject*) bb);
 	/* Optimize cases with empty left or right operand */
 	if(a->ob_size == 0) {
-		INCREF(bb);
+		PY_INCREF(bb);
 		return bb;
 	}
 	if(b->ob_size == 0) {
-		INCREF(a);
+		PY_INCREF(a);
 		return (object*) a;
 	}
 	size = a->ob_size + b->ob_size;
@@ -180,7 +181,6 @@ static object* stringconcat(a, bb)stringobject* a;
 	memcpy(op->ob_sval + a->ob_size, b->ob_sval, (int) b->ob_size);
 	op->ob_sval[size] = '\0';
 	return (object*) op;
-#undef b
 }
 
 static object* stringrepeat(a, n)stringobject* a;
@@ -194,7 +194,7 @@ static object* stringrepeat(a, n)stringobject* a;
 	}
 	size = a->ob_size * n;
 	if(size == a->ob_size) {
-		INCREF(a);
+		PY_INCREF(a);
 		return (object*) a;
 	}
 	op = malloc(sizeof(stringobject) + size * sizeof(char));
@@ -204,7 +204,7 @@ static object* stringrepeat(a, n)stringobject* a;
 	NEWREF(op);
 	op->ob_type = &Stringtype;
 	op->ob_size = size;
-	for(i = 0; i < size; i += a->ob_size) {
+	for(i = 0; i < (int) size; i += a->ob_size) {
 		memcpy(op->ob_sval + i, a->ob_sval, (int) a->ob_size);
 	}
 	op->ob_sval[size] = '\0';
@@ -222,11 +222,11 @@ static object* stringslice(a, i, j)stringobject* a;
 	if(j < 0) {
 		j = 0;
 	} /* Avoid signed/unsigned bug in next line */
-	if(j > a->ob_size) {
-		j = a->ob_size;
+	if(j > (int) a->ob_size) {
+		j = (int) a->ob_size;
 	}
-	if(i == 0 && j == a->ob_size) { /* It's the same as a */
-		INCREF(a);
+	if(i == 0 && j == (int) a->ob_size) { /* It's the same as a */
+		PY_INCREF(a);
 		return (object*) a;
 	}
 	if(j < i) {
@@ -238,7 +238,7 @@ static object* stringslice(a, i, j)stringobject* a;
 static object* stringitem(a, i)stringobject* a;
 							   int i;
 {
-	if(i < 0 || i >= a->ob_size) {
+	if(i < 0 || i >= (int) a->ob_size) {
 		err_setstr(IndexError, "string index out of range");
 		return NULL;
 	}
@@ -287,7 +287,7 @@ void joinstring(pv, w)object** pv;
 		return;
 	}
 	v = stringconcat((stringobject*) *pv, w);
-	DECREF(*pv);
+	PY_DECREF(*pv);
 	*pv = v;
 }
 
@@ -303,10 +303,11 @@ int resizestring(pv, newsize)object** pv;
 {
 	object* v;
 	stringobject* sv;
+
 	v = *pv;
 	if(!is_stringobject(v) || v->ob_refcnt != 1) {
 		*pv = 0;
-		DECREF(v);
+		PY_DECREF(v);
 		err_badcall();
 		return -1;
 	}
@@ -315,13 +316,20 @@ int resizestring(pv, newsize)object** pv;
 	--ref_total;
 #endif
 	UNREF(v);
-	*pv = (object*) realloc(
-			(char*) v, sizeof(stringobject) + newsize * sizeof(char));
+
+	*pv = realloc(v, sizeof(stringobject) + newsize * sizeof(char));
+
 	if(*pv == NULL) {
+		/* NOTE: GCC seems to fail to see this as being okay? */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wuse-after-free"
 		free(v);
+#pragma GCC diagnostic pop
+
 		err_nomem();
 		return -1;
 	}
+
 	NEWREF(*pv);
 	sv = (stringobject*) *pv;
 	sv->ob_size = newsize;

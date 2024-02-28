@@ -64,7 +64,7 @@ object* newopenfileobject(fp, name, mode)FILE* fp;
 	f->f_name = newstringobject(name);
 	f->f_mode = newstringobject(mode);
 	if(f->f_name == NULL || f->f_mode == NULL) {
-		DECREF(f);
+		PY_DECREF(f);
 		return NULL;
 	}
 	f->f_fp = fp;
@@ -74,7 +74,7 @@ object* newopenfileobject(fp, name, mode)FILE* fp;
 object* newfileobject(name, mode)char* name, * mode;
 {
 	fileobject* f;
-	FILE* fp;
+
 	f = (fileobject*) newopenfileobject((FILE*) NULL, name, mode);
 	if(f == NULL) {
 		return NULL;
@@ -89,7 +89,7 @@ object* newfileobject(name, mode)char* name, * mode;
 	f->f_fp = fopen(name, mode);
 	if(f->f_fp == NULL) {
 		err_errno(RuntimeError);
-		DECREF(f);
+		PY_DECREF(f);
 		return NULL;
 	}
 	return (object*) f;
@@ -103,9 +103,9 @@ static void file_dealloc(f)fileobject* f;
 		fclose(f->f_fp);
 	}
 	if(f->f_name != NULL)
-		DECREF(f->f_name);
+		PY_DECREF(f->f_name);
 	if(f->f_mode != NULL)
-		DECREF(f->f_mode);
+		PY_DECREF(f->f_mode);
 	free(f);
 }
 
@@ -143,7 +143,7 @@ static object* file_close(f, args)fileobject* f;
 		fclose(f->f_fp);
 		f->f_fp = NULL;
 	}
-	INCREF(None);
+	PY_INCREF(None);
 	return None;
 }
 
@@ -241,7 +241,7 @@ static object* file_write(f, args)fileobject* f;
 		err_errno(RuntimeError);
 		return NULL;
 	}
-	INCREF(None);
+	PY_INCREF(None);
 	return None;
 }
 
@@ -267,4 +267,5 @@ typeobject Filetype = {
 		0,              /*tp_setattr*/
 		0,              /*tp_compare*/
 		file_repr,      /*tp_repr*/
+		0, 0, 0
 };
