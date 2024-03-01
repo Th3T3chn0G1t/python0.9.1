@@ -109,9 +109,7 @@ static object* regexp_exec(re, args)regexpobject* re;
 		return NULL;
 	}
 	buffer = getstringvalue(v);
-#ifndef MULTILINE
 #define reglexec(prog, str, offset) regexec((prog), (str)+(offset))
-#endif
 	if(!reglexec(re->re_prog, buffer, offset)) {
 		return newtupleobject(0);
 	}

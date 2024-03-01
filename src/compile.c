@@ -320,8 +320,6 @@ static void com_addopname(c, op, n)struct compiling* c;
 
 static object* parsenumber(s)char* s;
 {
-	extern long strtol();
-	extern double atof();
 	char* end = s;
 	long x;
 	x = strtol(s, &end, 0);

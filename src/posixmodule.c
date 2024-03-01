@@ -205,7 +205,7 @@ static object* posix_do_stat(self, args, statfunc)object* self;
 static object* posix_chdir(self, args)object* self;
 									  object* args;
 {
-	extern int chdir(const char*);
+	int chdir(const char*);
 
 	(void) self;
 
@@ -216,9 +216,9 @@ static object* posix_chmod(self, args)object* self;
 									  object* args;
 {
 #ifdef _WIN32
-	extern int chmod(const char*, int);
+	int chmod(const char*, int);
 #else
-	extern int chmod(const char *, mode_t);
+	int chmod(const char* mode_t);
 #endif
 	(void) self;
 
@@ -229,7 +229,7 @@ static object* posix_getcwd(self, args)object* self;
 									   object* args;
 {
 	char buf[1026];
-	extern char* getcwd(char*, int);
+	char* getcwd(char*, int);
 
 	(void) self;
 
@@ -250,7 +250,7 @@ posix_link(self, args)
 {
 	(void) self;
 
-	extern int link (const char *, const char *);
+	int link (const char* const char *);
 	return posix_2str(args, link);
 }
 #endif
@@ -308,7 +308,7 @@ static object* posix_mkdir(self, args)object* self;
 									  object* args;
 {
 #ifndef _WIN32
-	extern int mkdir (const char *, mode_t);
+	int mkdir (const char* mode_t);
 
 	(void) self;
 
@@ -323,7 +323,7 @@ static object* posix_mkdir(self, args)object* self;
 static object* posix_rename(self, args)object* self;
 									   object* args;
 {
-	extern int rename(const char*, const char*);
+	int rename(const char*, const char*);
 
 	(void) self;
 
@@ -333,7 +333,7 @@ static object* posix_rename(self, args)object* self;
 static object* posix_rmdir(self, args)object* self;
 									  object* args;
 {
-	extern int rmdir(const char*);
+	int rmdir(const char*);
 
 	(void) self;
 
@@ -343,7 +343,7 @@ static object* posix_rmdir(self, args)object* self;
 static object* posix_stat(self, args)object* self;
 									 object* args;
 {
-	extern int stat(const char*, struct stat*);
+	int stat(const char*, struct stat*);
 
 	(void) self;
 
@@ -385,7 +385,7 @@ static object* posix_umask(self, args)object* self;
 static object* posix_unlink(self, args)object* self;
 									   object* args;
 {
-	extern int unlink(const char*);
+	int unlink(const char*);
 
 	(void) self;
 
@@ -426,7 +426,7 @@ posix_lstat(self, args)
 	   object *self;
 	   object *args;
 {
-	   extern int lstat (const char *, struct stat *);
+	   int lstat (const char* struct stat *);
 
 		(void) self;
 
@@ -454,7 +454,7 @@ posix_symlink(self, args)
 	   object *self;
 	   object *args;
 {
-	   extern int symlink (const char *, const char *);
+	   int symlink (const char* const char *);
 	   return posix_2str(args, symlink);
 }
 

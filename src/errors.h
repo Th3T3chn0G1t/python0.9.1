@@ -55,14 +55,14 @@ extern object* KeyboardInterrupt;
 
 /* Convenience functions */
 
-extern int err_badarg(void);
+int err_badarg(void);
 
-extern object* err_nomem(void);
+object* err_nomem(void);
 
-extern object* err_errno(object*);
+object* err_errno(object*);
 
-extern void err_input(int);
+void err_input(int);
 
-extern void err_badcall(void);
+void err_badcall(void);
 
 void fatal(char*);

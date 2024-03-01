@@ -28,8 +28,8 @@ extern typeobject Functype;
 
 #define is_funcobject(op) ((op)->ob_type == &Functype)
 
-extern object* newfuncobject(object*, object*);
+object* newfuncobject(object*, object*);
 
-extern object* getfunccode(object*);
+object* getfunccode(object*);
 
-extern object* getfuncglobals(object*);
+object* getfuncglobals(object*);

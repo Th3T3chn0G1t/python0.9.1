@@ -47,13 +47,13 @@ extern typeobject Tupletype;
 
 #define is_tupleobject(op) ((op)->ob_type == &Tupletype)
 
-extern object* newtupleobject(int size);
+object* newtupleobject(int size);
 
-extern int gettuplesize(object*);
+int gettuplesize(object*);
 
-extern object* gettupleitem(object*, int);
+object* gettupleitem(object*, int);
 
-extern int settupleitem(object*, int, object*);
+int settupleitem(object*, int, object*);
 
 /* Macro, trading safety for speed */
 #define GETTUPLEITEM(op, i) ((op)->ob_item[i])

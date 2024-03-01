@@ -68,7 +68,7 @@ object* err_scerr(sc_errno)int sc_errno;
 	return NULL;
 }
 
-err_scerrset(sc_errno, value, instr)int sc_errno;
+int err_scerrset(sc_errno, value, instr)int sc_errno;
 									object* value;
 									char* instr;
 {

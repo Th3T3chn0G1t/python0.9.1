@@ -52,17 +52,17 @@ extern typeobject Stringtype;
 
 #define is_stringobject(op) ((op)->ob_type == &Stringtype)
 
-extern object* newsizedstringobject(char*, int);
+object* newsizedstringobject(char*, int);
 
-extern object* newstringobject(char*);
+object* newstringobject(char*);
 
-extern unsigned int getstringsize(object*);
+unsigned int getstringsize(object*);
 
-extern char* getstringvalue(object*);
+char* getstringvalue(object*);
 
-extern void joinstring(object**, object*);
+void joinstring(object**, object*);
 
-extern int resizestring(object**, int);
+int resizestring(object**, int);
 
 /* Macro, trading safety for speed */
 #define GETSTRINGVALUE(op) ((op)->ob_sval)

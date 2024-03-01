@@ -66,17 +66,17 @@ char* getpythonpath() {
    These are initialized when first imported. */
 
 /* Standard modules */
-extern void inittime();
+void inittime();
 
-extern void initmath();
+void initmath();
 
-extern void initregexp();
+void initregexp();
 
 /* Mac-specific modules */
-extern void initmac();
+void initmac();
 
 #ifdef USE_STDWIN
-extern void initstdwin();
+void initstdwin();
 #endif
 
 struct {

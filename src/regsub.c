@@ -27,10 +27,8 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
  *     Copyright (c) 1986 by University of Toronto.
  *     Written by Henry Spencer.  Not derived from licensed software.
-#ifdef MULTILINE
  *     Changed by Guido van Rossum, CWI, Amsterdam
  *     for multi-line support.
-#endif
  *
  *     Permission is granted to anyone to use this software for any
  *     purpose on any computer system, and to redistribute it freely,
@@ -68,7 +66,6 @@ void regsub(prog, source, dest)regexp* prog;
 	char c;
 	int no;
 	int len;
-	extern char* strncpy();
 
 	if(prog == NULL || source == NULL || dest == NULL) {
 		regerror("NULL parm to regsub");
@@ -96,12 +93,10 @@ void regsub(prog, source, dest)regexp* prog;
 			if(c == '\\' && (*src == '\\' || *src == '&')) {
 				c = *src++;
 			}
-#ifdef MULTILINE
 			else if(c == '\\' && *src == 'n') {
 				c = '\n';
 				src++;
 			}
-#endif
 			*dst++ = c;
 		}
 		else if(prog->startp[no] != NULL && prog->endp[no] != NULL) {

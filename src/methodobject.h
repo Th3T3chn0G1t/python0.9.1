@@ -30,15 +30,15 @@ extern typeobject Methodtype;
 
 typedef object* (* method)(object*, object*);
 
-extern object* newmethodobject(char*, method, object*, unsigned int);
+object* newmethodobject(char*, method, object*, unsigned int);
 
-extern method getmethod(object*);
+method getmethod(object*);
 
-extern object* getself(object*);
+object* getself(object*);
 
 struct methodlist {
 	char* ml_name;
 	method ml_meth;
 };
 
-extern object* findmethod(struct methodlist*, object*, char*);
+object* findmethod(struct methodlist*, object*, char*);

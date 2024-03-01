@@ -28,16 +28,20 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 #include "modsupport.h"
 
-
 #include <signal.h>
 #include <setjmp.h>
 #include <time.h>
 
 #ifdef _WIN32
 # include <windows.h>
-# define sleep Sleep
 #endif
 
+/*
+ * TODO: Remove all builtin modules from Python itself and move to AGA to make
+ * 		 More sensible impls.
+ */
+
+/* TODO: Higher resolution timers. */
 
 /* Time methods */
 
@@ -81,73 +85,19 @@ static object* time_sleep(object* self, object* args) {
 	if(sigsave != (void (*)(int)) SIG_IGN) {
 		signal(SIGINT, sleep_catcher);
 	}
+
+#ifdef _WIN32
+	Sleep(1000 * secs);
+#else
 	sleep(secs);
+#endif
 
 	signal(SIGINT, sigsave);
 	PY_INCREF(None);
 	return None;
 }
 
-#ifdef THINK_C
-#define DO_MILLI
-#endif /* THINK_C */
-
-#ifdef AMOEBA
-#define DO_MILLI
-extern long sys_milli();
-#define millitimer sys_milli
-#endif /* AMOEBA */
-
-#ifdef BSD_TIME
-#define DO_MILLI
-#endif /* BSD_TIME */
-
-#ifdef DO_MILLI
-
-static object *
-time_millisleep(self, args)
-	   object *self;
-	   object *args;
-{
-	   long msecs;
-	   void (*sigsave)();
-	   if (!getlongarg(args, &msecs))
-			   return NULL;
-	   if (setjmp(sleep_intr)) {
-			   signal(SIGINT, sigsave);
-			   err_set(KeyboardInterrupt);
-			   return NULL;
-	   }
-	   sigsave = signal(SIGINT, SIG_IGN);
-	   if (sigsave != (void (*)()) SIG_IGN)
-			   signal(SIGINT, sleep_catcher);
-	   millisleep(msecs);
-	   signal(SIGINT, sigsave);
-	   PY_INCREF(None);
-	   return None;
-}
-
-static object *
-time_millitimer(self, args)
-	   object *self;
-	   object *args;
-{
-	   long msecs;
-	   extern long millitimer();
-	   if (!getnoarg(args))
-			   return NULL;
-	   msecs = millitimer();
-	   return newintobject(msecs);
-}
-
-#endif /* DO_MILLI */
-
-
 static struct methodlist time_methods[] = {
-#ifdef DO_MILLI
-		{"millisleep",        time_millisleep},
-		{"millitimer",        time_millitimer},
-#endif /* DO_MILLI */
 		{ "sleep", time_sleep }, { "time", time_time },
 		{ NULL, NULL }           /* sentinel */
 };

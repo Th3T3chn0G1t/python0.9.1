@@ -626,9 +626,9 @@ return
 v;
 }
 
-extern void pick(), gselect();
+void pick(), gselect();
 
-extern long endpick(), endselect();
+long endpick(), endselect();
 
 %
 pick static object

@@ -27,10 +27,8 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
  *     Copyright (c) 1986 by University of Toronto.
  *     Written by Henry Spencer.  Not derived from licensed software.
-#ifdef MULTILINE
  *     Changed by Guido van Rossum, CWI, Amsterdam
  *     for multi-line support.
-#endif
  *
  *     Permission is granted to anyone to use this software for any
  *     purpose on any computer system, and to redistribute it freely,
@@ -57,7 +55,6 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #include "regexp.h"
 #include "regmagic.h"
 
-#ifdef MULTILINE
 /*
  * Defining MULTILINE turns on the following changes in the semantics:
  * 1.  The '.' operator matches all characters except a newline.
@@ -74,7 +71,6 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  * it differs from regexec(prog, string+offset) in assuming
  * that the line begins at 'string'.
  */
-#endif
 
 /*
  * The "internal use only" fields in regexp.h are present to pass info from
@@ -199,39 +195,34 @@ static int regnpar;            /* () count. */
 static char regdummy;
 static char* regcode;          /* Code-emit pointer; &regdummy = don't. */
 static long regsize;           /* Code size. */
-#ifdef MULTILINE
 static int regnl;              /* '\n' detected. */
-#endif
 
 /*
  * Forward declarations for regcomp()'s friends.
  */
-#ifndef STATIC
-#define        STATIC  static
-#endif
 
-STATIC char* reg();
+static char* reg();
 
-STATIC char* regbranch();
+static char* regbranch();
 
-STATIC char* regpiece();
+static char* regpiece();
 
-STATIC char* regatom();
+static char* regatom();
 
-STATIC char* regnode();
+static char* regnode();
 
-STATIC char* regnext();
+static char* regnext();
 
-STATIC void regc();
+static void regc();
 
-STATIC void reginsert();
+static void reginsert();
 
-STATIC void regtail();
+static void regtail();
 
-STATIC void regoptail();
+static void regoptail();
 
 #ifdef STRCSPN
-STATIC int strcspn();
+static int strcspn();
 #endif
 
 /*
@@ -264,9 +255,7 @@ regexp* regcomp(exp)char* exp;
 	regnpar = 1;
 	regsize = 0L;
 	regcode = &regdummy;
-#ifdef MULTILINE
 	regnl = 0;
-#endif
 	regc(MAGIC);
 	if(reg(0, &flags) == NULL) {
 		return (NULL);
@@ -299,10 +288,9 @@ regexp* regcomp(exp)char* exp;
 		scan = OPERAND(scan);
 
 		/* Starting-point info. */
-		if(OP(scan) == EXACTLY) {
+		if (OP(scan) == EXACTLY) {
 			r->regstart = *OPERAND(scan);
-		}
-		else if(OP(scan) == BOL) {
+		} else if (OP(scan) == BOL) {
 			r->reganch++;
 		}
 
@@ -314,21 +302,19 @@ regexp* regcomp(exp)char* exp;
 		 * and avoiding duplication strengthens checking.  Not a
 		 * strong reason, but sufficient in the absence of others.
 		 */
-#ifdef MULTILINE
-		if((flags & SPSTART) && !regnl) {
-#else
-			if (flags&SPSTART) {
-#endif
-			longest = NULL;
-			len = 0;
-			for(; scan != NULL; scan = regnext(scan)) {
-				if(OP(scan) == EXACTLY && (int) strlen(OPERAND(scan)) >= len) {
-					longest = OPERAND(scan);
-					len = strlen(OPERAND(scan));
+		if ((flags & SPSTART) && !regnl) {
+			if (flags & SPSTART) {
+				longest = NULL;
+				len = 0;
+				for (; scan != NULL; scan = regnext(scan)) {
+					if (OP(scan) == EXACTLY && (int) strlen(OPERAND(scan)) >= len) {
+						longest = OPERAND(scan);
+						len = strlen(OPERAND(scan));
+					}
 				}
+				r->regmust = longest;
+				r->regmlen = len;
 			}
-			r->regmust = longest;
-			r->regmlen = len;
 		}
 	}
 
@@ -601,14 +587,12 @@ static char* regatom(flagp)int* flagp;
 			break;
 		case '\\': if(*regparse == '\0') FAIL("trailing \\");
 			ret = regnode(EXACTLY);
-#ifdef MULTILINE
 			if(*regparse == 'n') {
 				regc('\n');
 				regparse++;
 				regnl++;
 			}
 			else
-#endif
 			{
 				regc(*regparse++);
 			}
@@ -632,11 +616,9 @@ static char* regatom(flagp)int* flagp;
 			}
 			ret = regnode(EXACTLY);
 			while(len > 0) {
-#ifdef MULTILINE
 				if(*regparse == '\n') {
 					regnl++;
 				}
-#endif
 				regc(*regparse++);
 				len--;
 			}
@@ -776,18 +758,18 @@ static char** regendp;         /* Ditto for endp. */
 /*
  * Forwards.
  */
-STATIC int regtry();
+static int regtry();
 
-STATIC int regmatch();
+static int regmatch();
 
-STATIC int regrepeat();
+static int regrepeat();
 
 #ifdef _DEBUG
 int regnarrate = 0;
 
 void regdump();
 
-STATIC char* regprop();
+static char* regprop();
 
 #endif
 
@@ -798,7 +780,6 @@ int regexec(prog, string)regexp* prog;
 						 char* string;
 {
 	char* s;
-	extern char* strchr();
 
 	/* Be paranoid... */
 	if(prog == NULL || string == NULL) {
@@ -806,12 +787,10 @@ int regexec(prog, string)regexp* prog;
 		return (0);
 	}
 
-#ifdef MULTILINE
 	/* Check for \n in string, and if so, call the more general routine. */
 	if(strchr(string, '\n') != NULL) {
 		return reglexec(prog, string, 0);
 	}
-#endif
 
 	/* Check validity of program. */
 	if(UCHARAT(prog->program) != MAGIC) {
@@ -865,7 +844,6 @@ int regexec(prog, string)regexp* prog;
 	return (0);
 }
 
-#ifdef MULTILINE
 /*
  - reglexec - match a regexp against a long string buffer, starting at offset
  */
@@ -874,7 +852,6 @@ int reglexec(prog, string, offset)regexp* prog;
 								  int offset;
 {
 	char* s;
-	extern char* strchr();
 
 	/* Be paranoid... */
 	if(prog == NULL || string == NULL) {
@@ -932,7 +909,6 @@ int reglexec(prog, string, offset)regexp* prog;
 	/* Failure. */
 	return (0);
 }
-#endif
 
 /*
  - regtry - try match at specific point
@@ -980,7 +956,6 @@ regmatch(prog)char* prog;
 {
 	char* scan;    /* Current node. */
 	char* next;             /* Next node. */
-	extern char* strchr();
 
 	scan = prog;
 #ifdef _DEBUG
@@ -998,32 +973,20 @@ regmatch(prog)char* prog;
 
 		switch(OP(scan)) {
 			case BOL:
-#ifdef MULTILINE
 				if(!(reginput == regbol ||
 					( reginput > regbol && *(reginput - 1) == '\n')))
-#else
-					if (reginput != regbol)
-#endif
 				{
 					return (0);
 				}
 				break;
 			case EOL:
-#ifdef MULTILINE
 				if(*reginput != '\0' && *reginput != '\n')
-#else
-					if (*reginput != '\0')
-#endif
 				{
 					return (0);
 				}
 				break;
 			case ANY:
-#ifdef MULTILINE
 				if(*reginput == '\0' || *reginput == '\n')
-#else
-					if (*reginput == '\0')
-#endif
 				{
 					return (0);
 				}
@@ -1053,12 +1016,8 @@ regmatch(prog)char* prog;
 				reginput++;
 				break;
 			case ANYBUT:
-#ifdef MULTILINE
 				if(*reginput == '\0' || *reginput == '\n' ||
 				   strchr(OPERAND(scan), *reginput) != NULL)
-#else
-					if (*reginput == '\0' || strchr(OPERAND(scan), *reginput) != NULL)
-#endif
 				{
 					return (0);
 				}
@@ -1206,21 +1165,17 @@ static int regrepeat(p)char* p;
 	int count = 0;
 	char* scan;
 	char* opnd;
-#ifdef MULTILINE
 	char* eol;
-#endif
 
 	scan = reginput;
 	opnd = OPERAND(p);
 	switch(OP(p)) {
 		case ANY:
-#ifdef MULTILINE
 			if((eol = strchr(scan, '\n')) != NULL) {
 				count += eol - scan;
 				scan = eol;
 				break;
 			}
-#endif
 			count = strlen(scan);
 			scan += count;
 			break;
@@ -1237,12 +1192,8 @@ static int regrepeat(p)char* p;
 			}
 			break;
 		case ANYBUT:
-#ifdef MULTILINE
 			while(*scan != '\0' && *scan != '\n' &&
 				  strchr(opnd, *scan) == NULL) {
-#else
-				while (*scan != '\0' && strchr(opnd, *scan) == NULL) {
-#endif
 				count++;
 				scan++;
 			}
@@ -1283,7 +1234,7 @@ static char* regnext(p)char* p;
 
 #ifdef _DEBUG
 
-STATIC char* regprop();
+static char* regprop();
 
 /*
  - regdump - dump a regexp onto stdout in vaguely comprehensible form
@@ -1293,7 +1244,6 @@ void regdump(r)regexp* r;
 	char* s;
 	char op = EXACTLY;     /* Arbitrary non-END op. */
 	char* next;
-	extern char* strchr();
 
 
 	s = r->program + 1;
@@ -1311,12 +1261,10 @@ void regdump(r)regexp* r;
 		if(op == ANYOF || op == ANYBUT || op == EXACTLY) {
 			/* Literal string, where present. */
 			while(*s != '\0') {
-#ifdef MULTILINE
 				if(*s == '\n') {
 					printf("\\n");
 				}
 				else
-#endif
 				{
 					putchar(*s);
 				}

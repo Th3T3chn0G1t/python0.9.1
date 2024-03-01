@@ -36,12 +36,9 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #define ElementIsNull  11
 #define TransError     12
 
-extern object* err_scerr
-PROTO((
+object* err_scerr(
 int sc_errno
-));
-
-extern err_scerrset PROTO((int sc_errno, object* value, char* instr)
-
 );
+
+int err_scerrset (int sc_errno, object* value, char* instr);
 extern object* StubcodeError;

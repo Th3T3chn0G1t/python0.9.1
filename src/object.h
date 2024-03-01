@@ -198,15 +198,15 @@ extern typeobject Typetype; /* The type of type objects */
 #define is_typeobject(op) ((op)->ob_type == &Typetype)
 
 /* Generic operations on objects */
-extern void printobject(object*, FILE*, int);
+void printobject(object*, FILE*, int);
 
-extern object* reprobject(object*);
+object* reprobject(object*);
 
-extern int cmpobject(object*, object*);
+int cmpobject(object*, object*);
 
-extern object* getattr(object*, char*);
+object* getattr(object*, char*);
 
-extern int setattr(object*, char*, object*);
+int setattr(object*, char*, object*);
 
 /* Flag bits for printing: */
 #define PRINT_RAW      1       /* No string quotes etc. */

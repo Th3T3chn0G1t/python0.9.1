@@ -28,8 +28,8 @@ extern typeobject Filetype;
 
 #define is_fileobject(op) ((op)->ob_type == &Filetype)
 
-extern object* newfileobject(char*, char*);
+object* newfileobject(char*, char*);
 
-extern object* newopenfileobject(FILE*, char*, char*);
+object* newopenfileobject(FILE*, char*, char*);
 
-extern FILE* getfilefile(object*);
+FILE* getfilefile(object*);

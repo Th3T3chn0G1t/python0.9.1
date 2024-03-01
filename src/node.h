@@ -35,11 +35,11 @@ typedef struct _node {
 	struct _node* n_child;
 } node;
 
-extern node* newtree(int type);
+node* newtree(int type);
 
-extern node* addchild(node* n, int type, char* str, int lineno);
+node* addchild(node* n, int type, char* str, int lineno);
 
-extern void freetree(node* n);
+void freetree(node* n);
 
 /* Node access functions */
 #define NCH(n)         ((n)->n_nchildren)
@@ -59,8 +59,8 @@ extern void freetree(node* n);
        } }
 #endif
 
-extern void listtree(node*);
+void listtree(node*);
 
-extern void listnode(FILE*, node*);
+void listnode(FILE*, node*);
 
 #endif

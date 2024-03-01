@@ -40,7 +40,7 @@ extern int errno;
 
 #include "sys/param.h"
 
-extern char* getwd();
+char* getwd();
 
 char* getcwd(buf, size)char* buf;
 					   int size;

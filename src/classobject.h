@@ -36,12 +36,12 @@ extern typeobject Classtype, Classmembertype, Classmethodtype;
 #define is_classmemberobject(op) ((op)->ob_type == &Classmembertype)
 #define is_classmethodobject(op) ((op)->ob_type == &Classmethodtype)
 
-extern object* newclassobject(object*, object*);
+object* newclassobject(object*, object*);
 
-extern object* newclassmemberobject(object*);
+object* newclassmemberobject(object*);
 
-extern object* newclassmethodobject(object*, object*);
+object* newclassmethodobject(object*, object*);
 
-extern object* classmethodgetfunc(object*);
+object* classmethodgetfunc(object*);
 
-extern object* classmethodgetself(object*);
+object* classmethodgetself(object*);

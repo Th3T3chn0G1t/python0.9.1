@@ -70,7 +70,7 @@ struct sc_ProcessBlock {
 	TpsLoop loops;
 };
 
-extern getcapability();
+getcapability();
 
 /*
  *      Clean up the mess the loops make.
@@ -1070,7 +1070,7 @@ static int xGetI(flags, sc_pb)TscOperand flags;
 static int xGetC(flags, sc_pb)TscOperand flags;
 							  struct sc_ProcessBlock* sc_pb;
 {
-	extern object* newcapobject();
+	object* newcapobject();
 	object* capobj;
 	capability cap;
 

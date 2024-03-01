@@ -66,4 +66,4 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 
 extern char* tok_name[]; /* Token names */
-extern int tok_1char(int);
+int tok_1char(int);

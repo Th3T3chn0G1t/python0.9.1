@@ -28,6 +28,6 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 extern grammar gram;
 
-extern grammar* meta_grammar(void);
+grammar* meta_grammar(void);
 
-extern grammar* pgen(struct _node*);
+grammar* pgen(struct _node*);

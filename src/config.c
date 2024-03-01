@@ -32,10 +32,10 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
    These are initialized when first imported. */
 
 /* Standard modules */
-extern void inittime();
-extern void initmath();
-extern void initregexp();
-extern void initposix();
+void inittime();
+void initmath();
+void initregexp();
+void initposix();
 
 struct py_initmod inittab[] = {
 	/* Standard modules */

@@ -37,9 +37,9 @@ extern typeobject Floattype;
 
 #define is_floatobject(op) ((op)->ob_type == &Floattype)
 
-extern object* newfloatobject(double);
+object* newfloatobject(double);
 
-extern double getfloatvalue(object*);
+double getfloatvalue(object*);
 
 /* Macro, trading safety for speed */
 #define GETFLOATVALUE(op) ((op)->ob_fval)

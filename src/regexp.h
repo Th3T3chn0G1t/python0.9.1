@@ -29,8 +29,6 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  * not the System V one.
  */
 
-#define MULTILINE
-
 #define NSUBEXP  10
 typedef struct regexp {
 	char* startp[NSUBEXP];
@@ -42,16 +40,13 @@ typedef struct regexp {
 	char program[1];        /* Unwarranted chumminess with compiler. */
 } regexp;
 
-extern regexp* regcomp();
+regexp* regcomp();
 
-extern int regexec();
+int regexec();
 
-#ifdef MULTILINE
 
-extern int reglexec();
+int reglexec();
 
-#endif
+void regsub();
 
-extern void regsub();
-
-extern void regerror();
+void regerror();

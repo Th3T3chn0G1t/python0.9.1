@@ -165,46 +165,6 @@ static int tok_nextc(tok)struct tok_state* tok;
 			tok->inp = tok->buf + n;
 			tok->end = tok->inp + n;
 		}
-#ifdef USE_READLINE
-		if (tok->prompt != NULL) {
-				extern char *readline (char *prompt);
-				static int been_here;
-				if (!been_here) {
-						/* Force rebind of TAB to insert-tab */
-						extern int rl_insert();
-						rl_bind_key('\t', rl_insert);
-						been_here++;
-				}
-				if (tok->buf != NULL)
-						free(tok->buf);
-				tok->buf = readline(tok->prompt);
-				(void) intrcheck(); /* Clear pending interrupt */
-				if (tok->nextprompt != NULL)
-						tok->prompt = tok->nextprompt;
-						/* XXX different semantics w/o readline()! */
-				if (tok->buf == NULL) {
-						tok->done = E_EOF;
-				}
-				else {
-						unsigned int n = strlen(tok->buf);
-						if (n > 0)
-								add_history(tok->buf);
-						/* Append the '\n' that readline()
-						   doesn't give us, for the tokenizer... */
-						tok->buf = realloc(tok->buf, n+2);
-						if (tok->buf == NULL)
-								tok->done = E_NOMEM;
-						else {
-								tok->end = tok->buf + n;
-								*tok->end++ = '\n';
-								*tok->end = '\0';
-								tok->inp = tok->end;
-								tok->cur = tok->buf;
-						}
-				}
-		}
-		else
-#endif
 		{
 			tok->cur = tok->inp;
 			if(tok->prompt != NULL && tok->inp == tok->buf) {

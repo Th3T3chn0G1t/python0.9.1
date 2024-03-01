@@ -56,7 +56,7 @@ static object* mac_chdir(self, args)object* self;
 static object* mac_getcwd(self, args)object* self;
 									 object* args;
 {
-	extern char* getwd();
+	char* getwd();
 	char buf[1025];
 	if(!getnoarg(args)) {
 		return NULL;

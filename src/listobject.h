@@ -47,19 +47,19 @@ extern typeobject Listtype;
 
 #define is_listobject(op) ((op)->ob_type == &Listtype)
 
-extern object* newlistobject(int size);
+object* newlistobject(int size);
 
-extern int getlistsize(object*);
+int getlistsize(object*);
 
-extern object* getlistitem(object*, int);
+object* getlistitem(object*, int);
 
-extern int setlistitem(object*, int, object*);
+int setlistitem(object*, int, object*);
 
-extern int inslistitem(object*, int, object*);
+int inslistitem(object*, int, object*);
 
-extern int addlistitem(object*, object*);
+int addlistitem(object*, object*);
 
-extern int sortlist(object*);
+int sortlist(object*);
 
 /* Macro, trading safety for speed */
 #define GETLISTITEM(op, i) ((op)->ob_item[i])

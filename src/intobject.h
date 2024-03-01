@@ -48,9 +48,9 @@ extern typeobject Inttype;
 
 #define is_intobject(op) ((op)->ob_type == &Inttype)
 
-extern object* newintobject(long);
+object* newintobject(long);
 
-extern long getintvalue(object*);
+long getintvalue(object*);
 
 
 /*
