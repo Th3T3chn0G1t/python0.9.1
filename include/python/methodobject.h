@@ -1,49 +1,31 @@
-/***********************************************************
-Copyright 1991 by Stichting Mathematisch Centrum, Amsterdam, The
-Netherlands.
-
-                        All Rights Reserved
-
-Permission to use, copy, modify, and distribute this software and its
-documentation for any purpose and without fee is hereby granted,
-provided that the above copyright notice appear in all copies and that
-both that copyright notice and this permission notice appear in
-supporting documentation, and that the names of Stichting Mathematisch
-Centrum or CWI not be used in advertising or publicity pertaining to
-distribution of the software without specific, written prior permission.
-
-STICHTING MATHEMATISCH CENTRUM DISCLAIMS ALL WARRANTIES WITH REGARD TO
-THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
-FITNESS, IN NO EVENT SHALL STICHTING MATHEMATISCH CENTRUM BE LIABLE
-FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
-OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-
-******************************************************************/
+/*
+ * Copyright 1991 by Stichting Mathematisch Centrum
+ * See `LICENCE' for more information.
+ */
 
 /* Method object interface */
 
 #ifndef PY_METHODOBJECT_H
 #define PY_METHODOBJECT_H
 
-extern typeobject Methodtype;
+#include <python/object.h>
 
-#define is_methodobject(op) ((op)->ob_type == &Methodtype)
+/* TODO: Python global state */
+extern struct py_type py_method_type;
 
-typedef object* (* method)(object*, object*);
+#define py_is_method(op) ((op)->type == &py_method_type)
 
-object* newmethodobject(char*, method, object*, unsigned int);
+typedef struct py_object* (*py_method_t)(struct py_object*, struct py_object*);
 
-method getmethod(object*);
-
-object* getself(object*);
-
-struct methodlist {
-	char* ml_name;
-	method ml_meth;
+struct py_methodlist {
+	char* name;
+	py_method_t method;
 };
 
-object* findmethod(struct methodlist*, object*, char*);
+struct py_object* py_method_new(char*, py_method_t, struct py_object*, unsigned int);
+py_method_t py_method_get(struct py_object*);
+struct py_object* py_method_get_self(struct py_object*);
+
+struct py_object* py_methodlist_find(struct py_methodlist*, struct py_object*, const char*);
 
 #endif

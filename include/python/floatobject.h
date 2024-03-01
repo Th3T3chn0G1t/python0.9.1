@@ -1,50 +1,30 @@
-/***********************************************************
-Copyright 1991 by Stichting Mathematisch Centrum, Amsterdam, The
-Netherlands.
-
-                        All Rights Reserved
-
-Permission to use, copy, modify, and distribute this software and its
-documentation for any purpose and without fee is hereby granted,
-provided that the above copyright notice appear in all copies and that
-both that copyright notice and this permission notice appear in
-supporting documentation, and that the names of Stichting Mathematisch
-Centrum or CWI not be used in advertising or publicity pertaining to
-distribution of the software without specific, written prior permission.
-
-STICHTING MATHEMATISCH CENTRUM DISCLAIMS ALL WARRANTIES WITH REGARD TO
-THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
-FITNESS, IN NO EVENT SHALL STICHTING MATHEMATISCH CENTRUM BE LIABLE
-FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
-OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-
-******************************************************************/
+/*
+ * Copyright 1991 by Stichting Mathematisch Centrum
+ * See `LICENCE' for more information.
+ */
 
 /* Float object interface */
 
 #ifndef PY_FLOATOBJECT_H
 #define PY_FLOATOBJECT_H
 
+#include <python/object.h>
+
 /*
-floatobject represents a (double precision) floating point number.
-*/
+ * struct py_float represents a (double precision) floating point number.
+ */
 
-typedef struct {
-	OB_HEAD
-	double ob_fval;
-} floatobject;
+struct py_float {
+	PY_OB_SEQ
+	double value;
+};
 
-extern typeobject Floattype;
+/* TODO: Python global state. */
+extern struct py_type py_float_type;
 
-#define is_floatobject(op) ((op)->ob_type == &Floattype)
+#define py_is_float(op) ((op)->type == &py_float_type)
 
-object* newfloatobject(double);
-
-double getfloatvalue(object*);
-
-/* Macro, trading safety for speed */
-#define GETFLOATVALUE(op) ((op)->ob_fval)
+struct py_object* py_float_new(double);
+double py_float_get(struct py_object*);
 
 #endif

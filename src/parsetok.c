@@ -1,86 +1,41 @@
-/***********************************************************
-Copyright 1991 by Stichting Mathematisch Centrum, Amsterdam, The
-Netherlands.
-
-                        All Rights Reserved
-
-Permission to use, copy, modify, and distribute this software and its
-documentation for any purpose and without fee is hereby granted,
-provided that the above copyright notice appear in all copies and that
-both that copyright notice and this permission notice appear in
-supporting documentation, and that the names of Stichting Mathematisch
-Centrum or CWI not be used in advertising or publicity pertaining to
-distribution of the software without specific, written prior permission.
-
-STICHTING MATHEMATISCH CENTRUM DISCLAIMS ALL WARRANTIES WITH REGARD TO
-THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
-FITNESS, IN NO EVENT SHALL STICHTING MATHEMATISCH CENTRUM BE LIABLE
-FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
-OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-
-******************************************************************/
+/*
+ * Copyright 1991 by Stichting Mathematisch Centrum
+ * See `LICENCE' for more information.
+ */
 
 /* Parser-tokenizer link implementation */
 
 #include <stdlib.h>
 
-#include <python/pgenheaders.h>
 #include <python/tokenizer.h>
 #include <python/node.h>
 #include <python/grammar.h>
 #include <python/parser.h>
 #include <python/parsetok.h>
-#include <python/errcode.h>
-
+#include <python/result.h>
+#include <python/token.h>
 
 /* Forward */
-static int parsetok(struct tok_state*, grammar*, int, node**);
+static int parsetok(struct py_tokenizer*, struct py_grammar*, int, struct py_node**);
 
+/* Parse input coming from a file. Return error code, print some errors. */
 
-/* Parse input coming from a string.  Return error code, print some errors. */
-
-int parsestring(s, g, start, n_ret)char* s;
-								   grammar* g;
-								   int start;
-								   node** n_ret;
-{
-	struct tok_state* tok = tok_setups(s);
-	int ret;
-
-	if(tok == NULL) {
-		fprintf(stderr, "no mem for tok_setups\n");
-		return E_NOMEM;
-	}
-	ret = parsetok(tok, g, start, n_ret);
-	if(ret == E_TOKEN || ret == E_SYNTAX) {
-		fprintf(
-				stderr, "String parsing error at line %d\n", tok->lineno);
-	}
-	tok_free(tok);
-	return ret;
-}
-
-
-/* Parse input coming from a file.  Return error code, print some errors. */
-
-int parsefile(fp, filename, g, start, ps1, ps2, n_ret)FILE* fp;
+int py_parse_file(fp, filename, g, start, ps1, ps2, n_ret)FILE* fp;
 													  char* filename;
-													  grammar* g;
+													  struct py_grammar* g;
 													  int start;
 													  char* ps1, * ps2;
-													  node** n_ret;
+													  struct py_node** n_ret;
 {
-	struct tok_state* tok = tok_setupf(fp, ps1, ps2);
+	struct py_tokenizer* tok = py_tokenizer_setup_file(fp, ps1, ps2);
 	int ret;
 
 	if(tok == NULL) {
-		fprintf(stderr, "no mem for tok_setupf\n");
-		return E_NOMEM;
+		fprintf(stderr, "no mem for py_tokenizer_setup_file\n");
+		return PY_RESULT_OOM;
 	}
 	ret = parsetok(tok, g, start, n_ret);
-	if(ret == E_TOKEN || ret == E_SYNTAX) {
+	if(ret == PY_RESULT_TOKEN || ret == PY_RESULT_SYNTAX) {
 		char* p;
 		fprintf(
 				stderr, "Parsing error: file %s, line %d:\n", filename,
@@ -100,7 +55,7 @@ int parsefile(fp, filename, g, start, ps1, ps2, n_ret)FILE* fp;
 		}
 		fprintf(stderr, "^\n");
 	}
-	tok_free(tok);
+	py_tokenizer_delete(tok);
 	return ret;
 }
 
@@ -108,17 +63,17 @@ int parsefile(fp, filename, g, start, ps1, ps2, n_ret)FILE* fp;
 /* Parse input coming from the given tokenizer structure.
    Return error code. */
 
-static int parsetok(tok, g, start, n_ret)struct tok_state* tok;
-										 grammar* g;
+static int parsetok(tok, g, start, n_ret)struct py_tokenizer* tok;
+										 struct py_grammar* g;
 										 int start;
-										 node** n_ret;
+										 struct py_node** n_ret;
 {
-	parser_state* ps;
+	struct py_parser* ps;
 	int ret;
 
-	if((ps = newparser(g, start)) == NULL) {
+	if((ps = py_parser_new(g, start)) == NULL) {
 		fprintf(stderr, "no mem for new parser\n");
-		return E_NOMEM;
+		return PY_RESULT_OOM;
 	}
 
 	for(;;) {
@@ -127,8 +82,8 @@ static int parsetok(tok, g, start, n_ret)struct tok_state* tok;
 		int len;
 		char* str;
 
-		type = tok_get(tok, &a, &b);
-		if(type == ERRORTOKEN) {
+		type = py_tokenizer_get(tok, &a, &b);
+		if(type == PY_ERRORTOKEN) {
 			ret = tok->done;
 			break;
 		}
@@ -136,24 +91,24 @@ static int parsetok(tok, g, start, n_ret)struct tok_state* tok;
 		str = malloc((len + 1) * sizeof(char));
 		if(str == NULL) {
 			fprintf(stderr, "no mem for next token\n");
-			ret = E_NOMEM;
+			ret = PY_RESULT_OOM;
 			break;
 		}
 		strncpy(str, a < tok->buf ? tok->buf : a, len);
 		str[len] = '\0';
-		ret = addtoken(ps, (int) type, str, tok->lineno);
-		if(ret != E_OK) {
-			if(ret == E_DONE) {
-				*n_ret = ps->p_tree;
-				ps->p_tree = NULL;
+		ret = py_parser_add(ps, (int) type, str, tok->lineno);
+		if(ret != PY_RESULT_OK) {
+			if(ret == PY_RESULT_DONE) {
+				*n_ret = ps->tree;
+				ps->tree = NULL;
 			}
-			else if(tok->lineno <= 1 && tok->done == E_EOF) {
-				ret = E_EOF;
+			else if(tok->lineno <= 1 && tok->done == PY_RESULT_EOF) {
+				ret = PY_RESULT_EOF;
 			}
 			break;
 		}
 	}
 
-	delparser(ps);
+	py_parser_delete(ps);
 	return ret;
 }

@@ -1,49 +1,32 @@
-/***********************************************************
-Copyright 1991 by Stichting Mathematisch Centrum, Amsterdam, The
-Netherlands.
-
-                        All Rights Reserved
-
-Permission to use, copy, modify, and distribute this software and its
-documentation for any purpose and without fee is hereby granted,
-provided that the above copyright notice appear in all copies and that
-both that copyright notice and this permission notice appear in
-supporting documentation, and that the names of Stichting Mathematisch
-Centrum or CWI not be used in advertising or publicity pertaining to
-distribution of the software without specific, written prior permission.
-
-STICHTING MATHEMATISCH CENTRUM DISCLAIMS ALL WARRANTIES WITH REGARD TO
-THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
-FITNESS, IN NO EVENT SHALL STICHTING MATHEMATISCH CENTRUM BE LIABLE
-FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
-OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-
-******************************************************************/
+/*
+ * Copyright 1991 by Stichting Mathematisch Centrum
+ * See `LICENCE' for more information.
+ */
 
 /* Method object implementation */
 
-#include <stdlib.h>
-
-#include <python/allobjects.h>
 #include <python/token.h>
+#include <python/errors.h>
+
+#include <python/object.h>
+#include <python/stringobject.h>
+#include <python/methodobject.h>
 
 typedef struct {
-	OB_HEAD
+	PY_OB_SEQ
 	char* m_name;
 	unsigned m_heap_name;
-	method m_meth;
-	object* m_self;
+	py_method_t m_meth;
+	struct py_object* m_self;
 } methodobject;
 
-object* newmethodobject(name, meth, self, heapname)
+struct py_object* py_method_new(name, meth, self, heapname)
 		char* name; /* static string */
-		method meth;
-		object* self;
+		py_method_t meth;
+		struct py_object* self;
 		unsigned int heapname;
 {
-	methodobject* op = NEWOBJ(methodobject, &Methodtype);
+	methodobject* op = py_object_new(&py_method_type);
 	if(op != NULL) {
 		op->m_heap_name = heapname;
 		op->m_name = name;
@@ -52,22 +35,22 @@ object* newmethodobject(name, meth, self, heapname)
 			PY_INCREF(self);
 		op->m_self = self;
 	}
-	return (object*) op;
+	return (struct py_object*) op;
 }
 
-method getmethod(op)object* op;
+py_method_t py_method_get(op)struct py_object* op;
 {
-	if(!is_methodobject(op)) {
-		err_badcall();
+	if(!py_is_method(op)) {
+		py_error_set_badcall();
 		return NULL;
 	}
 	return ((methodobject*) op)->m_meth;
 }
 
-object* getself(op)object* op;
+struct py_object* py_method_get_self(op)struct py_object* op;
 {
-	if(!is_methodobject(op)) {
-		err_badcall();
+	if(!py_is_method(op)) {
+		py_error_set_badcall();
 		return NULL;
 	}
 	return ((methodobject*) op)->m_self;
@@ -96,11 +79,11 @@ static void meth_print(m, fp, flags)methodobject* m;
 	else {
 		fprintf(
 				fp, "<built-in method '%s' of some %s object>", m->m_name,
-				m->m_self->ob_type->tp_name);
+				m->m_self->type->name);
 	}
 }
 
-static object* meth_repr(m)methodobject* m;
+static struct py_object* meth_repr(m)methodobject* m;
 {
 	char buf[200];
 	if(m->m_self == NULL) {
@@ -109,36 +92,36 @@ static object* meth_repr(m)methodobject* m;
 	else {
 		sprintf(
 				buf, "<built-in method '%.80s' of some %.80s object>",
-				m->m_name, m->m_self->ob_type->tp_name);
+				m->m_name, m->m_self->type->name);
 	}
-	return newstringobject(buf);
+	return py_string_new(buf);
 }
 
-typeobject Methodtype = {
-		OB_HEAD_INIT(&Typetype) 0, "method", sizeof(methodobject), 0,
-		meth_dealloc,   /*tp_dealloc*/
-		meth_print,     /*tp_print*/
-		0,              /*tp_getattr*/
-		0,              /*tp_setattr*/
-		0,              /*tp_compare*/
-		meth_repr,      /*tp_repr*/
-		0,              /*tp_as_number*/
-		0,              /*tp_as_sequence*/
-		0,              /*tp_as_mapping*/
+struct py_type py_method_type = {
+		PY_OB_SEQ_INIT(&py_type_type) 0, "method", sizeof(methodobject), 0,
+		meth_dealloc,   /*dealloc*/
+		meth_print,     /*print*/
+		0,              /*get_attr*/
+		0,              /*set_attr*/
+		0,              /*cmp*/
+		meth_repr,      /*repr*/
+		0,              /*numbermethods*/
+		0,              /*sequencemethods*/
+		0,              /*mappingmethods*/
 };
 
 /* Find a method in a module's method table.
-   Usually called from an object's getattr method. */
+   Usually called from an object's py_object_get_attr method. */
 
-object* findmethod(ml, op, name)struct methodlist* ml;
-								object* op;
-								char* name;
+struct py_object* py_methodlist_find(ml, op, name)struct py_methodlist* ml;
+								struct py_object* op;
+								const char* name;
 {
-	for(; ml->ml_name != NULL; ml++) {
-		if(strcmp(name, ml->ml_name) == 0) {
-			return newmethodobject(ml->ml_name, ml->ml_meth, op, 0);
+	for(; ml->name != NULL; ml++) {
+		if(strcmp(name, ml->name) == 0) {
+			return py_method_new(ml->name, ml->method, op, 0);
 		}
 	}
-	err_setstr(NameError, name);
+	py_error_set_string(py_name_error, name);
 	return NULL;
 }

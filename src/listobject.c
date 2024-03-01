@@ -1,260 +1,244 @@
-/***********************************************************
-Copyright 1991 by Stichting Mathematisch Centrum, Amsterdam, The
-Netherlands.
-
-                        All Rights Reserved
-
-Permission to use, copy, modify, and distribute this software and its
-documentation for any purpose and without fee is hereby granted,
-provided that the above copyright notice appear in all copies and that
-both that copyright notice and this permission notice appear in
-supporting documentation, and that the names of Stichting Mathematisch
-Centrum or CWI not be used in advertising or publicity pertaining to
-distribution of the software without specific, written prior permission.
-
-STICHTING MATHEMATISCH CENTRUM DISCLAIMS ALL WARRANTIES WITH REGARD TO
-THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
-FITNESS, IN NO EVENT SHALL STICHTING MATHEMATISCH CENTRUM BE LIABLE
-FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
-OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-
-******************************************************************/
+/*
+ * Copyright 1991 by Stichting Mathematisch Centrum
+ * See `LICENCE' for more information.
+ */
 
 /* List object implementation */
 
-#include <stdlib.h>
-
-#include <python/allobjects.h>
+#include <python/std.h>
+#include <python/errors.h>
 #include <python/modsupport.h>
 
-object* newlistobject(size)int size;
+#include <python/listobject.h>
+#include <python/stringobject.h>
+#include <python/tupleobject.h>
+
+struct py_object* py_list_new(size)int size;
 {
 	int i;
-	listobject* op;
+	struct py_list* op;
 	if(size < 0) {
-		err_badcall();
+		py_error_set_badcall();
 		return NULL;
 	}
-	op = malloc(sizeof(listobject));
+	op = malloc(sizeof(struct py_list));
 	if(op == NULL) {
-		return err_nomem();
+		return py_error_set_nomem();
 	}
 	if(size <= 0) {
-		op->ob_item = NULL;
+		op->item = NULL;
 	}
 	else {
-		op->ob_item = malloc(size * sizeof(object*));
-		if(op->ob_item == NULL) {
+		op->item = malloc(size * sizeof(struct py_object*));
+		if(op->item == NULL) {
 			free(op);
-			return err_nomem();
+			return py_error_set_nomem();
 		}
 	}
-	NEWREF(op);
-	op->ob_type = &Listtype;
-	op->ob_size = size;
+	PY_NEWREF(op);
+	op->type = &py_list_type;
+	op->size = size;
 	for(i = 0; i < size; i++) {
-		op->ob_item[i] = NULL;
+		op->item[i] = NULL;
 	}
-	return (object*) op;
+	return (struct py_object*) op;
 }
 
-int getlistsize(op)object* op;
+int py_list_size(op)struct py_object* op;
 {
-	if(!is_listobject(op)) {
-		err_badcall();
+	if(!py_is_list(op)) {
+		py_error_set_badcall();
 		return -1;
 	}
 	else {
-		return ((listobject*) op)->ob_size;
+		return ((struct py_list*) op)->size;
 	}
 }
 
-object* getlistitem(op, i)object* op;
+struct py_object* py_list_get(op, i)struct py_object* op;
 						  int i;
 {
-	if(!is_listobject(op)) {
-		err_badcall();
+	if(!py_is_list(op)) {
+		py_error_set_badcall();
 		return NULL;
 	}
-	if(i < 0 || i >= (int) ((listobject*) op)->ob_size) {
-		err_setstr(IndexError, "list index out of range");
+	if(i < 0 || i >= (int) ((struct py_list*) op)->size) {
+		py_error_set_string(PY_INDEX_ERROR, "list index out of range");
 		return NULL;
 	}
-	return ((listobject*) op)->ob_item[i];
+	return ((struct py_list*) op)->item[i];
 }
 
-int setlistitem(op, i, newitem)object* op;
+int py_list_set(op, i, newitem)struct py_object* op;
 							   int i;
-							   object* newitem;
+							   struct py_object* newitem;
 {
-	object* olditem;
-	if(!is_listobject(op)) {
+	struct py_object* olditem;
+	if(!py_is_list(op)) {
 		if(newitem != NULL)
 			PY_DECREF(newitem);
-		err_badcall();
+		py_error_set_badcall();
 		return -1;
 	}
-	if(i < 0 || i >= (int) ((listobject*) op)->ob_size) {
+	if(i < 0 || i >= (int) ((struct py_list*) op)->size) {
 		if(newitem != NULL)
 			PY_DECREF(newitem);
-		err_setstr(IndexError, "list assignment index out of range");
+		py_error_set_string(PY_INDEX_ERROR, "list assignment index out of range");
 		return -1;
 	}
-	olditem = ((listobject*) op)->ob_item[i];
-	((listobject*) op)->ob_item[i] = newitem;
+	olditem = ((struct py_list*) op)->item[i];
+	((struct py_list*) op)->item[i] = newitem;
 	if(olditem != NULL)
 		PY_DECREF(olditem);
 	return 0;
 }
 
-static int ins1(self, where, v)listobject* self;
+static int ins1(self, where, v)struct py_list* self;
 							   int where;
-							   object* v;
+							   struct py_object* v;
 {
 	int i;
-	object** items;
+	struct py_object** items;
 	if(v == NULL) {
-		err_badcall();
+		py_error_set_badcall();
 		return -1;
 	}
-	items = self->ob_item;
+	items = self->item;
 	/* TODO: Leaky realloc. */
-	items = realloc(items, (self->ob_size + 1) * sizeof(object*));
+	items = realloc(items, (self->size + 1) * sizeof(struct py_object*));
 	if(items == NULL) {
-		err_nomem();
+		py_error_set_nomem();
 		return -1;
 	}
 	if(where < 0) {
 		where = 0;
 	}
 	/* TODO: Address massive amount of `(int)' casting from old code. */
-	if(where > (int) self->ob_size) {
-		where = (int) self->ob_size;
+	if(where > (int) self->size) {
+		where = (int) self->size;
 	}
-	for(i = (int) self->ob_size; --i >= where;) {
+	for(i = (int) self->size; --i >= where;) {
 		items[i + 1] = items[i];
 	}
 	PY_INCREF(v);
 	items[where] = v;
-	self->ob_item = items;
-	self->ob_size++;
+	self->item = items;
+	self->size++;
 	return 0;
 }
 
-int inslistitem(op, where, newitem)object* op;
+int py_list_insert(op, where, newitem)struct py_object* op;
 								   int where;
-								   object* newitem;
+								   struct py_object* newitem;
 {
-	if(!is_listobject(op)) {
-		err_badcall();
+	if(!py_is_list(op)) {
+		py_error_set_badcall();
 		return -1;
 	}
-	return ins1((listobject*) op, where, newitem);
+	return ins1((struct py_list*) op, where, newitem);
 }
 
-int addlistitem(op, newitem)object* op;
-							object* newitem;
+int py_list_add(op, newitem)struct py_object* op;
+							struct py_object* newitem;
 {
-	if(!is_listobject(op)) {
-		err_badcall();
+	if(!py_is_list(op)) {
+		py_error_set_badcall();
 		return -1;
 	}
 	return ins1(
-			(listobject*) op, (int) ((listobject*) op)->ob_size, newitem);
+			(struct py_list*) op, (int) ((struct py_list*) op)->size, newitem);
 }
 
 /* Methods */
 
-static void list_dealloc(op)listobject* op;
+static void list_dealloc(op)struct py_list* op;
 {
 	int i;
-	for(i = 0; i < (int) op->ob_size; i++) {
-		if(op->ob_item[i] != NULL)
-			PY_DECREF(op->ob_item[i]);
+	for(i = 0; i < (int) op->size; i++) {
+		if(op->item[i] != NULL)
+			PY_DECREF(op->item[i]);
 	}
-	if(op->ob_item != NULL) {
-		free(op->ob_item);
+	if(op->item != NULL) {
+		free(op->item);
 	}
 	free(op);
 }
 
-static void list_print(op, fp, flags)listobject* op;
+static void list_print(op, fp, flags)struct py_list* op;
 									 FILE* fp;
 									 int flags;
 {
 	int i;
 	fprintf(fp, "[");
-	for(i = 0; i < (int) op->ob_size && !StopPrint; i++) {
+	for(i = 0; i < (int) op->size && !py_stop_print; i++) {
 		if(i > 0) {
 			fprintf(fp, ", ");
 		}
-		printobject(op->ob_item[i], fp, flags);
+		py_object_print(op->item[i], fp, flags);
 	}
 	fprintf(fp, "]");
 }
 
-object* list_repr(v)listobject* v;
+struct py_object* list_repr(v)struct py_list* v;
 {
-	object* s, * t, * comma;
+	struct py_object* s, * t, * comma;
 	int i;
-	s = newstringobject("[");
-	comma = newstringobject(", ");
-	for(i = 0; i < (int) v->ob_size && s != NULL; i++) {
+	s = py_string_new("[");
+	comma = py_string_new(", ");
+	for(i = 0; i < (int) v->size && s != NULL; i++) {
 		if(i > 0) {
-			joinstring(&s, comma);
+			py_string_join(&s, comma);
 		}
-		t = reprobject(v->ob_item[i]);
-		joinstring(&s, t);
+		t = py_object_repr(v->item[i]);
+		py_string_join(&s, t);
 		PY_DECREF(t);
 	}
 	PY_DECREF(comma);
-	t = newstringobject("]");
-	joinstring(&s, t);
+	t = py_string_new("]");
+	py_string_join(&s, t);
 	PY_DECREF(t);
 	return s;
 }
 
-static int list_compare(v, w)listobject* v, * w;
+static int list_compare(v, w)struct py_list* v, * w;
 {
-	int len = (v->ob_size < w->ob_size) ? v->ob_size : w->ob_size;
+	int len = (v->size < w->size) ? v->size : w->size;
 	int i;
 	for(i = 0; i < len; i++) {
-		int cmp = cmpobject(v->ob_item[i], w->ob_item[i]);
+		int cmp = py_object_cmp(v->item[i], w->item[i]);
 		if(cmp != 0) {
 			return cmp;
 		}
 	}
-	return v->ob_size - w->ob_size;
+	return v->size - w->size;
 }
 
-static int list_length(a)listobject* a;
+static int list_length(a)struct py_list* a;
 {
-	return a->ob_size;
+	return a->size;
 }
 
-static object* list_item(a, i)listobject* a;
+static struct py_object* list_item(a, i)struct py_list* a;
 							  int i;
 {
-	if(i < 0 || i >= (int) a->ob_size) {
-		err_setstr(IndexError, "list index out of range");
+	if(i < 0 || i >= (int) a->size) {
+		py_error_set_string(PY_INDEX_ERROR, "list index out of range");
 		return NULL;
 	}
-	PY_INCREF(a->ob_item[i]);
-	return a->ob_item[i];
+	PY_INCREF(a->item[i]);
+	return a->item[i];
 }
 
-static object* list_slice(a, ilow, ihigh)listobject* a;
+static struct py_object* list_slice(a, ilow, ihigh)struct py_list* a;
 										 int ilow, ihigh;
 {
-	listobject* np;
+	struct py_list* np;
 	int i;
 	if(ilow < 0) {
 		ilow = 0;
 	}
-	else if(ilow > (int) a->ob_size) {
-		ilow = (int) a->ob_size;
+	else if(ilow > (int) a->size) {
+		ilow = (int) a->size;
 	}
 	if(ihigh < 0) {
 		ihigh = 0;
@@ -262,100 +246,100 @@ static object* list_slice(a, ilow, ihigh)listobject* a;
 	if(ihigh < ilow) {
 		ihigh = ilow;
 	}
-	else if(ihigh > (int) a->ob_size) {
-		ihigh = (int) a->ob_size;
+	else if(ihigh > (int) a->size) {
+		ihigh = (int) a->size;
 	}
-	np = (listobject*) newlistobject(ihigh - ilow);
+	np = (struct py_list*) py_list_new(ihigh - ilow);
 	if(np == NULL) {
 		return NULL;
 	}
 	for(i = ilow; i < ihigh; i++) {
-		object* v = a->ob_item[i];
+		struct py_object* v = a->item[i];
 		PY_INCREF(v);
-		np->ob_item[i - ilow] = v;
+		np->item[i - ilow] = v;
 	}
-	return (object*) np;
+	return (struct py_object*) np;
 }
 
-static object* list_concat(a, bb)listobject* a;
-								 object* bb;
+static struct py_object* list_concat(a, bb)struct py_list* a;
+								 struct py_object* bb;
 {
 	int size;
 	int i;
-	listobject* np;
-	listobject* b;
-	if(!is_listobject(bb)) {
-		err_badarg();
+	struct py_list* np;
+	struct py_list* b;
+	if(!py_is_list(bb)) {
+		py_error_set_badarg();
 		return NULL;
 	}
-	b = ((listobject*) bb);
-	size = a->ob_size + b->ob_size;
-	np = (listobject*) newlistobject(size);
+	b = ((struct py_list*) bb);
+	size = a->size + b->size;
+	np = (struct py_list*) py_list_new(size);
 	if(np == NULL) {
-		return err_nomem();
+		return py_error_set_nomem();
 	}
-	for(i = 0; i < (int) a->ob_size; i++) {
-		object* v = a->ob_item[i];
+	for(i = 0; i < (int) a->size; i++) {
+		struct py_object* v = a->item[i];
 		PY_INCREF(v);
-		np->ob_item[i] = v;
+		np->item[i] = v;
 	}
-	for(i = 0; i < (int) b->ob_size; i++) {
-		object* v = b->ob_item[i];
+	for(i = 0; i < (int) b->size; i++) {
+		struct py_object* v = b->item[i];
 		PY_INCREF(v);
-		np->ob_item[i + a->ob_size] = v;
+		np->item[i + a->size] = v;
 	}
-	return (object*) np;
+	return (struct py_object*) np;
 }
 
 /* Added by Andrew Dalke, 27 March 2009 to handle the needed forward declaration for gcc*/
-static int list_ass_slice(object* a, int ilow, int ihigh, object* v);
+static int list_ass_slice(struct py_object* a, int ilow, int ihigh, struct py_object* v);
 
 
-static int list_ass_item(a, i, v)listobject* a;
+static int list_ass_item(a, i, v)struct py_list* a;
 								 int i;
-								 object* v;
+								 struct py_object* v;
 {
-	if(i < 0 || i >= (int) a->ob_size) {
-		err_setstr(IndexError, "list assignment index out of range");
+	if(i < 0 || i >= (int) a->size) {
+		py_error_set_string(PY_INDEX_ERROR, "list assignment index out of range");
 		return -1;
 	}
 	if(v == NULL) {
-		return list_ass_slice((object*) a, i, i + 1, v);
+		return list_ass_slice((struct py_object*) a, i, i + 1, v);
 	}
 	PY_INCREF(v);
-	PY_DECREF(a->ob_item[i]);
-	a->ob_item[i] = v;
+	PY_DECREF(a->item[i]);
+	a->item[i] = v;
 	return 0;
 }
 
-static int list_ass_slice(aa, ilow, ihigh, v)object* aa;
+static int list_ass_slice(aa, ilow, ihigh, v)struct py_object* aa;
 											int ilow, ihigh;
-											object* v;
+											struct py_object* v;
 {
-	object** item;
-	listobject* a;
-	listobject* b;
+	struct py_object** item;
+	struct py_list* a;
+	struct py_list* b;
 	int n; /* Size of replacement list */
 	int d; /* Change in size */
 	int k; /* Loop index */
 
-	a = ((listobject*) aa);
-	b = ((listobject*) v);
+	a = ((struct py_list*) aa);
+	b = ((struct py_list*) v);
 	if(v == NULL) {
 		n = 0;
 	}
-	else if(is_listobject(v)) {
-		n = b->ob_size;
+	else if(py_is_list(v)) {
+		n = b->size;
 	}
 	else {
-		err_badarg();
+		py_error_set_badarg();
 		return -1;
 	}
 	if(ilow < 0) {
 		ilow = 0;
 	}
-	else if(ilow > (int) a->ob_size) {
-		ilow = (int) a->ob_size;
+	else if(ilow > (int) a->size) {
+		ilow = (int) a->size;
 	}
 	if(ihigh < 0) {
 		ihigh = 0;
@@ -363,110 +347,110 @@ static int list_ass_slice(aa, ilow, ihigh, v)object* aa;
 	if(ihigh < ilow) {
 		ihigh = ilow;
 	}
-	else if(ihigh > (int) a->ob_size) {
-		ihigh = (int) a->ob_size;
+	else if(ihigh > (int) a->size) {
+		ihigh = (int) a->size;
 	}
-	item = a->ob_item;
+	item = a->item;
 	d = n - (ihigh - ilow);
 	if(d <= 0) { /* Delete -d items; PY_DECREF ihigh-ilow items */
 		for(k = ilow; k < ihigh; k++)
 			PY_DECREF(item[k]);
 		if(d < 0) {
-			for(/*k = ihigh*/; k < (int) a->ob_size; k++) {
+			for(/*k = ihigh*/; k < (int) a->size; k++) {
 				item[k + d] = item[k];
 			}
-			a->ob_size += d;
+			a->size += d;
 			/* TODO: Leaky realloc. */
-			item = realloc(item, a->ob_size * sizeof(object*));
-			a->ob_item = item;
+			item = realloc(item, a->size * sizeof(struct py_object*));
+			a->item = item;
 		}
 	}
 	else { /* Insert d items; PY_DECREF ihigh-ilow items */
 		/* TODO: Leaky realloc. */
-		item = realloc(item, (a->ob_size + d) * sizeof(object*));
+		item = realloc(item, (a->size + d) * sizeof(struct py_object*));
 		if(item == NULL) {
-			err_nomem();
+			py_error_set_nomem();
 			return -1;
 		}
-		for(k = a->ob_size; --k >= ihigh;) {
+		for(k = a->size; --k >= ihigh;) {
 			item[k + d] = item[k];
 		}
 		for(/*k = ihigh-1*/; k >= ilow; --k)
 			PY_DECREF(item[k]);
-		a->ob_item = item;
-		a->ob_size += d;
+		a->item = item;
+		a->size += d;
 	}
 	for(k = 0; k < n; k++, ilow++) {
-		object* w = b->ob_item[k];
+		struct py_object* w = b->item[k];
 		PY_INCREF(w);
 		item[ilow] = w;
 	}
 	return 0;
 }
 
-static object* ins(self, where, v)listobject* self;
+static struct py_object* ins(self, where, v)struct py_list* self;
 								  int where;
-								  object* v;
+								  struct py_object* v;
 {
 	if(ins1(self, where, v) != 0) {
 		return NULL;
 	}
-	PY_INCREF(None);
-	return None;
+	PY_INCREF(PY_NONE);
+	return PY_NONE;
 }
 
-static object* listinsert(self, args)listobject* self;
-									 object* args;
+static struct py_object* listinsert(self, args)struct py_list* self;
+									 struct py_object* args;
 {
 	int i;
-	if(args == NULL || !is_tupleobject(args) || gettuplesize(args) != 2) {
-		err_badarg();
+	if(args == NULL || !py_is_tuple(args) || py_tuple_size(args) != 2) {
+		py_error_set_badarg();
 		return NULL;
 	}
-	if(!getintarg(gettupleitem(args, 0), &i)) {
+	if(!py_arg_int(py_tuple_get(args, 0), &i)) {
 		return NULL;
 	}
-	return ins(self, i, gettupleitem(args, 1));
+	return ins(self, i, py_tuple_get(args, 1));
 }
 
-static object* listappend(self, args)listobject* self;
-									 object* args;
+static struct py_object* listappend(self, args)struct py_list* self;
+									 struct py_object* args;
 {
-	return ins(self, (int) self->ob_size, args);
+	return ins(self, (int) self->size, args);
 }
 
 static int cmp(v, w)char* v, * w;
 {
-	return cmpobject(*(object**) v, *(object**) w);
+	return py_object_cmp(*(struct py_object**) v, *(struct py_object**) w);
 }
 
-static object* listsort(self, args)listobject* self;
-								   object* args;
+static struct py_object* listsort(self, args)struct py_list* self;
+								   struct py_object* args;
 {
 	if(args != NULL) {
-		err_badarg();
+		py_error_set_badarg();
 		return NULL;
 	}
-	err_clear();
-	if(self->ob_size > 1) {
+	py_error_clear();
+	if(self->size > 1) {
 		qsort(
-				(char*) self->ob_item, (int) self->ob_size, sizeof(object*),
+				(char*) self->item, (int) self->size, sizeof(struct py_object*),
 				cmp);
 	}
-	if(err_occurred()) {
+	if(py_error_occurred()) {
 		return NULL;
 	}
-	PY_INCREF(None);
-	return None;
+	PY_INCREF(PY_NONE);
+	return PY_NONE;
 }
 
-int sortlist(v)object* v;
+int py_list_sort(v)struct py_object* v;
 {
-	if(v == NULL || !is_listobject(v)) {
-		err_badcall();
+	if(v == NULL || !py_is_list(v)) {
+		py_error_set_badcall();
 		return -1;
 	}
-	v = listsort((listobject*) v, (object*) NULL);
+	v = listsort((struct py_list*) v, (struct py_object*) NULL);
 	if(v == NULL) {
 		return -1;
 	}
@@ -474,38 +458,38 @@ int sortlist(v)object* v;
 	return 0;
 }
 
-static struct methodlist list_methods[] = {
+static struct py_methodlist list_methods[] = {
 		{ "append", listappend },
 		{ "insert", listinsert },
 		{ "sort",   listsort },
 		{ NULL, NULL }           /* sentinel */
 };
 
-static object* list_getattr(f, name)listobject* f;
+static struct py_object* list_getattr(f, name)struct py_list* f;
 									char* name;
 {
-	return findmethod(list_methods, (object*) f, name);
+	return py_methodlist_find(list_methods, (struct py_object*) f, name);
 }
 
-static sequence_methods list_as_sequence = {
-		list_length,    /*sq_length*/
-		list_concat,    /*sq_concat*/
-		0,              /*sq_repeat*/
-		list_item,      /*sq_item*/
-		list_slice,     /*sq_slice*/
-		list_ass_item,  /*sq_ass_item*/
-		list_ass_slice, /*sq_ass_slice*/
+static struct py_sequencemethods list_as_sequence = {
+		list_length,    /*len*/
+		list_concat,    /*cat*/
+		0,              /*rep*/
+		list_item,      /*ind*/
+		list_slice,     /*slice*/
+		list_ass_item,  /*assign_item*/
+		list_ass_slice, /*assign_slice*/
 };
 
-typeobject Listtype = {
-		OB_HEAD_INIT(&Typetype) 0, "list", sizeof(listobject), 0,
-		list_dealloc,   /*tp_dealloc*/
-		list_print,     /*tp_print*/
-		list_getattr,   /*tp_getattr*/
-		0,              /*tp_setattr*/
-		list_compare,   /*tp_compare*/
-		list_repr,      /*tp_repr*/
-		0,              /*tp_as_number*/
-		&list_as_sequence,  /*tp_as_sequence*/
-		0,              /*tp_as_mapping*/
+struct py_type py_list_type = {
+		PY_OB_SEQ_INIT(&py_type_type) 0, "list", sizeof(struct py_list), 0,
+		list_dealloc,   /*dealloc*/
+		list_print,     /*print*/
+		list_getattr,   /*get_attr*/
+		0,              /*set_attr*/
+		list_compare,   /*cmp*/
+		list_repr,      /*repr*/
+		0,              /*numbermethods*/
+		&list_as_sequence,  /*sequencemethods*/
+		0,              /*mappingmethods*/
 };

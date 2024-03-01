@@ -1,45 +1,20 @@
-/***********************************************************
-Copyright 1991 by Stichting Mathematisch Centrum, Amsterdam, The
-Netherlands.
-
-                        All Rights Reserved
-
-Permission to use, copy, modify, and distribute this software and its
-documentation for any purpose and without fee is hereby granted,
-provided that the above copyright notice appear in all copies and that
-both that copyright notice and this permission notice appear in
-supporting documentation, and that the names of Stichting Mathematisch
-Centrum or CWI not be used in advertising or publicity pertaining to
-distribution of the software without specific, written prior permission.
-
-STICHTING MATHEMATISCH CENTRUM DISCLAIMS ALL WARRANTIES WITH REGARD TO
-THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
-FITNESS, IN NO EVENT SHALL STICHTING MATHEMATISCH CENTRUM BE LIABLE
-FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
-OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-
-******************************************************************/
+/*
+ * Copyright 1991 by Stichting Mathematisch Centrum
+ * See `LICENCE' for more information.
+ */
 
 /* List a node on a file */
 
-#include <python/pgenheaders.h>
 #include <python/token.h>
 #include <python/node.h>
 
 /* Forward */
-static void list1node(FILE*, node*);
-
-void listtree(n)node* n;
-{
-	listnode(stdout, n);
-}
+static void list1node(FILE*, struct py_node*);
 
 static int level, atbol;
 
-void listnode(fp, n)FILE* fp;
-					node* n;
+void py_tree_list(fp, n)FILE* fp;
+					struct py_node* n;
 {
 	level = 0;
 	atbol = 1;
@@ -47,22 +22,22 @@ void listnode(fp, n)FILE* fp;
 }
 
 static void list1node(fp, n)FILE* fp;
-							node* n;
+							struct py_node* n;
 {
 	if(n == 0) {
 		return;
 	}
-	if(ISNONTERMINAL(TYPE(n))) {
+	if(n->type >= PY_NONTERMINAL) {
 		int i;
-		for(i = 0; i < NCH(n); i++) {
-			list1node(fp, CHILD(n, i));
+		for(i = 0; i < n->count; i++) {
+			list1node(fp, &n->children[i]);
 		}
 	}
-	else if(ISTERMINAL(TYPE(n))) {
-		switch(TYPE(n)) {
-			case INDENT:++level;
+	else {
+		switch(n->type) {
+			case PY_INDENT:++level;
 				break;
-			case DEDENT:--level;
+			case PY_DEDENT:--level;
 				break;
 			default:
 				if(atbol) {
@@ -72,20 +47,17 @@ static void list1node(fp, n)FILE* fp;
 					}
 					atbol = 0;
 				}
-				if(TYPE(n) == NEWLINE) {
-					if(STR(n) != NULL) {
-						fprintf(fp, "%s", STR(n));
+				if(n->type == PY_NEWLINE) {
+					if(n->str != NULL) {
+						fprintf(fp, "%s", n->str);
 					}
 					fprintf(fp, "\n");
 					atbol = 1;
 				}
 				else {
-					fprintf(fp, "%s ", STR(n));
+					fprintf(fp, "%s ", n->str);
 				}
 				break;
 		}
-	}
-	else {
-		fprintf(fp, "? ");
 	}
 }

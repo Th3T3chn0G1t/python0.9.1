@@ -1,101 +1,82 @@
-/***********************************************************
-Copyright 1991 by Stichting Mathematisch Centrum, Amsterdam, The
-Netherlands.
-
-                        All Rights Reserved
-
-Permission to use, copy, modify, and distribute this software and its
-documentation for any purpose and without fee is hereby granted,
-provided that the above copyright notice appear in all copies and that
-both that copyright notice and this permission notice appear in
-supporting documentation, and that the names of Stichting Mathematisch
-Centrum or CWI not be used in advertising or publicity pertaining to
-distribution of the software without specific, written prior permission.
-
-STICHTING MATHEMATISCH CENTRUM DISCLAIMS ALL WARRANTIES WITH REGARD TO
-THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
-FITNESS, IN NO EVENT SHALL STICHTING MATHEMATISCH CENTRUM BE LIABLE
-FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
-OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-
-******************************************************************/
+/*
+ * Copyright 1991 by Stichting Mathematisch Centrum
+ * See `LICENCE' for more information.
+ */
 
 /* Traceback implementation */
 
-#include <stdlib.h>
-
-#include <python/allobjects.h>
+#include <python/std.h>
 #include <python/compile.h>
 #include <python/frameobject.h>
 #include <python/traceback.h>
 #include <python/structmember.h>
 #include <python/sysmodule.h>
 #include <python/fgetsintr.h>
+#include <python/errors.h>
+#include <python/env.h>
 
 typedef struct _tracebackobject {
-	OB_HEAD
+	PY_OB_SEQ
 	struct _tracebackobject* tb_next;
-	frameobject* tb_frame;
+	struct py_frame* tb_frame;
 	int tb_lasti;
 	int tb_lineno;
 } tracebackobject;
 
 #define OFF(x) offsetof(tracebackobject, x)
 
-static struct memberlist tb_memberlist[] = {
-		{ "tb_next",   T_OBJECT, OFF(tb_next), 0 },
-		{ "tb_frame",  T_OBJECT, OFF(tb_frame), 0 },
-		{ "tb_lasti",  T_INT,    OFF(tb_lasti), 0 },
-		{ "tb_lineno", T_INT,    OFF(tb_lineno), 0 },
+static struct py_memberlist tb_memberlist[] = {
+		{ "tb_next",   PY_TYPE_OBJECT, OFF(tb_next), PY_READWRITE },
+		{ "tb_frame",  PY_TYPE_OBJECT, OFF(tb_frame), PY_READWRITE },
+		{ "tb_lasti",  PY_TYPE_INT,    OFF(tb_lasti), PY_READWRITE },
+		{ "tb_lineno", PY_TYPE_INT,    OFF(tb_lineno), PY_READWRITE },
 		{ NULL, 0, 0, 0 }  /* Sentinel */
 };
 
-static object* tb_getattr(tb, name)tracebackobject* tb;
+static struct py_object* tb_getattr(tb, name)tracebackobject* tb;
 								   char* name;
 {
-	return getmember((char*) tb, tb_memberlist, name);
+	return py_memberlist_get((char*) tb, tb_memberlist, name);
 }
 
 static void tb_dealloc(tb)tracebackobject* tb;
 {
-	XDECREF(tb->tb_next);
-	XDECREF(tb->tb_frame);
+	PY_XDECREF(tb->tb_next);
+	PY_XDECREF(tb->tb_frame);
 	free(tb);
 }
 
-static typeobject Tracebacktype = {
-		OB_HEAD_INIT(&Typetype) 0, "traceback", sizeof(tracebackobject), 0,
-		tb_dealloc,     /*tp_dealloc*/
-		0,              /*tp_print*/
-		tb_getattr,     /*tp_getattr*/
-		0,              /*tp_setattr*/
-		0,              /*tp_compare*/
-		0,              /*tp_repr*/
-		0,              /*tp_as_number*/
-		0,              /*tp_as_sequence*/
-		0,              /*tp_as_mapping*/
+static struct py_type Tracebacktype = {
+		PY_OB_SEQ_INIT(&py_type_type) 0, "traceback", sizeof(tracebackobject), 0,
+		tb_dealloc,     /*dealloc*/
+		0,              /*print*/
+		tb_getattr,     /*get_attr*/
+		0,              /*set_attr*/
+		0,              /*cmp*/
+		0,              /*repr*/
+		0,              /*numbermethods*/
+		0,              /*sequencemethods*/
+		0,              /*mappingmethods*/
 };
 
-#define is_tracebackobject(v) ((v)->ob_type == &Tracebacktype)
+#define is_tracebackobject(v) ((v)->type == &Tracebacktype)
 
 static tracebackobject* newtracebackobject(next, frame, lasti, lineno)
 		tracebackobject* next;
-		frameobject* frame;
+		struct py_frame* frame;
 		int lasti, lineno;
 {
 	tracebackobject* tb;
 	if((next != NULL && !is_tracebackobject(next)) || frame == NULL ||
-	   !is_frameobject(frame)) {
-		err_badcall();
+	   !py_is_frame(frame)) {
+		py_error_set_badcall();
 		return NULL;
 	}
-	tb = NEWOBJ(tracebackobject, &Tracebacktype);
+	tb = py_object_new(&Tracebacktype);
 	if(tb != NULL) {
-		XINCREF(next);
+		PY_XINCREF(next);
 		tb->tb_next = next;
-		XINCREF(frame);
+		PY_XINCREF(frame);
 		tb->tb_frame = frame;
 		tb->tb_lasti = lasti;
 		tb->tb_lineno = lineno;
@@ -105,7 +86,7 @@ static tracebackobject* newtracebackobject(next, frame, lasti, lineno)
 
 static tracebackobject* tb_current = NULL;
 
-int tb_here(frame, lasti, lineno)frameobject* frame;
+int py_traceback_new(frame, lasti, lineno)struct py_frame* frame;
 								 int lasti;
 								 int lineno;
 {
@@ -114,26 +95,26 @@ int tb_here(frame, lasti, lineno)frameobject* frame;
 	if(tb == NULL) {
 		return -1;
 	}
-	XDECREF(tb_current);
+	PY_XDECREF(tb_current);
 	tb_current = tb;
 	return 0;
 }
 
-object* tb_fetch() {
-	object* v;
-	v = (object*) tb_current;
+struct py_object* py_traceback_get() {
+	struct py_object* v;
+	v = (struct py_object*) tb_current;
 	tb_current = NULL;
 	return v;
 }
 
-int tb_store(v)object* v;
+int py_traceback_set(v)struct py_object* v;
 {
 	if(v != NULL && !is_tracebackobject(v)) {
-		err_badcall();
+		py_error_set_badcall();
 		return -1;
 	}
-	XDECREF(tb_current);
-	XINCREF(v);
+	PY_XDECREF(tb_current);
+	PY_XINCREF(v);
 	tb_current = (tracebackobject*) v;
 	return 0;
 }
@@ -174,31 +155,31 @@ static void tb_printinternal(tb, fp)tracebackobject* tb;
 									FILE* fp;
 {
 	while(tb != NULL) {
-		if(intrcheck()) {
+		if(py_intrcheck()) {
 			fprintf(fp, "[interrupted]\n");
 			break;
 		}
 		fprintf(fp, "  File \"");
-		printobject(tb->tb_frame->f_code->co_filename, fp, PRINT_RAW);
+		py_object_print(tb->tb_frame->code->filename, fp, PY_PRINT_RAW);
 		fprintf(fp, "\", line %d\n", tb->tb_lineno);
 		tb_displayline(
-				fp, getstringvalue(tb->tb_frame->f_code->co_filename),
+				fp, py_string_get_value(tb->tb_frame->code->filename),
 				tb->tb_lineno);
 		tb = tb->tb_next;
 	}
 }
 
-int tb_print(v, fp)object* v;
+int py_traceback_print(v, fp)struct py_object* v;
 				   FILE* fp;
 {
 	if(v == NULL) {
 		return 0;
 	}
 	if(!is_tracebackobject(v)) {
-		err_badcall();
+		py_error_set_badcall();
 		return -1;
 	}
-	sysset("last_traceback", v);
+	py_system_set("last_traceback", v);
 	tb_printinternal((tracebackobject*) v, fp);
 	return 0;
 }

@@ -1,53 +1,35 @@
-/***********************************************************
-Copyright 1991 by Stichting Mathematisch Centrum, Amsterdam, The
-Netherlands.
+/*
+ * Copyright 1991 by Stichting Mathematisch Centrum
+ * See `LICENCE' for more information.
+ */
 
-                        All Rights Reserved
-
-Permission to use, copy, modify, and distribute this software and its
-documentation for any purpose and without fee is hereby granted,
-provided that the above copyright notice appear in all copies and that
-both that copyright notice and this permission notice appear in
-supporting documentation, and that the names of Stichting Mathematisch
-Centrum or CWI not be used in advertising or publicity pertaining to
-distribution of the software without specific, written prior permission.
-
-STICHTING MATHEMATISCH CENTRUM DISCLAIMS ALL WARRANTIES WITH REGARD TO
-THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
-FITNESS, IN NO EVENT SHALL STICHTING MATHEMATISCH CENTRUM BE LIABLE
-FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
-OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-
-******************************************************************/
+/* Definitions for compiled intermediate code */
 
 #ifndef PY_COMPILE_H
 #define PY_COMPILE_H
 
-/* Definitions for compiled intermediate code */
-
+#include <python/object.h>
+#include <python/stringobject.h>
+#include <python/node.h>
 
 /* An intermediate code fragment contains:
    - a string that encodes the instructions,
    - a list of the constants,
    - and a list of the names used. */
 
-typedef struct {
-	OB_HEAD
-	stringobject* co_code;  /* instruction opcodes */
-	object* co_consts;      /* list of immutable constant objects */
-	object* co_names;       /* list of stringobjects */
-	object* co_filename;    /* string */
-} codeobject;
+struct py_code {
+	PY_OB_SEQ
+	struct py_string* code;  /* instruction opcodes */
+	struct py_object* consts;      /* list of immutable constant objects */
+	struct py_object* names;       /* list of stringobjects */
+	struct py_object* filename;    /* string */
+};
 
-extern typeobject Codetype;
+/* TODO: Python global state. */
+extern struct py_type py_code_type;
 
-#define is_codeobject(op) ((op)->ob_type == &Codetype)
+#define py_is_code(op) ((op)->type == &py_code_type)
 
-struct _node;
-
-/* Public interface */
-codeobject* compile(struct _node *, char *);
+struct py_code* py_compile(struct py_node*, char *);
 
 #endif

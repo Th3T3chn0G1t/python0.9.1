@@ -1,60 +1,42 @@
-/***********************************************************
-Copyright 1991 by Stichting Mathematisch Centrum, Amsterdam, The
-Netherlands.
-
-                        All Rights Reserved
-
-Permission to use, copy, modify, and distribute this software and its
-documentation for any purpose and without fee is hereby granted,
-provided that the above copyright notice appear in all copies and that
-both that copyright notice and this permission notice appear in
-supporting documentation, and that the names of Stichting Mathematisch
-Centrum or CWI not be used in advertising or publicity pertaining to
-distribution of the software without specific, written prior permission.
-
-STICHTING MATHEMATISCH CENTRUM DISCLAIMS ALL WARRANTIES WITH REGARD TO
-THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
-FITNESS, IN NO EVENT SHALL STICHTING MATHEMATISCH CENTRUM BE LIABLE
-FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
-OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-
-******************************************************************/
+/*
+ * Copyright 1991 by Stichting Mathematisch Centrum
+ * See `LICENCE' for more information.
+ */
 
 /* Type object implementation */
 
-#include <python/allobjects.h>
+#include <python/std.h>
+#include <python/object.h>
 
-/* Type object implementation */
+#include <python/stringobject.h>
 
-static void type_print(v, fp, flags)typeobject* v;
+static void type_print(v, fp, flags)struct py_type* v;
 									FILE* fp;
 									int flags;
 {
 	(void) flags;
 
-	fprintf(fp, "<type '%s'>", v->tp_name);
+	fprintf(fp, "<type '%s'>", v->name);
 }
 
-static object* type_repr(v)typeobject* v;
+static struct py_object* type_repr(v)struct py_type* v;
 {
 	char buf[100];
-	sprintf(buf, "<type '%.80s'>", v->tp_name);
-	return newstringobject(buf);
+	sprintf(buf, "<type '%.80s'>", v->name);
+	return py_string_new(buf);
 }
 
-typeobject Typetype = {
-		OB_HEAD_INIT(&Typetype)
+struct py_type py_type_type = {
+		PY_OB_SEQ_INIT(&py_type_type)
 		0,                      /* Number of items for varobject */
 		"type",                       /* Name of this type */
-		sizeof(typeobject),     /* Basic object size */
+		sizeof(struct py_type),     /* Basic object size */
 		0,                      /* Item size for varobject */
-		0,                      /*tp_dealloc*/
-		type_print,             /*tp_print*/
-		0,                      /*tp_getattr*/
-		0,                      /*tp_setattr*/
-		0,                      /*tp_compare*/
-		type_repr,              /*tp_repr*/
+		0,                      /*dealloc*/
+		type_print,             /*print*/
+		0,                      /*get_attr*/
+		0,                      /*set_attr*/
+		0,                      /*cmp*/
+		type_repr,              /*repr*/
 		0, 0, 0
 };

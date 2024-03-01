@@ -1,37 +1,16 @@
-/***********************************************************
-Copyright 1991 by Stichting Mathematisch Centrum, Amsterdam, The
-Netherlands.
-
-                        All Rights Reserved
-
-Permission to use, copy, modify, and distribute this software and its
-documentation for any purpose and without fee is hereby granted,
-provided that the above copyright notice appear in all copies and that
-both that copyright notice and this permission notice appear in
-supporting documentation, and that the names of Stichting Mathematisch
-Centrum or CWI not be used in advertising or publicity pertaining to
-distribution of the software without specific, written prior permission.
-
-STICHTING MATHEMATISCH CENTRUM DISCLAIMS ALL WARRANTIES WITH REGARD TO
-THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
-FITNESS, IN NO EVENT SHALL STICHTING MATHEMATISCH CENTRUM BE LIABLE
-FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
-OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-
-******************************************************************/
+/*
+ * Copyright 1991 by Stichting Mathematisch Centrum
+ * See `LICENCE' for more information.
+ */
 
 /* Parser generator */
+
 /* XXX This file is not yet fully PROTOized */
 
 /* For a description, see the comments at end of this file */
 
-#include <stdlib.h>
-#include <assert.h>
-
-#include <python/pgenheaders.h>
 #include <python/token.h>
+#include <python/errors.h>
 #include <python/node.h>
 #include <python/grammar.h>
 #include <python/metagrammar.h>
@@ -68,7 +47,7 @@ static int addnfastate(nf)nfa* nf;
 	nf->nf_state =
 		realloc(nf->nf_state, (nf->nf_nstates + 1) * sizeof(nfastate));
 	if(nf->nf_state == NULL) {
-		fatal("out of mem");
+		py_fatal("out of mem");
 	}
 	st = &nf->nf_state[nf->nf_nstates++];
 	st->st_narcs = 0;
@@ -85,7 +64,7 @@ static void addnfaarc(nf, from, to, lbl)nfa* nf;
 	st = &nf->nf_state[from];
 	st->st_arc = realloc(st->st_arc, (st->st_narcs + 1) * sizeof(nfaarc));
 	if(st->st_arc == NULL) {
-		fatal("out of mem");
+		py_fatal("out of mem");
 	}
 	ar = &st->st_arc[st->st_narcs++];
 	ar->ar_label = lbl;
@@ -95,11 +74,11 @@ static void addnfaarc(nf, from, to, lbl)nfa* nf;
 static nfa* newnfa(name)char* name;
 {
 	nfa* nf;
-	static int type = NT_OFFSET; /* All types will be disjunct */
+	static int type = PY_NONTERMINAL; /* All types will be disjunct */
 
 	nf = malloc(sizeof(nfa));
 	if(nf == NULL) {
-		fatal("no mem for new nfa");
+		py_fatal("no mem for new nfa");
 	}
 	nf->nf_type = type++;
 	nf->nf_name = name; /* XXX strdup(name) ??? */
@@ -112,7 +91,7 @@ static nfa* newnfa(name)char* name;
 typedef struct _nfagrammar {
 	int gr_nnfas;
 	nfa** gr_nfa;
-	labellist gr_ll;
+	struct py_labellist gr_ll;
 } nfagrammar;
 
 static nfagrammar* newnfagrammar() {
@@ -120,13 +99,13 @@ static nfagrammar* newnfagrammar() {
 
 	gr = malloc(sizeof(nfagrammar));
 	if(gr == NULL) {
-		fatal("no mem for new nfa grammar");
+		py_fatal("no mem for new nfa grammar");
 	}
 	gr->gr_nnfas = 0;
 	gr->gr_nfa = NULL;
-	gr->gr_ll.ll_nlabels = 0;
-	gr->gr_ll.ll_label = NULL;
-	addlabel(&gr->gr_ll, ENDMARKER, "EMPTY");
+	gr->gr_ll.count = 0;
+	gr->gr_ll.label = NULL;
+	py_labellist_add(&gr->gr_ll, PY_ENDMARKER, "EMPTY");
 	return gr;
 }
 
@@ -138,10 +117,10 @@ static nfa* addnfa(gr, name)nfagrammar* gr;
 	nf = newnfa(name);
 	gr->gr_nfa = realloc(gr->gr_nfa, (gr->gr_nnfas + 1) * sizeof(nfa *));
 	if(gr->gr_nfa == NULL) {
-		fatal("out of mem");
+		py_fatal("out of mem");
 	}
 	gr->gr_nfa[gr->gr_nnfas++] = nf;
-	addlabel(&gr->gr_ll, NAME, nf->nf_name);
+	py_labellist_add(&gr->gr_ll, PY_NAME, nf->nf_name);
 	return nf;
 }
 
@@ -159,56 +138,56 @@ static char REQNFMT[] = "metacompile: less than %d children\n";
 #define REQN(i, count) /* empty */
 #endif
 
-void compile_rule(nfagrammar* gr, node* n);
+void compile_rule(nfagrammar* gr, struct py_node* n);
 
-static nfagrammar* metacompile(n)node* n;
+static nfagrammar* metacompile(n)struct py_node* n;
 {
 	nfagrammar* gr;
 	int i;
 
 	fprintf(stderr, "Compiling (meta-) parse tree into NFA grammar\n");
 	gr = newnfagrammar();
-	REQ(n, MSTART);
-	i = n->n_nchildren - 1; /* Last child is ENDMARKER */
-	n = n->n_child;
+	PY_REQ(n, PY_MSTART);
+	i = n->count - 1; /* Last child is PY_ENDMARKER */
+	n = n->children;
 	for(; --i >= 0; n++) {
-		if(n->n_type != NEWLINE) {
+		if(n->type != PY_NEWLINE) {
 			compile_rule(gr, n);
 		}
 	}
 	return gr;
 }
 
-void compile_rhs(labellist* ll, nfa* nf, node* n, int* pa, int* pb);
+void compile_rhs(struct py_labellist* ll, nfa* nf, struct py_node* n, int* pa, int* pb);
 
-void compile_rule(nfagrammar* gr, node* n) {
+void compile_rule(nfagrammar* gr, struct py_node* n) {
 	nfa* nf;
 
-	REQ(n, RULE);
-	REQN(n->n_nchildren, 4);
-	n = n->n_child;
-	REQ(n, NAME);
-	nf = addnfa(gr, n->n_str);
+	PY_REQ(n, PY_RULE);
+	REQN(n->count, 4);
+	n = n->children;
+	PY_REQ(n, PY_NAME);
+	nf = addnfa(gr, n->str);
 	n++;
-	REQ(n, COLON);
+	PY_REQ(n, PY_COLON);
 	n++;
-	REQ(n, RHS);
+	PY_REQ(n, PY_RHS);
 	compile_rhs(&gr->gr_ll, nf, n, &nf->nf_start, &nf->nf_finish);
 	n++;
-	REQ(n, NEWLINE);
+	PY_REQ(n, PY_NEWLINE);
 }
 
-void compile_alt(labellist* ll, nfa* nf, node* n, int* pa, int* pb);
+void compile_alt(struct py_labellist* ll, nfa* nf, struct py_node* n, int* pa, int* pb);
 
-void compile_rhs(labellist* ll, nfa* nf, node* n, int* pa, int* pb) {
+void compile_rhs(struct py_labellist* ll, nfa* nf, struct py_node* n, int* pa, int* pb) {
 	int i;
 	int a, b;
 
-	REQ(n, RHS);
-	i = n->n_nchildren;
+	PY_REQ(n, PY_RHS);
+	i = n->count;
 	REQN(i, 1);
-	n = n->n_child;
-	REQ(n, ALT);
+	n = n->children;
+	PY_REQ(n, PY_ALT);
 	compile_alt(ll, nf, n, pa, pb);
 	if(--i <= 0) {
 		return;
@@ -218,70 +197,70 @@ void compile_rhs(labellist* ll, nfa* nf, node* n, int* pa, int* pb) {
 	b = *pb;
 	*pa = addnfastate(nf);
 	*pb = addnfastate(nf);
-	addnfaarc(nf, *pa, a, EMPTY);
-	addnfaarc(nf, b, *pb, EMPTY);
+	addnfaarc(nf, *pa, a, PY_LABEL_EMPTY);
+	addnfaarc(nf, b, *pb, PY_LABEL_EMPTY);
 	for(; --i >= 0; n++) {
-		REQ(n, VBAR);
+		PY_REQ(n, PY_VBAR);
 		REQN(i, 1);
 		--i;
 		n++;
-		REQ(n, ALT);
+		PY_REQ(n, PY_ALT);
 		compile_alt(ll, nf, n, &a, &b);
-		addnfaarc(nf, *pa, a, EMPTY);
-		addnfaarc(nf, b, *pb, EMPTY);
+		addnfaarc(nf, *pa, a, PY_LABEL_EMPTY);
+		addnfaarc(nf, b, *pb, PY_LABEL_EMPTY);
 	}
 }
 
-void compile_item(labellist* ll, nfa* nf, node* n, int* pa, int* pb);
+void compile_item(struct py_labellist* ll, nfa* nf, struct py_node* n, int* pa, int* pb);
 
-void compile_alt(labellist* ll, nfa* nf, node* n, int* pa, int* pb) {
+void compile_alt(struct py_labellist* ll, nfa* nf, struct py_node* n, int* pa, int* pb) {
 	int i;
 	int a, b;
 
-	REQ(n, ALT);
-	i = n->n_nchildren;
+	PY_REQ(n, PY_ALT);
+	i = n->count;
 	REQN(i, 1);
-	n = n->n_child;
-	REQ(n, ITEM);
+	n = n->children;
+	PY_REQ(n, PY_ITEM);
 	compile_item(ll, nf, n, pa, pb);
 	--i;
 	n++;
 	for(; --i >= 0; n++) {
-		if(n->n_type == COMMA) { /* XXX Temporary */
+		if(n->type == PY_COMMA) { /* XXX Temporary */
 			REQN(i, 1);
 			--i;
 			n++;
 		}
-		REQ(n, ITEM);
+		PY_REQ(n, PY_ITEM);
 		compile_item(ll, nf, n, &a, &b);
-		addnfaarc(nf, *pb, a, EMPTY);
+		addnfaarc(nf, *pb, a, PY_LABEL_EMPTY);
 		*pb = b;
 	}
 }
 
-void compile_atom(labellist* ll, nfa* nf, node* n, int* pa, int* pb);
+void compile_atom(struct py_labellist* ll, nfa* nf, struct py_node* n, int* pa, int* pb);
 
-void compile_item(labellist* ll, nfa* nf, node* n, int* pa, int* pb) {
+void compile_item(struct py_labellist* ll, nfa* nf, struct py_node* n, int* pa, int* pb) {
 	int i;
 	int a, b;
 
-	REQ(n, ITEM);
-	i = n->n_nchildren;
+	PY_REQ(n, PY_ITEM);
+	i = n->count;
 	REQN(i, 1);
-	n = n->n_child;
-	if(n->n_type == LSQB) {
+	n = n->children;
+	if(n->type == PY_LSQB) {
 		REQN(i, 3);
 		n++;
-		REQ(n, RHS);
+		PY_REQ(n, PY_RHS);
 		*pa = addnfastate(nf);
 		*pb = addnfastate(nf);
-		addnfaarc(nf, *pa, *pb, EMPTY);
+		addnfaarc(nf, *pa, *pb, PY_LABEL_EMPTY);
 		compile_rhs(ll, nf, n, &a, &b);
-		addnfaarc(nf, *pa, a, EMPTY);
-		addnfaarc(nf, b, *pb, EMPTY);
+		addnfaarc(nf, *pa, a, PY_LABEL_EMPTY);
+		addnfaarc(nf, b, *pb, PY_LABEL_EMPTY);
 		REQN(i, 1);
 		n++;
-		REQ(n, RSQB);
+		PY_REQ(n, PY_RSQB);
 	}
 	else {
 		compile_atom(ll, nf, n, pa, pb);
@@ -289,38 +268,38 @@ void compile_item(labellist* ll, nfa* nf, node* n, int* pa, int* pb) {
 			return;
 		}
 		n++;
-		addnfaarc(nf, *pb, *pa, EMPTY);
-		if(n->n_type == STAR) {
+		addnfaarc(nf, *pb, *pa, PY_LABEL_EMPTY);
+		if(n->type == PY_STAR) {
 			*pb = *pa;
 		}
-		else REQ(n, PLUS);
+		else PY_REQ(n, PY_PLUS);
 	}
 }
 
-void compile_atom(labellist* ll, nfa* nf, node* n, int* pa, int* pb) {
+void compile_atom(struct py_labellist* ll, nfa* nf, struct py_node* n, int* pa, int* pb) {
 	int i;
 
-	REQ(n, ATOM);
-	i = n->n_nchildren;
+	PY_REQ(n, PY_ATOM);
+	i = n->count;
 	REQN(i, 1);
-	n = n->n_child;
-	if(n->n_type == LPAR) {
+	n = n->children;
+	if(n->type == PY_LPAR) {
 		REQN(i, 3);
 		n++;
-		REQ(n, RHS);
+		PY_REQ(n, PY_RHS);
 		compile_rhs(ll, nf, n, pa, pb);
 		n++;
-		REQ(n, RPAR);
+		PY_REQ(n, PY_RPAR);
 	}
-	else if(n->n_type == NAME || n->n_type == STRING) {
+	else if(n->type == PY_NAME || n->type == PY_STRING) {
 		*pa = addnfastate(nf);
 		*pb = addnfastate(nf);
-		addnfaarc(nf, *pa, *pb, addlabel(ll, n->n_type, n->n_str));
+		addnfaarc(nf, *pa, *pb, py_labellist_add(ll, n->type, n->str));
 	}
-	else REQ(n, NAME);
+	else PY_REQ(n, PY_NAME);
 }
 
-static void dumpstate(ll, nf, istate)labellist* ll;
+static void dumpstate(ll, nf, istate)struct py_labellist* ll;
 									 nfa* nf;
 									 int istate;
 {
@@ -339,13 +318,13 @@ static void dumpstate(ll, nf, istate)labellist* ll;
 		}
 		printf(
 				"-> %2d  %s", ar->ar_arrow,
-				labelrepr(&ll->ll_label[ar->ar_label]));
+				py_label_repr(&ll->label[ar->ar_label]));
 		ar++;
 	}
 	printf("\n");
 }
 
-static void dumpnfa(ll, nf)labellist* ll;
+static void dumpnfa(ll, nf)struct py_labellist* ll;
 						   nfa* nf;
 {
 	int i;
@@ -365,13 +344,13 @@ static void addclosure(ss, nf, istate)py_bitset_t ss;
 									 nfa* nf;
 									 int istate;
 {
-	if(addbit(ss, istate)) {
+	if(py_bitset_add(ss, istate)) {
 		nfastate* st = &nf->nf_state[istate];
 		nfaarc* ar = st->st_arc;
 		int i;
 
 		for(i = st->st_narcs; --i >= 0;) {
-			if(ar->ar_label == EMPTY) {
+			if(ar->ar_label == PY_LABEL_EMPTY) {
 				addclosure(ss, nf, ar->ar_arrow);
 			}
 			ar++;
@@ -400,16 +379,16 @@ typedef struct _ss_dfa {
 } ss_dfa;
 
 void printssdfa(
-		int xx_nstates, ss_state* xx_state, int nbits, labellist* ll,
+		int xx_nstates, ss_state* xx_state, int nbits, struct py_labellist* ll,
 		char* msg);
 
 void simplify(int xx_nstates, ss_state* xx_state);
 
-void convert(dfa* d, int xx_nstates, ss_state* xx_state);
+void convert(struct py_dfa* d, int xx_nstates, ss_state* xx_state);
 
 static void makedfa(gr, nf, d)nfagrammar* gr;
 						 nfa* nf;
-						 dfa* d;
+						 struct py_dfa* d;
 {
 	int nbits = nf->nf_nstates;
 	py_bitset_t ss;
@@ -420,11 +399,11 @@ static void makedfa(gr, nf, d)nfagrammar* gr;
 	nfastate* st;
 	nfaarc* ar;
 
-	ss = newbitset(nbits);
+	ss = py_bitset_new(nbits);
 	addclosure(ss, nf, nf->nf_start);
 	xx_state = malloc(sizeof(ss_state));
 	if(xx_state == NULL) {
-		fatal("no mem for xx_state in makedfa");
+		py_fatal("no mem for xx_state in makedfa");
 	}
 	xx_nstates = 1;
 	yy = &xx_state[0];
@@ -454,7 +433,7 @@ static void makedfa(gr, nf, d)nfagrammar* gr;
 			/* For all non-empty arcs from this state... */
 			for(iarc = 0; iarc < st->st_narcs; iarc++) {
 				ar = &st->st_arc[iarc];
-				if(ar->ar_label == EMPTY) {
+				if(ar->ar_label == PY_LABEL_EMPTY) {
 					continue;
 				}
 				/* Look up in list of arcs from this state */
@@ -469,11 +448,11 @@ static void makedfa(gr, nf, d)nfagrammar* gr;
 				yy->ss_arc = realloc(
 					yy->ss_arc, (yy->ss_narcs + 1) * sizeof(ss_arc));
 				if(yy->ss_arc == NULL) {
-					fatal("out of mem");
+					py_fatal("out of mem");
 				}
 				zz = &yy->ss_arc[yy->ss_narcs++];
 				zz->sa_label = ar->ar_label;
-				zz->sa_bitset = newbitset(nbits);
+				zz->sa_bitset = py_bitset_new(nbits);
 				zz->sa_arrow = -1;
 				found:;
 				/* Add destination */
@@ -484,7 +463,7 @@ static void makedfa(gr, nf, d)nfagrammar* gr;
 		for(jarc = 0; jarc < xx_state[istate].ss_narcs; jarc++) {
 			zz = &xx_state[istate].ss_arc[jarc];
 			for(jstate = 0; jstate < xx_nstates; jstate++) {
-				if(samebitset(
+				if(py_bitset_cmp(
 						zz->sa_bitset, xx_state[jstate].ss_ss, nbits)) {
 					zz->sa_arrow = jstate;
 					goto done;
@@ -492,7 +471,7 @@ static void makedfa(gr, nf, d)nfagrammar* gr;
 			}
 			xx_state = realloc(xx_state, (xx_nstates + 1) * sizeof(ss_state));
 			if(xx_state == NULL) {
-				fatal("out of mem");
+				py_fatal("out of mem");
 			}
 			zz->sa_arrow = xx_nstates;
 			yy = &xx_state[xx_nstates++];
@@ -523,7 +502,7 @@ static void makedfa(gr, nf, d)nfagrammar* gr;
 }
 
 void printssdfa(
-		int xx_nstates, ss_state* xx_state, int nbits, labellist* ll,
+		int xx_nstates, ss_state* xx_state, int nbits, struct py_labellist* ll,
 		char* msg) {
 
 	int i, ibit, iarc;
@@ -551,7 +530,7 @@ void printssdfa(
 			zz = &yy->ss_arc[iarc];
 			printf(
 					"  Arc to state %d, label %s\n", zz->sa_arrow,
-					labelrepr(&ll->ll_label[zz->sa_label]));
+					py_label_repr(&ll->label[zz->sa_label]));
 		}
 	}
 }
@@ -560,8 +539,8 @@ void printssdfa(
 /* PART THREE -- SIMPLIFY DFA */
 
 /* Simplify the DFA by repeatedly eliminating states that are
-   equivalent to another oner.  This is NOT Algorithm 3.3 from
-   [Aho&Ullman 77].  It does not always finds the minimal DFA,
+   equivalent to another oner. This is NOT Algorithm 3.3 from
+   [Aho&Ullman 77]. It does not always finds the minimal DFA,
    but it does usually make a much smaller one...  (For an example
    of sub-optimal behaviour, try S: x a b+ | y a b+.)
 */
@@ -633,7 +612,7 @@ void simplify(int xx_nstates, ss_state* xx_state) {
 
 /* Convert the DFA into a grammar that can be used by our parser */
 
-void convert(dfa* d, int xx_nstates, ss_state* xx_state) {
+void convert(struct py_dfa* d, int xx_nstates, ss_state* xx_state) {
 	int i, j;
 	ss_state* yy;
 	ss_arc* zz;
@@ -643,7 +622,7 @@ void convert(dfa* d, int xx_nstates, ss_state* xx_state) {
 		if(yy->ss_deleted) {
 			continue;
 		}
-		yy->ss_rename = addstate(d);
+		yy->ss_rename = py_dfa_add_state(d);
 	}
 
 	for(i = 0; i < xx_nstates; i++) {
@@ -653,34 +632,34 @@ void convert(dfa* d, int xx_nstates, ss_state* xx_state) {
 		}
 		for(j = 0; j < yy->ss_narcs; j++) {
 			zz = &yy->ss_arc[j];
-			addarc(
+			py_dfa_add_arc(
 					d, yy->ss_rename, xx_state[zz->sa_arrow].ss_rename,
 					zz->sa_label);
 		}
 		if(yy->ss_finish) {
-			addarc(d, yy->ss_rename, yy->ss_rename, 0);
+			py_dfa_add_arc(d, yy->ss_rename, yy->ss_rename, 0);
 		}
 	}
 
-	d->d_initial = 0;
+	d->initial = 0;
 }
 
 
 /* PART FIVE -- GLUE IT ALL TOGETHER */
 
-static grammar* maketables(gr)nfagrammar* gr;
+static struct py_grammar* maketables(gr)nfagrammar* gr;
 {
 	int i;
 	nfa* nf;
-	dfa* d;
-	grammar* g;
+	struct py_dfa* d;
+	struct py_grammar* g;
 
 	if(gr->gr_nnfas == 0) {
 		return NULL;
 	}
-	g = newgrammar(gr->gr_nfa[0]->nf_type);
+	g = py_grammar_new(gr->gr_nfa[0]->nf_type);
 	/* XXX first rule must be start rule */
-	g->g_ll = gr->gr_ll;
+	g->labels = gr->gr_ll;
 
 	for(i = 0; i < gr->gr_nnfas; i++) {
 		nf = gr->gr_nfa[i];
@@ -689,22 +668,22 @@ static grammar* maketables(gr)nfagrammar* gr;
 			dumpnfa(&gr->gr_ll, nf);
 		}
 		fprintf(stderr, "Making DFA for '%s' ...\n", nf->nf_name);
-		d = adddfa(g, nf->nf_type, nf->nf_name);
+		d = py_grammar_add_dfa(g, nf->nf_type, nf->nf_name);
 		makedfa(gr, gr->gr_nfa[i], d);
 	}
 
 	return g;
 }
 
-grammar* pgen(n)node* n;
+struct py_grammar* pgen(n)struct py_node* n;
 {
 	nfagrammar* gr;
-	grammar* g;
+	struct py_grammar* g;
 
 	gr = metacompile(n);
 	g = maketables(gr);
-	translatelabels(g);
-	addfirstsets(g);
+	py_grammar_translate(g);
+	py_grammar_add_firsts(g);
 	return g;
 }
 
@@ -716,18 +695,18 @@ Description
 
 Input is a grammar in extended BNF (using * for repetition, + for
 at-least-once repetition, [] for optional parts, | for alternatives and
-() for grouping).  This has already been parsed and turned into a parse
+() for grouping). This has already been parsed and turned into a parse
 tree.
 
 Each rule is considered as a regular expression in its own right.
 It is turned into a Non-deterministic Finite Automaton (NFA), which
 is then turned into a Deterministic Finite Automaton (DFA), which is then
-optimized to reduce the number of states.  See [Aho&Ullman 77] chapter 3,
+optimized to reduce the number of states. See [Aho&Ullman 77] chapter 3,
 or similar compiler books (this technique is more often used for lexical
 analyzers).
 
 The DFA's are used by the parser as parsing tables in a special way
-that's probably unique.  Before they are usable, the FIRST sets of all
+that's probably unique. Before they are usable, the FIRST sets of all
 non-terminals are computed.
 
 Reference

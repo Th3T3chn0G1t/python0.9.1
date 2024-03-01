@@ -1,40 +1,26 @@
-/***********************************************************
-Copyright 1991 by Stichting Mathematisch Centrum, Amsterdam, The
-Netherlands.
-
-                        All Rights Reserved
-
-Permission to use, copy, modify, and distribute this software and its
-documentation for any purpose and without fee is hereby granted,
-provided that the above copyright notice appear in all copies and that
-both that copyright notice and this permission notice appear in
-supporting documentation, and that the names of Stichting Mathematisch
-Centrum or CWI not be used in advertising or publicity pertaining to
-distribution of the software without specific, written prior permission.
-
-STICHTING MATHEMATISCH CENTRUM DISCLAIMS ALL WARRANTIES WITH REGARD TO
-THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
-FITNESS, IN NO EVENT SHALL STICHTING MATHEMATISCH CENTRUM BE LIABLE
-FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
-OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-
-******************************************************************/
+/*
+ * Copyright 1991 by Stichting Mathematisch Centrum
+ * See `LICENCE' for more information.
+ */
 
 /* File object interface */
 
 #ifndef PY_FILEOBJECT_H
 #define PY_FILEOBJECT_H
 
-extern typeobject Filetype;
+#include <python/object.h>
+#include <python/std.h>
 
-#define is_fileobject(op) ((op)->ob_type == &Filetype)
+/* TODO: Remove this. */
 
-object* newfileobject(char*, char*);
+/* TODO: Python global state. */
+extern struct py_type py_file_type;
 
-object* newopenfileobject(FILE*, char*, char*);
+#define py_is_file(op) ((op)->type == &py_file_type)
 
-FILE* getfilefile(object*);
+struct py_object* py_file_new(char*, char*);
+FILE* py_file_get(struct py_object*);
+
+struct py_object* py_openfile_new(FILE*, char*, char*);
 
 #endif

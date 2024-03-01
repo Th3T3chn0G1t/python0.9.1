@@ -1,45 +1,25 @@
-/***********************************************************
-Copyright 1991 by Stichting Mathematisch Centrum, Amsterdam, The
-Netherlands.
-
-                        All Rights Reserved
-
-Permission to use, copy, modify, and distribute this software and its
-documentation for any purpose and without fee is hereby granted,
-provided that the above copyright notice appear in all copies and that
-both that copyright notice and this permission notice appear in
-supporting documentation, and that the names of Stichting Mathematisch
-Centrum or CWI not be used in advertising or publicity pertaining to
-distribution of the software without specific, written prior permission.
-
-STICHTING MATHEMATISCH CENTRUM DISCLAIMS ALL WARRANTIES WITH REGARD TO
-THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
-FITNESS, IN NO EVENT SHALL STICHTING MATHEMATISCH CENTRUM BE LIABLE
-FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
-OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-
-******************************************************************/
+/*
+ * Copyright 1991 by Stichting Mathematisch Centrum
+ * See `LICENCE' for more information.
+ */
 
 /* Grammar subroutines needed by parser */
 
 #include <assert.h>
 
-#include <python/pgenheaders.h>
 #include <python/grammar.h>
 #include <python/token.h>
 
 /* Return the DFA for the given type */
 
-dfa* finddfa(g, type)grammar* g;
+struct py_dfa* py_grammar_find_dfa(g, type)struct py_grammar* g;
 					 int type;
 {
 	int i;
-	dfa* d;
+	struct py_dfa* d;
 
-	for(i = g->g_ndfas, d = g->g_dfa; --i >= 0; d++) {
-		if(d->d_type == type) {
+	for(i = g->count, d = g->dfas; --i >= 0; d++) {
+		if(d->type == type) {
 			return d;
 		}
 	}
@@ -47,29 +27,29 @@ dfa* finddfa(g, type)grammar* g;
 	/* NOTREACHED */
 }
 
-char* labelrepr(lb)label* lb;
+char* py_label_repr(lb)struct py_label* lb;
 {
 	static char buf[100];
 
-	if(lb->lb_type == ENDMARKER) {
+	if(lb->type == PY_ENDMARKER) {
 		return "EMPTY";
 	}
-	else if(ISNONTERMINAL(lb->lb_type)) {
-		if(lb->lb_str == NULL) {
-			sprintf(buf, "NT%d", lb->lb_type);
+	else if(lb->type >= PY_NONTERMINAL) {
+		if(lb->str == NULL) {
+			sprintf(buf, "NT%d", lb->type);
 			return buf;
 		}
 		else {
-			return lb->lb_str;
+			return lb->str;
 		}
 	}
 	else {
-		if(lb->lb_str == NULL) {
-			return tok_name[lb->lb_type];
+		if(lb->str == NULL) {
+			return py_token_names[lb->type];
 		}
 		else {
 			sprintf(
-					buf, "%.32s(%.32s)", tok_name[lb->lb_type], lb->lb_str);
+					buf, "%.32s(%.32s)", py_token_names[lb->type], lb->str);
 			return buf;
 		}
 	}

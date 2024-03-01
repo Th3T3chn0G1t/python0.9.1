@@ -1,66 +1,56 @@
-/***********************************************************
-Copyright 1991 by Stichting Mathematisch Centrum, Amsterdam, The
-Netherlands.
-
-                        All Rights Reserved
-
-Permission to use, copy, modify, and distribute this software and its
-documentation for any purpose and without fee is hereby granted,
-provided that the above copyright notice appear in all copies and that
-both that copyright notice and this permission notice appear in
-supporting documentation, and that the names of Stichting Mathematisch
-Centrum or CWI not be used in advertising or publicity pertaining to
-distribution of the software without specific, written prior permission.
-
-STICHTING MATHEMATISCH CENTRUM DISCLAIMS ALL WARRANTIES WITH REGARD TO
-THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
-FITNESS, IN NO EVENT SHALL STICHTING MATHEMATISCH CENTRUM BE LIABLE
-FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
-OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-
-******************************************************************/
+/*
+ * Copyright 1991 by Stichting Mathematisch Centrum
+ * See `LICENCE' for more information.
+ */
 
 /* Module definition and import implementation */
 
-#include <python/allobjects.h>
+#include <python/env.h>
 #include <python/node.h>
 #include <python/token.h>
 #include <python/graminit.h>
 #include <python/import.h>
-#include <python/sysmodule.h>
-#include <python/pythonrun.h>
 #include <python/config.h>
-#include <python/errcode.h>
+#include <python/result.h>
+#include <python/parsetok.h>
+#include <python/errors.h>
+#include <python/grammar.h>
+#include <python/pgen.h>
 
-static object* modules;
+#include <python/sysmodule.h>
+
+#include <python/moduleobject.h>
+#include <python/dictobject.h>
+#include <python/listobject.h>
+#include <python/stringobject.h>
+
+static struct py_object* modules;
 
 /* Initialization */
 
 static int init_builtin(char* name);
 
-void initimport(void) {
-	if((modules = newdictobject()) == NULL) {
-		fatal("no mem for dictionary of modules");
+void py_import_init(void) {
+	if((modules = py_dict_new()) == NULL) {
+		py_fatal("no mem for dictionary of modules");
 	}
 }
 
-object* get_modules(void) {
+struct py_object* py_get_modules(void) {
 	return modules;
 }
 
-object* add_module(name)char* name;
+struct py_object* py_add_module(name)char* name;
 {
-	object* m;
-	if((m = dictlookup(modules, name)) != NULL && is_moduleobject(m)) {
+	struct py_object* m;
+	if((m = py_dict_lookup(modules, name)) != NULL && py_is_module(m)) {
 		return m;
 	}
-	m = newmoduleobject(name);
+	m = py_module_new(name);
 	if(m == NULL) {
 		return NULL;
 	}
-	if(dictinsert(modules, name, m) != 0) {
+	if(py_dict_insert(modules, name, m) != 0) {
 		PY_DECREF(m);
 		return NULL;
 	}
@@ -72,27 +62,27 @@ static FILE* open_module(name, suffix, namebuf)char* name;
 											   char* suffix;
 											   char* namebuf; /* XXX No buffer overflow checks! */
 {
-	object* path;
+	struct py_object* path;
 	FILE* fp;
 
-	path = sysget("path");
-	if(path == NULL || !is_listobject(path)) {
+	path = py_system_get("path");
+	if(path == NULL || !py_is_list(path)) {
 		strcpy(namebuf, name);
 		strcat(namebuf, suffix);
 		fp = pyopen_r(namebuf);
 	}
 	else {
-		int npath = getlistsize(path);
+		int npath = py_list_size(path);
 		int i;
 		fp = NULL;
 		for(i = 0; i < npath; i++) {
-			object* v = getlistitem(path, i);
+			struct py_object* v = py_list_get(path, i);
 			int len;
-			if(!is_stringobject(v)) {
+			if(!py_is_string(v)) {
 				continue;
 			}
-			strcpy(namebuf, getstringvalue(v));
-			len = getstringsize(v);
+			strcpy(namebuf, py_string_get_value(v));
+			len = py_string_size(v);
 			if(len > 0 && namebuf[len - 1] != '/') {
 				namebuf[len++] = '/';
 			}
@@ -107,49 +97,49 @@ static FILE* open_module(name, suffix, namebuf)char* name;
 	return fp;
 }
 
-static object* get_module(m, name, m_ret)
-/*module*/object* m;
+static struct py_object* get_module(m, name, m_ret)
+/*module*/struct py_object* m;
 		  char* name;
-		  object** m_ret;
+		  struct py_object** m_ret;
 {
-	object* d;
+	struct py_object* d;
 	FILE* fp;
-	node* n;
+	struct py_node* n;
 	int err;
 	char namebuf[256];
 
 	fp = open_module(name, ".py", namebuf);
 	if(fp == NULL) {
 		if(m == NULL) {
-			err_setstr(NameError, name);
+			py_error_set_string(py_name_error, name);
 		}
 		else {
-			err_setstr(RuntimeError, "no module source file");
+			py_error_set_string(py_runtime_error, "no module source file");
 		}
 		return NULL;
 	}
-	err = parse_file(fp, namebuf, file_input, &n);
+	err = py_parse_file(fp, namebuf, &py_grammar, file_input, 0, 0, &n);
 	pyclose(fp);
-	if(err != E_DONE) {
-		err_input(err);
+	if(err != PY_RESULT_DONE) {
+		py_error_set_input(err);
 		return NULL;
 	}
 	if(m == NULL) {
-		m = add_module(name);
+		m = py_add_module(name);
 		if(m == NULL) {
-			freetree(n);
+			py_tree_delete(n);
 			return NULL;
 		}
 		*m_ret = m;
 	}
-	d = getmoduledict(m);
-	return run_node(n, namebuf, d, d);
+	d = py_module_get_dict(m);
+	return py_tree_run(n, namebuf, d, d);
 }
 
-static object* load_module(name)char* name;
+static struct py_object* load_module(name)char* name;
 {
-	object* m, * v;
-	v = get_module((object*) NULL, name, &m);
+	struct py_object* m, * v;
+	v = get_module((struct py_object*) NULL, name, &m);
 	if(v == NULL) {
 		return NULL;
 	}
@@ -157,13 +147,13 @@ static object* load_module(name)char* name;
 	return m;
 }
 
-object* import_module(name)char* name;
+struct py_object* py_import_module(name)char* name;
 {
-	object* m;
-	if((m = dictlookup(modules, name)) == NULL) {
+	struct py_object* m;
+	if((m = py_dict_lookup(modules, name)) == NULL) {
 		if(init_builtin(name)) {
-			if((m = dictlookup(modules, name)) == NULL) {
-				err_setstr(SystemError, "builtin module missing");
+			if((m = py_dict_lookup(modules, name)) == NULL) {
+				py_error_set_string(py_system_error, "builtin module missing");
 			}
 		}
 		else {
@@ -173,43 +163,43 @@ object* import_module(name)char* name;
 	return m;
 }
 
-object* reload_module(m)object* m;
+struct py_object* py_reload_module(m)struct py_object* m;
 {
-	if(m == NULL || !is_moduleobject(m)) {
-		err_setstr(TypeError, "reload() argument must be module");
+	if(m == NULL || !py_is_module(m)) {
+		py_error_set_string(py_type_error, "reload() argument must be module");
 		return NULL;
 	}
 	/* XXX Ought to check for builtin modules -- can't reload these... */
-	return get_module(m, getmodulename(m), (object**) NULL);
+	return get_module(m, py_module_get_name(m), (struct py_object**) NULL);
 }
 
-static void cleardict(d)object* d;
+static void cleardict(d)struct py_object* d;
 {
 	int i;
-	for(i = getdictsize(d); --i >= 0;) {
+	for(i = py_dict_size(d); --i >= 0;) {
 		char* k;
-		k = getdictkey(d, i);
+		k = py_dict_get_key(d, i);
 		if(k != NULL) {
-			(void) dictremove(d, k);
+			(void) py_dict_remove(d, k);
 		}
 	}
 }
 
-void doneimport() {
+void py_import_done() {
 	if(modules != NULL) {
 		int i;
 		/* Explicitly erase all modules; this is the safest way
 		   to get rid of at least *some* circular dependencies */
-		for(i = getdictsize(modules); --i >= 0;) {
+		for(i = py_dict_size(modules); --i >= 0;) {
 			char* k;
-			k = getdictkey(modules, i);
+			k = py_dict_get_key(modules, i);
 			if(k != NULL) {
-				object* m;
-				m = dictlookup(modules, k);
-				if(m != NULL && is_moduleobject(m)) {
-					object* d;
-					d = getmoduledict(m);
-					if(d != NULL && is_dictobject(d)) {
+				struct py_object* m;
+				m = py_dict_lookup(modules, k);
+				if(m != NULL && py_is_module(m)) {
+					struct py_object* d;
+					d = py_module_get_dict(m);
+					if(d != NULL && py_is_dict(d)) {
 						cleardict(d);
 					}
 				}
@@ -226,9 +216,9 @@ void doneimport() {
 static int init_builtin(name)char* name;
 {
 	int i;
-	for(i = 0; inittab[i].name != NULL; i++) {
-		if(strcmp(name, inittab[i].name) == 0) {
-			(*inittab[i].initfunc)();
+	for(i = 0; py_init_table[i].name != NULL; i++) {
+		if(strcmp(name, py_init_table[i].name) == 0) {
+			(*py_init_table[i].func)();
 			return 1;
 		}
 	}

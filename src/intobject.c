@@ -1,48 +1,31 @@
-/***********************************************************
-Copyright 1991 by Stichting Mathematisch Centrum, Amsterdam, The
-Netherlands.
-
-                        All Rights Reserved
-
-Permission to use, copy, modify, and distribute this software and its
-documentation for any purpose and without fee is hereby granted,
-provided that the above copyright notice appear in all copies and that
-both that copyright notice and this permission notice appear in
-supporting documentation, and that the names of Stichting Mathematisch
-Centrum or CWI not be used in advertising or publicity pertaining to
-distribution of the software without specific, written prior permission.
-
-STICHTING MATHEMATISCH CENTRUM DISCLAIMS ALL WARRANTIES WITH REGARD TO
-THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
-FITNESS, IN NO EVENT SHALL STICHTING MATHEMATISCH CENTRUM BE LIABLE
-FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
-OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-
-******************************************************************/
+/*
+ * Copyright 1991 by Stichting Mathematisch Centrum
+ * See `LICENCE' for more information.
+ */
 
 /* Integer object implementation */
 
-#include <stdlib.h>
+#include <python/std.h>
+#include <python/errors.h>
 
-#include <python/allobjects.h>
+#include <python/intobject.h>
+#include <python/stringobject.h>
 
 /* Standard Booleans */
 
-intobject FalseObject = {
-		OB_HEAD_INIT(&Inttype) 0 };
+struct py_int py_false_object = {
+		PY_OB_SEQ_INIT(&py_int_type) 0 };
 
-intobject TrueObject = {
-		OB_HEAD_INIT(&Inttype) 1 };
+struct py_int py_true_object = {
+		PY_OB_SEQ_INIT(&py_int_type) 1 };
 
-static object* err_ovf() {
-	err_setstr(OverflowError, "integer overflow");
+static struct py_object* err_ovf(void) {
+	py_error_set_string(PY_OVERFLOW_ERROR, "integer overflow");
 	return NULL;
 }
 
-static object* err_zdiv() {
-	err_setstr(ZeroDivisionError, "integer division by zero");
+static struct py_object* err_zdiv(void) {
+	py_error_set_string(PY_ZERO_DIVISION_ERROR, "integer division by zero");
 	return NULL;
 }
 
@@ -57,171 +40,172 @@ static object* err_zdiv() {
 */
 
 #define BLOCK_SIZE     1000    /* 1K less typical malloc overhead */
-#define N_INTOBJECTS   (BLOCK_SIZE / sizeof(intobject))
+#define N_INTOBJECTS   (BLOCK_SIZE / sizeof(struct py_int))
 
-static intobject* fill_free_list() {
-	intobject* p, * q;
-	p = malloc(N_INTOBJECTS * sizeof(intobject));
+static struct py_int* fill_free_list() {
+	struct py_int* p, * q;
+	p = malloc(N_INTOBJECTS * sizeof(struct py_int));
 	if(p == NULL) {
-		return (intobject*) err_nomem();
+		return (struct py_int*) py_error_set_nomem();
 	}
 	q = p + N_INTOBJECTS;
 	while(--q > p)
-		*(intobject**) q = q - 1;
-	*(intobject**) q = NULL;
+		*(struct py_int**) q = q - 1;
+	*(struct py_int**) q = NULL;
 	return p + N_INTOBJECTS - 1;
 }
 
-static intobject* free_list = NULL;
+static struct py_int* free_list = NULL;
 
-object* newintobject(ival)long ival;
+struct py_object* py_int_new(ival)long ival;
 {
-	intobject* v;
+	struct py_int* v;
 	if(free_list == NULL) {
 		if((free_list = fill_free_list()) == NULL) {
 			return NULL;
 		}
 	}
 	v = free_list;
-	free_list = *(intobject**) free_list;
-	NEWREF(v);
-	v->ob_type = &Inttype;
-	v->ob_ival = ival;
-	return (object*) v;
+	free_list = *(struct py_int**) free_list;
+	PY_NEWREF(v);
+	v->type = &py_int_type;
+	v->value = ival;
+	return (struct py_object*) v;
 }
 
-static void int_dealloc(v)intobject* v;
+static void int_dealloc(v)struct py_int* v;
 {
-	*(intobject**) v = free_list;
+	*(struct py_int**) v = free_list;
 	free_list = v;
 }
 
-long getintvalue(op)object* op;
+long py_int_get(op)struct py_object* op;
 {
-	if(!is_intobject(op)) {
-		err_badcall();
+	if(!py_is_int(op)) {
+		py_error_set_badcall();
 		return -1;
 	}
 	else {
-		return ((intobject*) op)->ob_ival;
+		return ((struct py_int*) op)->value;
 	}
 }
 
 /* Methods */
 
-static void int_print(v, fp, flags)intobject* v;
+static void int_print(v, fp, flags)struct py_int* v;
 								   FILE* fp;
 								   int flags;
 {
 	(void) flags;
 
-	fprintf(fp, "%ld", v->ob_ival);
+	fprintf(fp, "%ld", v->value);
 }
 
-static object* int_repr(v)intobject* v;
+static struct py_object* int_repr(v)struct py_int* v;
 {
 	char buf[20];
-	sprintf(buf, "%ld", v->ob_ival);
-	return newstringobject(buf);
+	sprintf(buf, "%ld", v->value);
+	return py_string_new(buf);
 }
 
-static int int_compare(v, w)intobject* v, * w;
+static int int_compare(v, w)struct py_int* v, * w;
 {
-	long i = v->ob_ival;
-	long j = w->ob_ival;
+	long i = v->value;
+	long j = w->value;
 	return (i < j) ? -1 : (i > j) ? 1 : 0;
 }
 
-static object* int_add(v, w)intobject* v;
-							object* w;
+static struct py_object* int_add(v, w)struct py_int* v;
+							struct py_object* w;
 {
 	long a, b, x;
-	if(!is_intobject(w)) {
-		err_badarg();
+	if(!py_is_int(w)) {
+		py_error_set_badarg();
 		return NULL;
 	}
-	a = v->ob_ival;
-	b = ((intobject*) w)->ob_ival;
+	a = v->value;
+	b = ((struct py_int*) w)->value;
 	x = a + b;
 	if((x ^ a) < 0 && (x ^ b) < 0) {
 		return err_ovf();
 	}
-	return newintobject(x);
+	return py_int_new(x);
 }
 
-static object* int_sub(v, w)intobject* v;
-							object* w;
+static struct py_object* int_sub(v, w)struct py_int* v;
+							struct py_object* w;
 {
 	long a, b, x;
-	if(!is_intobject(w)) {
-		err_badarg();
+	if(!py_is_int(w)) {
+		py_error_set_badarg();
 		return NULL;
 	}
-	a = v->ob_ival;
-	b = ((intobject*) w)->ob_ival;
+	a = v->value;
+	b = ((struct py_int*) w)->value;
 	x = a - b;
 	if((x ^ a) < 0 && (x ^ ~b) < 0) {
 		return err_ovf();
 	}
-	return newintobject(x);
+	return py_int_new(x);
 }
 
-static object* int_mul(v, w)intobject* v;
-							object* w;
+static struct py_object* int_mul(v, w)struct py_int* v;
+							struct py_object* w;
 {
 	long a, b;
 	/* double x; */
-	if(!is_intobject(w)) {
-		err_badarg();
+	if(!py_is_int(w)) {
+		py_error_set_badarg();
 		return NULL;
 	}
-	a = v->ob_ival;
-	b = ((intobject*) w)->ob_ival;
+	a = v->value;
+	b = ((struct py_int*) w)->value;
 	/* x = (double) a * (double) b; */
+
 /* TODO: Need sensible overflow detection logic
        if (x > 0x7fffffff || x < (double) (long) 0x80000000)
                return err_ovf();
 */
-	return newintobject(a * b);
+	return py_int_new(a * b);
 }
 
-static object* int_div(v, w)intobject* v;
-							object* w;
+static struct py_object* int_div(v, w)struct py_int* v;
+							struct py_object* w;
 {
-	if(!is_intobject(w)) {
-		err_badarg();
+	if(!py_is_int(w)) {
+		py_error_set_badarg();
 		return NULL;
 	}
-	if(((intobject*) w)->ob_ival == 0) {
+	if(((struct py_int*) w)->value == 0) {
 		return err_zdiv();
 	}
-	return newintobject(v->ob_ival / ((intobject*) w)->ob_ival);
+	return py_int_new(v->value / ((struct py_int*) w)->value);
 }
 
-static object* int_rem(v, w)intobject* v;
-							object* w;
+static struct py_object* int_rem(v, w)struct py_int* v;
+							struct py_object* w;
 {
-	if(!is_intobject(w)) {
-		err_badarg();
+	if(!py_is_int(w)) {
+		py_error_set_badarg();
 		return NULL;
 	}
-	if(((intobject*) w)->ob_ival == 0) {
+	if(((struct py_int*) w)->value == 0) {
 		return err_zdiv();
 	}
-	return newintobject(v->ob_ival % ((intobject*) w)->ob_ival);
+	return py_int_new(v->value % ((struct py_int*) w)->value);
 }
 
-static object* int_pow(v, w)intobject* v;
-							object* w;
+static struct py_object* int_pow(v, w)struct py_int* v;
+							struct py_object* w;
 {
 	long iv, iw, ix;
 	int neg;
-	if(!is_intobject(w)) {
-		err_badarg();
+	if(!py_is_int(w)) {
+		py_error_set_badarg();
 		return NULL;
 	}
-	iv = v->ob_ival;
-	iw = ((intobject*) w)->ob_ival;
+	iv = v->value;
+	iw = ((struct py_int*) w)->value;
 	neg = 0;
 	if(iw < 0) {
 		neg = 1, iw = -iw;
@@ -237,30 +221,30 @@ static object* int_pow(v, w)intobject* v;
 		ix = 1 / ix;
 	}
 	/* XXX How to check for overflow? */
-	return newintobject(ix);
+	return py_int_new(ix);
 }
 
-static object* int_neg(v)intobject* v;
+static struct py_object* int_neg(v)struct py_int* v;
 {
 	long a, x;
-	a = v->ob_ival;
+	a = v->value;
 	x = -a;
 	if(a < 0 && x < 0) {
 		return err_ovf();
 	}
-	return newintobject(x);
+	return py_int_new(x);
 }
 
-static object* int_pos(v)intobject* v;
+static struct py_object* int_pos(v)struct py_int* v;
 {
 	PY_INCREF(v);
-	return (object*) v;
+	return (struct py_object*) v;
 }
 
-static number_methods int_as_number = {
+static struct py_numbermethods int_as_number = {
 		int_add,        /*tp_add*/
-		int_sub,        /*tp_subtract*/
-		int_mul,        /*tp_multiply*/
+		int_sub,        /*tp_sub*/
+		int_mul,        /*tp_mul*/
 		int_div,        /*tp_divide*/
 		int_rem,        /*tp_remainder*/
 		int_pow,        /*tp_power*/
@@ -268,15 +252,15 @@ static number_methods int_as_number = {
 		int_pos,        /*tp_plus*/
 };
 
-typeobject Inttype = {
-		OB_HEAD_INIT(&Typetype) 0, "int", sizeof(intobject), 0,
-		int_dealloc,    /*tp_dealloc*/
-		int_print,      /*tp_print*/
-		0,              /*tp_getattr*/
-		0,              /*tp_setattr*/
-		int_compare,    /*tp_compare*/
-		int_repr,       /*tp_repr*/
-		&int_as_number,     /*tp_as_number*/
-		0,              /*tp_as_sequence*/
-		0,              /*tp_as_mapping*/
+struct py_type py_int_type = {
+		PY_OB_SEQ_INIT(&py_type_type) 0, "int", sizeof(struct py_int), 0,
+		int_dealloc,    /*dealloc*/
+		int_print,      /*print*/
+		0,              /*get_attr*/
+		0,              /*set_attr*/
+		int_compare,    /*cmp*/
+		int_repr,       /*repr*/
+		&int_as_number,     /*numbermethods*/
+		0,              /*sequencemethods*/
+		0,              /*mappingmethods*/
 };

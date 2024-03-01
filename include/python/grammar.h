@@ -1,121 +1,88 @@
-/***********************************************************
-Copyright 1991 by Stichting Mathematisch Centrum, Amsterdam, The
-Netherlands.
+/*
+ * Copyright 1991 by Stichting Mathematisch Centrum
+ * See `LICENCE' for more information.
+ */
 
-                        All Rights Reserved
-
-Permission to use, copy, modify, and distribute this software and its
-documentation for any purpose and without fee is hereby granted,
-provided that the above copyright notice appear in all copies and that
-both that copyright notice and this permission notice appear in
-supporting documentation, and that the names of Stichting Mathematisch
-Centrum or CWI not be used in advertising or publicity pertaining to
-distribution of the software without specific, written prior permission.
-
-STICHTING MATHEMATISCH CENTRUM DISCLAIMS ALL WARRANTIES WITH REGARD TO
-THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
-FITNESS, IN NO EVENT SHALL STICHTING MATHEMATISCH CENTRUM BE LIABLE
-FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
-OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-
-******************************************************************/
+/* Grammar interface */
 
 #ifndef PY_GRAMMAR_H
 #define PY_GRAMMAR_H
 
-/* Grammar interface */
-
-#include <stdio.h>
-
-#include <python/bitset.h> /* Sigh... */
+#include <python/std.h>
+#include <python/bitset.h>
 
 /* A label of an arc */
+struct py_label {
+	int type;
+	char* str;
+};
 
-typedef struct _label {
-	int lb_type;
-	char* lb_str;
-} label;
-
-#define EMPTY 0                /* Label number 0 is by definition the empty label */
+/* Label number 0 is by definition the empty label */
+#define PY_LABEL_EMPTY (0)
 
 /* A list of labels */
-
-typedef struct _labellist {
-	int ll_nlabels;
-	label* ll_label;
-} labellist;
+struct py_labellist {
+	int count;
+	struct py_label* label;
+};
 
 /* An arc from one state to another */
-
-typedef struct _arc {
-	short a_lbl;          /* Label of this arc */
-	short a_arrow;        /* State where this arc goes to */
-} arc;
+struct py_arc {
+	short label; /* Label of this arc */
+	short arrow; /* State where this arc goes to */
+};
 
 /* A state in a DFA */
-
-typedef struct _state {
-	int s_narcs;
-	arc* s_arc;         /* Array of arcs */
+struct py_state {
+	int count;
+	struct py_arc* arcs; /* Array of arcs */
 
 	/* Optional accelerators */
-	int s_lower;       /* Lowest label index */
-	int s_upper;       /* Highest label index */
-	int* s_accel;       /* Accelerator */
-	int s_accept;      /* Nonzero for accepting state */
-} state;
+	int lower; /* Lowest label index */
+	int upper; /* Highest label index */
+	int* accel; /* Accelerator */
+	int accept; /* Nonzero for accepting state */
+};
 
 /* A DFA */
+struct py_dfa {
+	int type; /* Non-terminal this represents */
+	char* name; /* For printing */
+	int initial; /* Initial state */
 
-typedef struct _dfa {
-	int d_type;        /* Non-terminal this represents */
-	char* d_name;        /* For printing */
-	int d_initial;     /* Initial state */
-	int d_nstates;
-	state* d_state;       /* Array of states */
-	py_bitset_t d_first;
-} dfa;
+	int count;
+	struct py_state* states; /* Array of states */
+	py_bitset_t first;
+};
 
 /* A grammar */
+struct py_grammar {
+	int count;
+	struct py_dfa* dfas; /* Array of DFAs */
 
-typedef struct _grammar {
-	int g_ndfas;
-	dfa* g_dfa;         /* Array of DFAs */
-	labellist g_ll;
-	int g_start;       /* Start symbol of the grammar */
-	int g_accel;       /* Set if accelerators present */
-} grammar;
+	struct py_labellist labels;
+	int start; /* Start symbol of the grammar */
+	int accel; /* Set if accelerators present */
+};
 
 /* FUNCTIONS */
+struct py_grammar* py_grammar_new(int);
+struct py_dfa* py_grammar_add_dfa(struct py_grammar*, int, char*);
+struct py_dfa* py_grammar_find_dfa(struct py_grammar*, int);
 
-grammar* newgrammar(int start);
+void py_grammar_translate(struct py_grammar*);
+void py_grammar_add_firsts(struct py_grammar*);
+void py_grammar_add_accels(struct py_grammar*);
+void py_grammar_delete_accels(void);
+void py_grammar_print(struct py_grammar*, FILE*);
+void py_grammar_print_nonterminals(struct py_grammar*, FILE*);
 
-dfa* adddfa(grammar* g, int type, char* name);
+int py_dfa_add_state(struct py_dfa*);
+void py_dfa_add_arc(struct py_dfa*, int, int, int);
 
-int addstate(dfa* d);
+int py_labellist_add(struct py_labellist*, int, char*);
+int py_labellist_find(struct py_labellist*, int, char*);
 
-void addarc(dfa* d, int from, int to, int lbl);
-
-dfa* finddfa(grammar* g, int type);
-
-char* typename(grammar* g, int lbl);
-
-int addlabel(labellist* ll, int type, char* str);
-
-int findlabel(labellist* ll, int type, char* str);
-
-char* labelrepr(label* lb);
-
-void translatelabels(grammar* g);
-
-void addfirstsets(grammar* g);
-
-void addaccellerators(grammar* g);
-
-void printgrammar(grammar* g, FILE* fp);
-
-void printnonterminals(grammar* g, FILE* fp);
+char* py_label_repr(struct py_label*);
 
 #endif

@@ -1,39 +1,19 @@
-/***********************************************************
-Copyright 1991 by Stichting Mathematisch Centrum, Amsterdam, The
-Netherlands.
-
-                        All Rights Reserved
-
-Permission to use, copy, modify, and distribute this software and its
-documentation for any purpose and without fee is hereby granted,
-provided that the above copyright notice appear in all copies and that
-both that copyright notice and this permission notice appear in
-supporting documentation, and that the names of Stichting Mathematisch
-Centrum or CWI not be used in advertising or publicity pertaining to
-distribution of the software without specific, written prior permission.
-
-STICHTING MATHEMATISCH CENTRUM DISCLAIMS ALL WARRANTIES WITH REGARD TO
-THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
-FITNESS, IN NO EVENT SHALL STICHTING MATHEMATISCH CENTRUM BE LIABLE
-FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
-OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-
-******************************************************************/
+/*
+ * Copyright 1991 by Stichting Mathematisch Centrum
+ * See `LICENCE' for more information.
+ */
 
 /* Time module */
-
-#include <signal.h>
-#include <setjmp.h>
-#include <time.h>
 
 #ifdef _WIN32
 # include <windows.h>
 #endif
 
-#include <python/allobjects.h>
+#include <python/std.h>
 #include <python/modsupport.h>
+#include <python/errors.h>
+
+#include <python/intobject.h>
 
 /*
  * TODO: Remove all builtin modules from Python itself and move to AGA to make
@@ -44,16 +24,16 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 /* Time methods */
 
-static object* time_time(object* self, object* args) {
+static struct py_object* time_time(struct py_object* self, struct py_object* args) {
 	long secs;
 
 	(void) self;
 
-	if(!getnoarg(args)) {
+	if(!py_arg_none(args)) {
 		return NULL;
 	}
 	secs = time((time_t*) NULL);
-	return newintobject(secs);
+	return py_int_new(secs);
 }
 
 static jmp_buf sleep_intr;
@@ -64,19 +44,19 @@ static void sleep_catcher(int sig) {
 	longjmp(sleep_intr, 1);
 }
 
-static object* time_sleep(object* self, object* args) {
+static struct py_object* time_sleep(struct py_object* self, struct py_object* args) {
 	int secs;
 	void (*sigsave)(int);
 
 	(void) self;
 
-	if(!getintarg(args, &secs)) {
+	if(!py_arg_int(args, &secs)) {
 		return NULL;
 	}
 
 	if(setjmp(sleep_intr)) {
 		signal(SIGINT, sigsave);
-		err_set(KeyboardInterrupt);
+		py_error_set(py_interrupt_error);
 		return NULL;
 	}
 
@@ -92,18 +72,18 @@ static object* time_sleep(object* self, object* args) {
 #endif
 
 	signal(SIGINT, sigsave);
-	PY_INCREF(None);
-	return None;
+	PY_INCREF(PY_NONE);
+	return PY_NONE;
 }
 
-static struct methodlist time_methods[] = {
+static struct py_methodlist time_methods[] = {
 		{ "sleep", time_sleep }, { "time", time_time },
 		{ NULL, NULL }           /* sentinel */
 };
 
 
 void inittime() {
-	initmodule("time", time_methods);
+	py_module_init("time", time_methods);
 }
 
 
@@ -119,7 +99,7 @@ sleep(msecs)
 
 	   deadline = MacTicks + msecs * 60;
 	   while (MacTicks < deadline) {
-			   if (intrcheck())
+			   if (py_intrcheck())
 					   sleep_catcher(SIGINT);
 	   }
 }
@@ -132,7 +112,7 @@ millisleep(msecs)
 
 	   deadline = MacTicks + msecs * 3 / 50; /* msecs * 60 / 1000 */
 	   while (MacTicks < deadline) {
-			   if (intrcheck())
+			   if (py_intrcheck())
 					   sleep_catcher(SIGINT);
 	   }
 }

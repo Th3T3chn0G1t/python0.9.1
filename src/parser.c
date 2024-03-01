@@ -1,26 +1,7 @@
-/***********************************************************
-Copyright 1991 by Stichting Mathematisch Centrum, Amsterdam, The
-Netherlands.
-
-                        All Rights Reserved
-
-Permission to use, copy, modify, and distribute this software and its
-documentation for any purpose and without fee is hereby granted,
-provided that the above copyright notice appear in all copies and that
-both that copyright notice and this permission notice appear in
-supporting documentation, and that the names of Stichting Mathematisch
-Centrum or CWI not be used in advertising or publicity pertaining to
-distribution of the software without specific, written prior permission.
-
-STICHTING MATHEMATISCH CENTRUM DISCLAIMS ALL WARRANTIES WITH REGARD TO
-THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
-FITNESS, IN NO EVENT SHALL STICHTING MATHEMATISCH CENTRUM BE LIABLE
-FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
-OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-
-******************************************************************/
+/*
+ * Copyright 1991 by Stichting Mathematisch Centrum
+ * See `LICENCE' for more information.
+ */
 
 /* Parser implementation */
 
@@ -31,12 +12,11 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #include <stdlib.h>
 #include <assert.h>
 
-#include <python/pgenheaders.h>
 #include <python/token.h>
 #include <python/grammar.h>
 #include <python/node.h>
 #include <python/parser.h>
-#include <python/errcode.h>
+#include <python/result.h>
 
 #ifdef _DEBUG
 extern int debugging;
@@ -48,131 +28,131 @@ extern int debugging;
 
 /* STACK DATA TYPE */
 
-static void s_reset(s)stack* s;
+static void s_reset(s)struct py_stack* s;
 {
-	s->s_top = &s->s_base[MAXSTACK];
+	s->top = &s->base[PY_MAX_STACK];
 }
 
-#define s_empty(s) ((s)->s_top == &(s)->s_base[MAXSTACK])
+#define s_empty(s) ((s)->top == &(s)->base[PY_MAX_STACK])
 
-static int s_push(s, d, parent)stack* s;
-							   dfa* d;
-							   node* parent;
+static int s_push(s, d, parent)struct py_stack* s;
+							   struct py_dfa* d;
+							   struct py_node* parent;
 {
-	stackentry* top;
-	if(s->s_top == s->s_base) {
+	struct py_stackentry* top;
+	if(s->top == s->base) {
 		fprintf(stderr, "s_push: parser stack overflow\n");
 		return -1;
 	}
-	top = --s->s_top;
-	top->s_dfa = d;
-	top->s_parent = parent;
-	top->s_state = 0;
+	top = --s->top;
+	top->dfa = d;
+	top->parent = parent;
+	top->state = 0;
 	return 0;
 }
 
 #ifdef _DEBUG
 
-static void s_pop(s)stack* s;
+static void s_pop(s)struct py_stack* s;
 {
 	if(s_empty(s)) {
 		fprintf(stderr, "s_pop: parser stack underflow -- FATAL\n");
 		abort();
 	}
-	s->s_top++;
+	s->top++;
 }
 
 #else /* !DEBUG */
 
-#define s_pop(s) (s)->s_top++
+#define s_pop(s) (s)->top++
 
 #endif
 
 
 /* PARSER CREATION */
 
-parser_state* newparser(g, start)grammar* g;
+struct py_parser* py_parser_new(g, start)struct py_grammar* g;
 								 int start;
 {
-	parser_state* ps;
+	struct py_parser* ps;
 
-	if(!g->g_accel) {
-		addaccelerators(g);
+	if(!g->accel) {
+		py_grammar_add_accels(g);
 	}
-	ps = malloc(sizeof(parser_state));
+	ps = malloc(sizeof(struct py_parser));
 	if(ps == NULL) {
 		return NULL;
 	}
-	ps->p_grammar = g;
-	ps->p_tree = newtree(start);
-	if(ps->p_tree == NULL) {
+	ps->grammar = g;
+	ps->tree = py_tree_new(start);
+	if(ps->tree == NULL) {
 		free(ps);
 		return NULL;
 	}
-	s_reset(&ps->p_stack);
-	(void) s_push(&ps->p_stack, finddfa(g, start), ps->p_tree);
+	s_reset(&ps->stack);
+	(void) s_push(&ps->stack, py_grammar_find_dfa(g, start), ps->tree);
 	return ps;
 }
 
-void delparser(ps)parser_state* ps;
+void py_parser_delete(ps)struct py_parser* ps;
 {
 	/* NB If you want to save the parse tree,
-	   you must set p_tree to NULL before calling delparser! */
-	freetree(ps->p_tree);
+	   you must set tree to NULL before calling py_parser_delete! */
+	py_tree_delete(ps->tree);
 	free(ps);
 }
 
 
 /* PARSER STACK OPERATIONS */
 
-static int shift(s, type, str, newstate, lineno)stack* s;
+static int shift(s, type, str, newstate, lineno)struct py_stack* s;
 												int type;
 												char* str;
 												int newstate;
 												int lineno;
 {
 	assert(!s_empty(s));
-	if(addchild(s->s_top->s_parent, type, str, lineno) == NULL) {
-		fprintf(stderr, "shift: no mem in addchild\n");
+	if(py_tree_add(s->top->parent, type, str, lineno) == NULL) {
+		fprintf(stderr, "shift: no mem in py_tree_add\n");
 		return -1;
 	}
-	s->s_top->s_state = newstate;
+	s->top->state = newstate;
 	return 0;
 }
 
-static int push(s, type, d, newstate, lineno)stack* s;
+static int push(s, type, d, newstate, lineno)struct py_stack* s;
 											 int type;
-											 dfa* d;
+											 struct py_dfa* d;
 											 int newstate;
 											 int lineno;
 {
-	node* n;
-	n = s->s_top->s_parent;
+	struct py_node* n;
+	n = s->top->parent;
 	assert(!s_empty(s));
-	if(addchild(n, type, (char*) NULL, lineno) == NULL) {
-		fprintf(stderr, "push: no mem in addchild\n");
+	if(py_tree_add(n, type, (char*) NULL, lineno) == NULL) {
+		fprintf(stderr, "push: no mem in py_tree_add\n");
 		return -1;
 	}
-	s->s_top->s_state = newstate;
-	return s_push(s, d, CHILD(n, NCH(n) - 1));
+	s->top->state = newstate;
+	return s_push(s, d, &n->children[n->count - 1]);
 }
 
 
 /* PARSER PROPER */
 
-static int classify(g, type, str)grammar* g;
+static int classify(g, type, str)struct py_grammar* g;
 								 int type;
 								 char* str;
 {
-	int n = g->g_ll.ll_nlabels;
+	int n = g->labels.count;
 
-	if(type == NAME) {
+	if(type == PY_NAME) {
 		char* s = str;
-		label* l = g->g_ll.ll_label;
+		struct py_label* l = g->labels.label;
 		int i;
 		for(i = n; i > 0; i--, l++) {
-			if(l->lb_type == NAME && l->lb_str != NULL &&
-			   l->lb_str[0] == s[0] && strcmp(l->lb_str, s) == 0) {
+			if(l->type == PY_NAME && l->str != NULL &&
+			   l->str[0] == s[0] && strcmp(l->str, s) == 0) {
 				D(printf("It's a keyword\n"));
 				return n - i;
 			}
@@ -180,10 +160,10 @@ static int classify(g, type, str)grammar* g;
 	}
 
 	{
-		label* l = g->g_ll.ll_label;
+		struct py_label* l = g->labels.label;
 		int i;
 		for(i = n; i > 0; i--, l++) {
-			if(l->lb_type == type && l->lb_str == NULL) {
+			if(l->type == type && l->str == NULL) {
 				D(printf("It's a token we know\n"));
 				return n - i;
 			}
@@ -194,43 +174,43 @@ static int classify(g, type, str)grammar* g;
 	return -1;
 }
 
-int addtoken(ps, type, str, lineno)parser_state* ps;
+int py_parser_add(ps, type, str, lineno)struct py_parser* ps;
 								   int type;
 								   char* str;
 								   int lineno;
 {
 	int ilabel;
 
-	D(printf("Token %s/'%s' ... ", tok_name[type], str));
+	D(printf("Token %s/'%s' ... ", py_token_names[type], str));
 
 	/* Find out which label this token is */
-	ilabel = classify(ps->p_grammar, type, str);
+	ilabel = classify(ps->grammar, type, str);
 	if(ilabel < 0) {
-		return E_SYNTAX;
+		return PY_RESULT_SYNTAX;
 	}
 
 	/* Loop until the token is shifted or an error occurred */
 	for(;;) {
 		/* Fetch the current dfa and state */
-		dfa* d = ps->p_stack.s_top->s_dfa;
-		state* s = &d->d_state[ps->p_stack.s_top->s_state];
+		struct py_dfa* d = ps->stack.top->dfa;
+		struct py_state* s = &d->states[ps->stack.top->state];
 
 		D(printf(
-				" DFA '%s', state %d:", d->d_name, ps->p_stack.s_top->s_state));
+				" DFA '%s', state %d:", d->name, ps->stack.top->state));
 
 		/* Check accelerator */
-		if(s->s_lower <= ilabel && ilabel < s->s_upper) {
-			int x = s->s_accel[ilabel - s->s_lower];
+		if(s->lower <= ilabel && ilabel < s->upper) {
+			int x = s->accel[ilabel - s->lower];
 			if(x != -1) {
 				if(x & (1 << 7)) {
 					/* Push non-terminal */
-					int nt = (x >> 8) + NT_OFFSET;
+					int nt = (x >> 8) + PY_NONTERMINAL;
 					int arrow = x & ((1 << 7) - 1);
-					dfa* d1 = finddfa(ps->p_grammar, nt);
+					struct py_dfa* d1 = py_grammar_find_dfa(ps->grammar, nt);
 					if(push(
-							&ps->p_stack, nt, d1, arrow, lineno) < 0) {
+							&ps->stack, nt, d1, arrow, lineno) < 0) {
 						D(printf(" MemError: push.\n"));
-						return E_NOMEM;
+						return PY_RESULT_OOM;
 					}
 					D(printf(" Push ...\n"));
 					continue;
@@ -238,40 +218,40 @@ int addtoken(ps, type, str, lineno)parser_state* ps;
 
 				/* Shift the token */
 				if(shift(
-						&ps->p_stack, type, str, x, lineno) < 0) {
+						&ps->stack, type, str, x, lineno) < 0) {
 					D(printf(" MemError: shift.\n"));
-					return E_NOMEM;
+					return PY_RESULT_OOM;
 				}
 				D(printf(" Shift.\n"));
 				/* Pop while we are in an accept-only state */
-				while(s = &d->d_state[ps->p_stack.s_top->s_state],
-						s->s_accept && s->s_narcs == 1) {
+				while(s = &d->states[ps->stack.top->state],
+						s->accept && s->count == 1) {
 					D(printf("  Direct pop.\n"));
-					s_pop(&ps->p_stack);
-					if(s_empty(&ps->p_stack)) {
+					s_pop(&ps->stack);
+					if(s_empty(&ps->stack)) {
 						D(printf("  ACCEPT.\n"));
-						return E_DONE;
+						return PY_RESULT_DONE;
 					}
-					d = ps->p_stack.s_top->s_dfa;
+					d = ps->stack.top->dfa;
 				}
-				return E_OK;
+				return PY_RESULT_OK;
 			}
 		}
 
-		if(s->s_accept) {
+		if(s->accept) {
 			/* Pop this dfa and try again */
-			s_pop(&ps->p_stack);
+			s_pop(&ps->stack);
 			D(printf(" Pop ...\n"));
-			if(s_empty(&ps->p_stack)) {
+			if(s_empty(&ps->stack)) {
 				D(printf(" Error: bottom of stack.\n"));
-				return E_SYNTAX;
+				return PY_RESULT_SYNTAX;
 			}
 			continue;
 		}
 
 		/* Stuck, report syntax error */
 		D(printf(" Error.\n"));
-		return E_SYNTAX;
+		return PY_RESULT_SYNTAX;
 	}
 }
 
@@ -280,8 +260,8 @@ int addtoken(ps, type, str, lineno)parser_state* ps;
 
 /* DEBUG OUTPUT */
 
-void dumptree(g, n)grammar* g;
-				   node* n;
+void dumptree(g, n)struct py_grammar* g;
+				   struct py_node* n;
 {
 	int i;
 
@@ -289,40 +269,40 @@ void dumptree(g, n)grammar* g;
 		printf("NIL");
 	}
 	else {
-		label l;
-		l.lb_type = TYPE(n);
-		l.lb_str = n->n_str;
-		printf("%s", labelrepr(&l));
-		if(ISNONTERMINAL(TYPE(n))) {
+		struct py_label l;
+		l.type = n->type;
+		l.str = n->str;
+		printf("%s", py_label_repr(&l));
+		if(n->type >= PY_NONTERMINAL) {
 			printf("(");
-			for(i = 0; i < NCH(n); i++) {
+			for(i = 0; i < n->count; i++) {
 				if(i > 0) {
 					printf(",");
 				}
-				dumptree(g, CHILD(n, i));
+				dumptree(g, &n->children[i]);
 			}
 			printf(")");
 		}
 	}
 }
 
-void showtree(g, n)grammar* g;
-				   node* n;
+void showtree(g, n)struct py_grammar* g;
+				   struct py_node* n;
 {
 	int i;
 
 	if(n == NULL) {
 		return;
 	}
-	if(ISNONTERMINAL(TYPE(n))) {
-		for(i = 0; i < NCH(n); i++) {
-			showtree(g, CHILD(n, i));
+	if(n->type >= PY_NONTERMINAL) {
+		for(i = 0; i < n->count; i++) {
+			showtree(g, &n->children[i]);
 		}
 	}
-	else if(ISTERMINAL(TYPE(n))) {
-		printf("%s", tok_name[TYPE(n)]);
-		if(TYPE(n) == NUMBER || TYPE(n) == NAME) {
-			printf("(%s)", STR(n));
+	else if(n->type < PY_NONTERMINAL) {
+		printf("%s", py_token_names[n->type]);
+		if(n->type == PY_NUMBER || n->type == PY_NAME) {
+			printf("(%s)", n->str);
 		}
 		printf(" ");
 	}
@@ -331,18 +311,18 @@ void showtree(g, n)grammar* g;
 	}
 }
 
-void printtree(ps)parser_state* ps;
+void printtree(ps)struct py_parser* ps;
 {
 	if(debugging) {
 		printf("Parse tree:\n");
-		dumptree(ps->p_grammar, ps->p_tree);
+		dumptree(ps->grammar, ps->tree);
 		printf("\n");
 		printf("Tokens:\n");
-		showtree(ps->p_grammar, ps->p_tree);
+		showtree(ps->grammar, ps->tree);
 		printf("\n");
 	}
 	printf("Listing:\n");
-	listtree(ps->p_tree);
+	py_tree_list(stdout, ps->tree);
 	printf("\n");
 }
 
@@ -353,32 +333,32 @@ void printtree(ps)parser_state* ps;
 Description
 -----------
 
-The parser's interface is different than usual: the function addtoken()
-must be called for each token in the input.  This makes it possible to
-turn it into an incremental parsing system later.  The parsing system
+The parser's interface is different than usual: the function py_parser_add()
+must be called for each token in the input. This makes it possible to
+turn it into an incremental parsing system later. The parsing system
 constructs a parse tree as it goes.
 
 A parsing rule is represented as a Deterministic Finite-state Automaton
-(DFA).  A node in a DFA represents a state of the parser; an arc represents
-a transition.  Transitions are either labeled with terminal symbols or
-with non-terminals.  When the parser decides to follow an arc labeled
+(DFA). A node in a DFA represents a state of the parser; an arc represents
+a transition. Transitions are either labeled with terminal symbols or
+with non-terminals. When the parser decides to follow an arc labeled
 with a non-terminal, it is invoked recursively with the DFA representing
 the parsing rule for that as its initial state; when that DFA accepts,
-the parser that invoked it continues.  The parse tree constructed by the
+the parser that invoked it continues. The parse tree constructed by the
 recursively called parser is inserted as a child in the current parse tree.
 
 The DFA's can be constructed automatically from a more conventional
-language description.  An extended LL(1) grammar (ELL(1)) is suitable.
+language description. An extended LL(1) grammar (ELL(1)) is suitable.
 Certain restrictions make the parser's life easier: rules that can produce
 the empty string should be outlawed (there are other ways to put loops
-or optional parts in the language).  To avoid the need to construct
+or optional parts in the language). To avoid the need to construct
 FIRST sets, we can require that all but the last alternative of a rule
 (really: arc going out of a DFA's state) must begin with a terminal
 symbol.
 
 As an example, consider this grammar:
 
-expr:  term (OP term)*
+expr:  term (PY_OP term)*
 term:  CONSTANT | '(' expr ')'
 
 The DFA corresponding to the rule for expr is:
@@ -386,10 +366,10 @@ The DFA corresponding to the rule for expr is:
 ------->.---term-->.------->
        ^          |
        |          |
-       \----OP----/
+       \----PY_OP----/
 
 The parse tree generated for the input a+b is:
 
-(expr: (term: (NAME: a)), (OP: +), (term: (NAME: b)))
+(expr: (term: (PY_NAME: a)), (PY_OP: +), (term: (PY_NAME: b)))
 
 */

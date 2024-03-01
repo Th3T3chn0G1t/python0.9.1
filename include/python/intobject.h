@@ -1,78 +1,54 @@
-/***********************************************************
-Copyright 1991 by Stichting Mathematisch Centrum, Amsterdam, The
-Netherlands.
-
-                        All Rights Reserved
-
-Permission to use, copy, modify, and distribute this software and its
-documentation for any purpose and without fee is hereby granted,
-provided that the above copyright notice appear in all copies and that
-both that copyright notice and this permission notice appear in
-supporting documentation, and that the names of Stichting Mathematisch
-Centrum or CWI not be used in advertising or publicity pertaining to
-distribution of the software without specific, written prior permission.
-
-STICHTING MATHEMATISCH CENTRUM DISCLAIMS ALL WARRANTIES WITH REGARD TO
-THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
-FITNESS, IN NO EVENT SHALL STICHTING MATHEMATISCH CENTRUM BE LIABLE
-FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
-OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-
-******************************************************************/
+/*
+ * Copyright 1991 by Stichting Mathematisch Centrum
+ * See `LICENCE' for more information.
+ */
 
 /* Integer object interface */
 
 #ifndef PY_INTOBJECT_H
 #define PY_INTOBJECT_H
 
-/*
-123456789-123456789-123456789-123456789-123456789-123456789-123456789-12
-
-intobject represents a (long) integer.  This is an immutable object;
-an integer cannot change its value after creation.
-
-There are functions to create new integer objects, to test an object
-for integer-ness, and to get the integer value.  The latter functions
-returns -1 and sets errno to EBADF if the object is not an intobject.
-None of the functions should be applied to nil objects.
-
-The type intobject is (unfortunately) exposed bere so we can declare
-TrueObject and FalseObject below; don't use this.
-*/
-
-typedef struct {
-	OB_HEAD
-	long ob_ival;
-} intobject;
-
-extern typeobject Inttype;
-
-#define is_intobject(op) ((op)->ob_type == &Inttype)
-
-object* newintobject(long);
-
-long getintvalue(object*);
-
+#include <python/object.h>
 
 /*
-123456789-123456789-123456789-123456789-123456789-123456789-123456789-12
+ * struct py_int represents a (long) integer. This is an immutable object;
+ * an integer cannot change its value after creation.
+ *
+ * There are functions to create new integer objects, to test an object
+ * for integer-ness, and to get the integer value. The latter functions
+ * returns -1 and sets errno to EBADF if the object is not an struct py_int.
+ * PY_NONE of the functions should be applied to nil objects.
+ *
+ * The type struct py_int is (unfortunately) exposed bere so we can declare
+ * py_true_object and py_false_object below; don't use this.
+ */
 
-False and True are special intobjects used by Boolean expressions.
-All values of type Boolean must point to either of these; but in
-contexts where integers are required they are integers (valued 0 and 1).
-Hope these macros don't conflict with other people's.
+struct py_int {
+	PY_OB_SEQ
+	long value;
+};
 
-Don't forget to apply PY_INCREF() when returning True or False!!!
-*/
+/* TODO: Python global state */
+extern struct py_type py_int_type;
 
-extern intobject FalseObject, TrueObject; /* Don't use these directly */
+#define py_is_int(op) ((op)->type == &py_int_type)
 
-#define PyFalse ((object *) &FalseObject)
-#define PyTrue ((object *) &TrueObject)
+struct py_object* py_int_new(long);
+long py_int_get(struct py_object*);
 
-/* Macro, trading safety for speed */
-#define GETINTVALUE(op) ((op)->ob_ival)
+/*
+ * False and True are special intobjects used by Boolean expressions.
+ * All values of type Boolean must point to either of these; but in
+ * contexts where integers are required they are integers (valued 0 and 1).
+ *
+ * Don't forget to apply PY_INCREF() when returning True or False!!!
+ */
+
+/* TODO: Python global state */
+/* Don't use these directly */
+extern struct py_int py_false_object, py_true_object;
+
+#define PY_TRUE ((struct py_object*) &py_true_object)
+#define PY_FALSE ((struct py_object*) &py_false_object)
 
 #endif

@@ -1,46 +1,32 @@
-/***********************************************************
-Copyright 1991 by Stichting Mathematisch Centrum, Amsterdam, The
-Netherlands.
-
-                        All Rights Reserved
-
-Permission to use, copy, modify, and distribute this software and its
-documentation for any purpose and without fee is hereby granted,
-provided that the above copyright notice appear in all copies and that
-both that copyright notice and this permission notice appear in
-supporting documentation, and that the names of Stichting Mathematisch
-Centrum or CWI not be used in advertising or publicity pertaining to
-distribution of the software without specific, written prior permission.
-
-STICHTING MATHEMATISCH CENTRUM DISCLAIMS ALL WARRANTIES WITH REGARD TO
-THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
-FITNESS, IN NO EVENT SHALL STICHTING MATHEMATISCH CENTRUM BE LIABLE
-FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
-OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-
-******************************************************************/
+/*
+ * Copyright 1991 by Stichting Mathematisch Centrum
+ * See `LICENCE' for more information.
+ */
 
 /* Class object implementation */
 
-#include <stdlib.h>
-
-#include <python/allobjects.h>
+#include <python/std.h>
 #include <python/structmember.h>
+#include <python/errors.h>
+
+#include <python/object.h>
+#include <python/classobject.h>
+#include <python/dictobject.h>
+#include <python/tupleobject.h>
+#include <python/funcobject.h>
 
 typedef struct {
-	OB_HEAD
-	object* cl_bases;      /* A tuple */
-	object* cl_methods;    /* A dictionary */
+	PY_OB_SEQ
+	struct py_object* cl_bases;      /* A tuple */
+	struct py_object* cl_methods;    /* A dictionary */
 } classobject;
 
-object* newclassobject(bases, methods)
-		object* bases; /* NULL or tuple of classobjects! */
-		object* methods;
+struct py_object* py_class_new(bases, methods)
+		struct py_object* bases; /* NULL or tuple of classobjects! */
+		struct py_object* methods;
 {
 	classobject* op;
-	op = NEWOBJ(classobject, &Classtype);
+	op = py_object_new(&py_class_type);
 	if(op == NULL) {
 		return NULL;
 	}
@@ -49,7 +35,7 @@ object* newclassobject(bases, methods)
 	op->cl_bases = bases;
 	PY_INCREF(methods);
 	op->cl_methods = methods;
-	return (object*) op;
+	return (struct py_object*) op;
 }
 
 /* Class methods */
@@ -61,71 +47,71 @@ static void class_dealloc(op)classobject* op;
 	free(op);
 }
 
-static object* class_getattr(op, name)classobject* op;
+static struct py_object* class_getattr(op, name)classobject* op;
 									  char* name;
 {
-	object* v;
-	v = dictlookup(op->cl_methods, name);
+	struct py_object* v;
+	v = py_dict_lookup(op->cl_methods, name);
 	if(v != NULL) {
 		PY_INCREF(v);
 		return v;
 	}
 	if(op->cl_bases != NULL) {
-		int n = gettuplesize(op->cl_bases);
+		int n = py_tuple_size(op->cl_bases);
 		int i;
 		for(i = 0; i < n; i++) {
-			v = class_getattr(gettupleitem(op->cl_bases, i), name);
+			v = class_getattr(py_tuple_get(op->cl_bases, i), name);
 			if(v != NULL) {
 				return v;
 			}
-			err_clear();
+			py_error_clear();
 		}
 	}
-	err_setstr(NameError, name);
+	py_error_set_string(py_name_error, name);
 	return NULL;
 }
 
-typeobject Classtype = {
-		OB_HEAD_INIT(&Typetype) 0, "class", sizeof(classobject), 0,
-		class_dealloc,  /*tp_dealloc*/
-		0,              /*tp_print*/
-		class_getattr,  /*tp_getattr*/
-		0,              /*tp_setattr*/
-		0,              /*tp_compare*/
-		0,              /*tp_repr*/
-		0,              /*tp_as_number*/
-		0,              /*tp_as_sequence*/
-		0,              /*tp_as_mapping*/
+struct py_type py_class_type = {
+		PY_OB_SEQ_INIT(&py_type_type) 0, "class", sizeof(classobject), 0,
+		class_dealloc,  /*dealloc*/
+		0,              /*print*/
+		class_getattr,  /*get_attr*/
+		0,              /*set_attr*/
+		0,              /*cmp*/
+		0,              /*repr*/
+		0,              /*numbermethods*/
+		0,              /*sequencemethods*/
+		0,              /*mappingmethods*/
 };
 
 
 /* We're not done yet: next, we define class member objects... */
 
 typedef struct {
-	OB_HEAD
+	PY_OB_SEQ
 	classobject* cm_class;      /* The class object */
-	object* cm_attr;       /* A dictionary */
+	struct py_object* cm_attr;       /* A dictionary */
 } classmemberobject;
 
-object* newclassmemberobject(class)object* class;
+struct py_object* py_classmember_new(class)struct py_object* class;
 {
 	classmemberobject* cm;
-	if(!is_classobject(class)) {
-		err_badcall();
+	if(!py_is_class(class)) {
+		py_error_set_badcall();
 		return NULL;
 	}
-	cm = NEWOBJ(classmemberobject, &Classmembertype);
+	cm = py_object_new(&py_class_member_type);
 	if(cm == NULL) {
 		return NULL;
 	}
 	PY_INCREF(class);
 	cm->cm_class = (classobject*) class;
-	cm->cm_attr = newdictobject();
+	cm->cm_attr = py_dict_new();
 	if(cm->cm_attr == NULL) {
 		PY_DECREF(cm);
 		return NULL;
 	}
-	return (object*) cm;
+	return (struct py_object*) cm;
 }
 
 /* Class member methods */
@@ -138,10 +124,10 @@ static void classmember_dealloc(cm)classmemberobject* cm;
 	free(cm);
 }
 
-static object* classmember_getattr(cm, name)classmemberobject* cm;
+static struct py_object* classmember_getattr(cm, name)classmemberobject* cm;
 											char* name;
 {
-	object* v = dictlookup(cm->cm_attr, name);
+	struct py_object* v = py_dict_lookup(cm->cm_attr, name);
 	if(v != NULL) {
 		PY_INCREF(v);
 		return v;
@@ -150,60 +136,61 @@ static object* classmember_getattr(cm, name)classmemberobject* cm;
 	if(v == NULL) {
 		return v;
 	} /* class_getattr() has set the error */
-	if(is_funcobject(v)) {
-		object* w = newclassmethodobject(v, (object*) cm);
+	if(py_is_func(v)) {
+		struct py_object* w = py_classmethod_new(v, (struct py_object*) cm);
 		PY_DECREF(v);
 		return w;
 	}
 	PY_DECREF(v);
-	err_setstr(NameError, name);
+	py_error_set_string(py_name_error, name);
 	return NULL;
 }
 
 static int classmember_setattr(cm, name, v)classmemberobject* cm;
 										   char* name;
-										   object* v;
+										   struct py_object* v;
 {
 	if(v == NULL) {
-		return dictremove(cm->cm_attr, name);
+		return py_dict_remove(cm->cm_attr, name);
 	}
 	else {
-		return dictinsert(cm->cm_attr, name, v);
+		return py_dict_insert(cm->cm_attr, name, v);
 	}
 }
 
-typeobject Classmembertype = {
-		OB_HEAD_INIT(&Typetype) 0, "class member", sizeof(classmemberobject), 0,
-		classmember_dealloc,    /*tp_dealloc*/
-		0,                      /*tp_print*/
-		classmember_getattr,    /*tp_getattr*/
-		classmember_setattr,    /*tp_setattr*/
-		0,                      /*tp_compare*/
-		0,                      /*tp_repr*/
-		0,                      /*tp_as_number*/
-		0,                      /*tp_as_sequence*/
-		0,                      /*tp_as_mapping*/
+struct py_type py_class_member_type = {
+		PY_OB_SEQ_INIT(&py_type_type) 0, "class member", sizeof(classmemberobject), 0,
+		classmember_dealloc,    /*dealloc*/
+		0,                      /*print*/
+		classmember_getattr,    /*get_attr*/
+		classmember_setattr,    /*set_attr*/
+		0,                      /*cmp*/
+		0,                      /*repr*/
+		0,                      /*numbermethods*/
+		0,                      /*sequencemethods*/
+		0,                      /*mappingmethods*/
 };
 
 
 /* And finally, here are class method objects */
+
 /* (Really methods of class members) */
 
 typedef struct {
-	OB_HEAD
-	object* cm_func;       /* The method function */
-	object* cm_self;       /* The object to which this applies */
+	PY_OB_SEQ
+	struct py_object* cm_func;       /* The method function */
+	struct py_object* cm_self;       /* The object to which this applies */
 } classmethodobject;
 
-object* newclassmethodobject(func, self)object* func;
-										object* self;
+struct py_object* py_classmethod_new(func, self)struct py_object* func;
+										struct py_object* self;
 {
 	classmethodobject* cm;
-	if(!is_funcobject(func)) {
-		err_badcall();
+	if(!py_is_func(func)) {
+		py_error_set_badcall();
 		return NULL;
 	}
-	cm = NEWOBJ(classmethodobject, &Classmethodtype);
+	cm = py_object_new(&py_class_method_type);
 	if(cm == NULL) {
 		return NULL;
 	}
@@ -211,22 +198,22 @@ object* newclassmethodobject(func, self)object* func;
 	cm->cm_func = func;
 	PY_INCREF(self);
 	cm->cm_self = self;
-	return (object*) cm;
+	return (struct py_object*) cm;
 }
 
-object* classmethodgetfunc(cm)object* cm;
+struct py_object* py_classmethod_get_func(cm)struct py_object* cm;
 {
-	if(!is_classmethodobject(cm)) {
-		err_badcall();
+	if(!py_is_classmethod(cm)) {
+		py_error_set_badcall();
 		return NULL;
 	}
 	return ((classmethodobject*) cm)->cm_func;
 }
 
-object* classmethodgetself(cm)object* cm;
+struct py_object* py_classmethod_get_self(cm)struct py_object* cm;
 {
-	if(!is_classmethodobject(cm)) {
-		err_badcall();
+	if(!py_is_classmethod(cm)) {
+		py_error_set_badcall();
 		return NULL;
 	}
 	return ((classmethodobject*) cm)->cm_self;
@@ -236,16 +223,16 @@ object* classmethodgetself(cm)object* cm;
 
 #define OFF(x) offsetof(classmethodobject, x)
 
-static struct memberlist classmethod_memberlist[] = {
-		{ "cm_func", T_OBJECT, OFF(cm_func), 0 },
-		{ "cm_self", T_OBJECT, OFF(cm_self), 0 },
+static struct py_memberlist classmethod_memberlist[] = {
+		{ "cm_func", PY_TYPE_OBJECT, OFF(cm_func), PY_READWRITE },
+		{ "cm_self", PY_TYPE_OBJECT, OFF(cm_self), PY_READWRITE },
 		{ NULL, 0, 0, 0 }  /* Sentinel */
 };
 
-static object* classmethod_getattr(cm, name)classmethodobject* cm;
+static struct py_object* classmethod_getattr(cm, name)classmethodobject* cm;
 											char* name;
 {
-	return getmember((char*) cm, classmethod_memberlist, name);
+	return py_memberlist_get((char*) cm, classmethod_memberlist, name);
 }
 
 static void classmethod_dealloc(cm)classmethodobject* cm;
@@ -255,15 +242,15 @@ static void classmethod_dealloc(cm)classmethodobject* cm;
 	free(cm);
 }
 
-typeobject Classmethodtype = {
-		OB_HEAD_INIT(&Typetype) 0, "class method", sizeof(classmethodobject), 0,
-		classmethod_dealloc,    /*tp_dealloc*/
-		0,                      /*tp_print*/
-		classmethod_getattr,    /*tp_getattr*/
-		0,                      /*tp_setattr*/
-		0,                      /*tp_compare*/
-		0,                      /*tp_repr*/
-		0,                      /*tp_as_number*/
-		0,                      /*tp_as_sequence*/
-		0,                      /*tp_as_mapping*/
+struct py_type py_class_method_type = {
+		PY_OB_SEQ_INIT(&py_type_type) 0, "class method", sizeof(classmethodobject), 0,
+		classmethod_dealloc,    /*dealloc*/
+		0,                      /*print*/
+		classmethod_getattr,    /*get_attr*/
+		0,                      /*set_attr*/
+		0,                      /*cmp*/
+		0,                      /*repr*/
+		0,                      /*numbermethods*/
+		0,                      /*sequencemethods*/
+		0,                      /*mappingmethods*/
 };

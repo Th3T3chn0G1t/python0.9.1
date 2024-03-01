@@ -1,66 +1,49 @@
-/***********************************************************
-Copyright 1991 by Stichting Mathematisch Centrum, Amsterdam, The
-Netherlands.
-
-                        All Rights Reserved
-
-Permission to use, copy, modify, and distribute this software and its
-documentation for any purpose and without fee is hereby granted,
-provided that the above copyright notice appear in all copies and that
-both that copyright notice and this permission notice appear in
-supporting documentation, and that the names of Stichting Mathematisch
-Centrum or CWI not be used in advertising or publicity pertaining to
-distribution of the software without specific, written prior permission.
-
-STICHTING MATHEMATISCH CENTRUM DISCLAIMS ALL WARRANTIES WITH REGARD TO
-THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
-FITNESS, IN NO EVENT SHALL STICHTING MATHEMATISCH CENTRUM BE LIABLE
-FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
-OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-
-******************************************************************/
+/*
+ * Copyright 1991 by Stichting Mathematisch Centrum
+ * See `LICENCE' for more information.
+ */
 
 /* Function object implementation */
 
-#include <stdlib.h>
-
-#include <python/allobjects.h>
+#include <python/std.h>
 #include <python/structmember.h>
+#include <python/errors.h>
+
+#include <python/object.h>
+#include <python/funcobject.h>
 
 typedef struct {
-	OB_HEAD
-	object* func_code;
-	object* func_globals;
+	PY_OB_SEQ
+	struct py_object* func_code;
+	struct py_object* func_globals;
 } funcobject;
 
-object* newfuncobject(code, globals)object* code;
-									object* globals;
+struct py_object* py_func_new(code, globals)struct py_object* code;
+									struct py_object* globals;
 {
-	funcobject* op = NEWOBJ(funcobject, &Functype);
+	funcobject* op = py_object_new(&py_func_type);
 	if(op != NULL) {
 		PY_INCREF(code);
 		op->func_code = code;
 		PY_INCREF(globals);
 		op->func_globals = globals;
 	}
-	return (object*) op;
+	return (struct py_object*) op;
 }
 
-object* getfunccode(op)object* op;
+struct py_object* py_func_get_code(op)struct py_object* op;
 {
-	if(!is_funcobject(op)) {
-		err_badcall();
+	if(!py_is_func(op)) {
+		py_error_set_badcall();
 		return NULL;
 	}
 	return ((funcobject*) op)->func_code;
 }
 
-object* getfuncglobals(op)object* op;
+struct py_object* py_func_get_globals(op)struct py_object* op;
 {
-	if(!is_funcobject(op)) {
-		err_badcall();
+	if(!py_is_func(op)) {
+		py_error_set_badcall();
 		return NULL;
 	}
 	return ((funcobject*) op)->func_globals;
@@ -70,16 +53,16 @@ object* getfuncglobals(op)object* op;
 
 #define OFF(x) offsetof(funcobject, x)
 
-static struct memberlist func_memberlist[] = {
-		{ "func_code",    T_OBJECT, OFF(func_code), 0 },
-		{ "func_globals", T_OBJECT, OFF(func_globals), 0 },
+static struct py_memberlist func_memberlist[] = {
+		{ "func_code",    PY_TYPE_OBJECT, OFF(func_code), PY_READWRITE },
+		{ "func_globals", PY_TYPE_OBJECT, OFF(func_globals), PY_READWRITE },
 		{ NULL, 0, 0, 0 }  /* Sentinel */
 };
 
-static object* func_getattr(op, name)funcobject* op;
+static struct py_object* func_getattr(op, name)funcobject* op;
 									 char* name;
 {
-	return getmember((char*) op, func_memberlist, name);
+	return py_memberlist_get((char*) op, func_memberlist, name);
 }
 
 static void func_dealloc(op)funcobject* op;
@@ -89,13 +72,13 @@ static void func_dealloc(op)funcobject* op;
 	free(op);
 }
 
-typeobject Functype = {
-		OB_HEAD_INIT(&Typetype) 0, "function", sizeof(funcobject), 0,
-		func_dealloc,   /*tp_dealloc*/
-		0,              /*tp_print*/
-		func_getattr,   /*tp_getattr*/
-		0,              /*tp_setattr*/
-		0,              /*tp_compare*/
-		0,              /*tp_repr*/
+struct py_type py_func_type = {
+		PY_OB_SEQ_INIT(&py_type_type) 0, "function", sizeof(funcobject), 0,
+		func_dealloc,   /*dealloc*/
+		0,              /*print*/
+		func_getattr,   /*get_attr*/
+		0,              /*set_attr*/
+		0,              /*cmp*/
+		0,              /*repr*/
 		0, 0, 0
 };

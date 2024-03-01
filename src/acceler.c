@@ -1,41 +1,21 @@
-/***********************************************************
-Copyright 1991 by Stichting Mathematisch Centrum, Amsterdam, The
-Netherlands.
-
-                        All Rights Reserved
-
-Permission to use, copy, modify, and distribute this software and its
-documentation for any purpose and without fee is hereby granted,
-provided that the above copyright notice appear in all copies and that
-both that copyright notice and this permission notice appear in
-supporting documentation, and that the names of Stichting Mathematisch
-Centrum or CWI not be used in advertising or publicity pertaining to
-distribution of the software without specific, written prior permission.
-
-STICHTING MATHEMATISCH CENTRUM DISCLAIMS ALL WARRANTIES WITH REGARD TO
-THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
-FITNESS, IN NO EVENT SHALL STICHTING MATHEMATISCH CENTRUM BE LIABLE
-FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
-OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-
-******************************************************************/
+/*
+ * Copyright 1991 by Stichting Mathematisch Centrum
+ * See `LICENCE' for more information.
+ */
 
 /* Parser accelerator module */
 
 /* The parser as originally conceived had disappointing performance.
    This module does some precomputation that speeds up the selection
    of a DFA based upon a token, turning a search through an array
-   into a simple indexing operation.  The parser now cannot work
-   without the accelerators installed.  Note that the accelerators
+   into a simple indexing operation. The parser now cannot work
+   without the accelerators installed. Note that the accelerators
    are installed dynamically when the parser is initialized, they
    are not part of the static data structure written on graminit.[ch]
    by the parser generator. */
 
 #include <stdlib.h>
 
-#include <python/pgenheaders.h>
 #include <python/grammar.h>
 #include <python/token.h>
 #include <python/parser.h>
@@ -45,75 +25,75 @@ static int** freelist = 0;
 static int freelist_len = 0;
 
 /* Forward references */
-static void fixdfa(grammar*, dfa*);
+static void fixdfa(struct py_grammar*, struct py_dfa*);
 
-static void fixstate(grammar*, state*);
+static void fixstate(struct py_grammar*, struct py_state*);
 
-void addaccelerators(grammar* g) {
-	dfa* d;
+void py_grammar_add_accels(struct py_grammar* g) {
+	struct py_dfa* d;
 	int i;
 
-	d = g->g_dfa;
-	for(i = g->g_ndfas; --i >= 0; d++) fixdfa(g, d);
-	g->g_accel = 1;
+	d = g->dfas;
+	for(i = g->count; --i >= 0; d++) fixdfa(g, d);
+	g->accel = 1;
 }
 
-static void fixdfa(grammar* g, dfa* d) {
-	state* s;
+static void fixdfa(struct py_grammar* g, struct py_dfa* d) {
+	struct py_state* s;
 	int j;
 
-	s = d->d_state;
-	for(j = 0; j < d->d_nstates; j++, s++) fixstate(g, s);
+	s = d->states;
+	for(j = 0; j < d->count; j++, s++) fixstate(g, s);
 }
 
-void freeaccel() {
+void py_grammar_delete_accels(void) {
 	int i;
 	for(i = 0; i < freelist_len; ++i) free(freelist[i]);
 	free(freelist);
 }
 
-static void fixstate(grammar* g, state* s) {
-	arc* a;
+static void fixstate(struct py_grammar* g, struct py_state* s) {
+	struct py_arc* a;
 	int k;
 	int* accel;
-	int nl = g->g_ll.ll_nlabels;
+	int nl = g->labels.count;
 
-	s->s_accept = 0;
+	s->accept = 0;
 	accel = malloc(nl * sizeof(int));
 
 	for(k = 0; k < nl; k++) accel[k] = -1;
-	a = s->s_arc;
+	a = s->arcs;
 
-	for(k = s->s_narcs; --k >= 0; a++) {
-		int lbl = a->a_lbl;
-		label* l = &g->g_ll.ll_label[lbl];
-		int type = l->lb_type;
+	for(k = s->count; --k >= 0; a++) {
+		int lbl = a->label;
+		struct py_label* l = &g->labels.label[lbl];
+		int type = l->type;
 
-		if(a->a_arrow >= (1 << 7)) {
+		if(a->arrow >= (1 << 7)) {
 			printf("XXX too many states!\n");
 			continue;
 		}
 
-		if(ISNONTERMINAL(type)) {
-			dfa* d1 = finddfa(g, type);
+		if(type >= PY_NONTERMINAL) {
+			struct py_dfa* d1 = py_grammar_find_dfa(g, type);
 			int ibit;
 
-			if(type - NT_OFFSET >= (1 << 7)) {
+			if(type - PY_NONTERMINAL >= (1 << 7)) {
 				printf("XXX too high nonterminal number!\n");
 				continue;
 			}
 
-			for(ibit = 0; ibit < g->g_ll.ll_nlabels; ibit++) {
-				if(PY_TESTBIT(d1->d_first, ibit)) {
+			for(ibit = 0; ibit < g->labels.count; ibit++) {
+				if(PY_TESTBIT(d1->first, ibit)) {
 					if(accel[ibit] != -1) printf("XXX ambiguity!\n");
 
-					accel[ibit] = a->a_arrow | (1 << 7);
-					accel[ibit] |= ((type - NT_OFFSET) << 8);
+					accel[ibit] = a->arrow | (1 << 7);
+					accel[ibit] |= ((type - PY_NONTERMINAL) << 8);
 				}
 			}
 		}
-		else if(lbl == EMPTY) { s->s_accept = 1; }
-		else if(lbl >= 0 && lbl < nl) accel[lbl] = a->a_arrow;
+		else if(lbl == PY_LABEL_EMPTY) { s->accept = 1; }
+		else if(lbl >= 0 && lbl < nl) accel[lbl] = a->arrow;
 	}
 
 	while(nl > 0 && accel[nl - 1] == -1) nl--;
@@ -122,20 +102,20 @@ static void fixstate(grammar* g, state* s) {
 	if(k < nl) {
 		int i;
 
-		s->s_accel = malloc((nl - k) * sizeof(int));
+		s->accel = malloc((nl - k) * sizeof(int));
 		/* TODO: Leaky realloc. */
 		freelist = realloc(freelist, ++freelist_len * sizeof(int*));
 
-		if(s->s_accel == NULL || freelist == NULL) {
+		if(s->accel == NULL || freelist == NULL) {
 			fprintf(stderr, "no mem to add parser accelerators\n");
 			exit(1);
 		}
 
-		freelist[freelist_len - 1] = s->s_accel;
-		s->s_lower = k;
-		s->s_upper = nl;
+		freelist[freelist_len - 1] = s->accel;
+		s->lower = k;
+		s->upper = nl;
 
-		for(i = 0; k < nl; i++, k++) s->s_accel[i] = accel[k];
+		for(i = 0; k < nl; i++, k++) s->accel[i] = accel[k];
 	}
 
 	free(accel);

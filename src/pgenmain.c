@@ -1,26 +1,7 @@
-/***********************************************************
-Copyright 1991 by Stichting Mathematisch Centrum, Amsterdam, The
-Netherlands.
-
-                        All Rights Reserved
-
-Permission to use, copy, modify, and distribute this software and its
-documentation for any purpose and without fee is hereby granted,
-provided that the above copyright notice appear in all copies and that
-both that copyright notice and this permission notice appear in
-supporting documentation, and that the names of Stichting Mathematisch
-Centrum or CWI not be used in advertising or publicity pertaining to
-distribution of the software without specific, written prior permission.
-
-STICHTING MATHEMATISCH CENTRUM DISCLAIMS ALL WARRANTIES WITH REGARD TO
-THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
-FITNESS, IN NO EVENT SHALL STICHTING MATHEMATISCH CENTRUM BE LIABLE
-FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
-OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-
-******************************************************************/
+/*
+ * Copyright 1991 by Stichting Mathematisch Centrum
+ * See `LICENCE' for more information.
+ */
 
 /* Parser generator main program */
 
@@ -34,7 +15,6 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 #include <stdlib.h>
 
-#include <python/pgenheaders.h>
 #include <python/grammar.h>
 #include <python/node.h>
 #include <python/parsetok.h>
@@ -43,7 +23,7 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 int debugging;
 
 /* Forward */
-grammar* getgrammar(char* filename);
+struct py_grammar* getgrammar(char* filename);
 
 #ifdef THINK_C
 int main PROTO((int, char **));
@@ -53,7 +33,7 @@ char *askfile PROTO((void));
 int main(argc, argv)int argc;
 					char** argv;
 {
-	grammar* g;
+	struct py_grammar* g;
 	FILE* fp;
 	char* filename;
 
@@ -69,7 +49,7 @@ int main(argc, argv)int argc;
 		exit(1);
 	}
 	fprintf(stderr, "Writing graminit.c ...\n");
-	printgrammar(g, fp);
+	py_grammar_print(g, fp);
 	fclose(fp);
 	fp = fopen(argv[3], "w");
 	if(fp == NULL) {
@@ -77,25 +57,25 @@ int main(argc, argv)int argc;
 		exit(1);
 	}
 	fprintf(stderr, "Writing graminit.h ...\n");
-	printnonterminals(g, fp);
+	py_grammar_print_nonterminals(g, fp);
 	fclose(fp);
 	exit(0);
 }
 
-grammar* getgrammar(filename)char* filename;
+struct py_grammar* getgrammar(filename)char* filename;
 {
 	FILE* fp;
-	node* n;
-	grammar* g0, * g;
+	struct py_node* n;
+	struct py_grammar* g0, * g;
 
 	fp = fopen(filename, "r");
 	if(fp == NULL) {
 		perror(filename);
 		exit(1);
 	}
-	g0 = meta_grammar();
+	g0 = &py_meta_grammar;
 	n = NULL;
-	parsefile(fp, filename, g0, g0->g_start, (char*) NULL, (char*) NULL, &n);
+	py_parse_file(fp, filename, g0, g0->start, (char*) NULL, (char*) NULL, &n);
 	fclose(fp);
 	if(n == NULL) {
 		fprintf(stderr, "Parsing error.\n");
@@ -129,12 +109,12 @@ askfile()
 }
 #endif
 
-void fatal(msg)char* msg;
+void py_fatal(msg)char* msg;
 {
 	fprintf(stderr, "pgen: FATAL ERROR: %s\n", msg);
 	exit(1);
 }
 
 /* XXX TO DO:
-   - check for duplicate definitions of names (instead of fatal err)
+   - check for duplicate definitions of names (instead of py_fatal err)
 */

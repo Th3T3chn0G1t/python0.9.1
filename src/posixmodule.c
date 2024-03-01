@@ -1,65 +1,39 @@
-/***********************************************************
-Copyright 1991 by Stichting Mathematisch Centrum, Amsterdam, The
-Netherlands.
-
-                        All Rights Reserved
-
-Permission to use, copy, modify, and distribute this software and its
-documentation for any purpose and without fee is hereby granted,
-provided that the above copyright notice appear in all copies and that
-both that copyright notice and this permission notice appear in
-supporting documentation, and that the names of Stichting Mathematisch
-Centrum or CWI not be used in advertising or publicity pertaining to
-distribution of the software without specific, written prior permission.
-
-STICHTING MATHEMATISCH CENTRUM DISCLAIMS ALL WARRANTIES WITH REGARD TO
-THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
-FITNESS, IN NO EVENT SHALL STICHTING MATHEMATISCH CENTRUM BE LIABLE
-FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
-OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-
-******************************************************************/
+/*
+ * Copyright 1991 by Stichting Mathematisch Centrum
+ * See `LICENCE' for more information.
+ */
 
 /* POSIX module implementation */
 
 /* TODO: How this handles includes and feature tests is terrible. */
 
-#include <stdlib.h>
-#include <signal.h>
-#include <string.h>
-#include <setjmp.h>
+#include <dirent.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-
 #ifndef _MSC_VER
 # include <sys/time.h>
 #endif
 
-#ifdef __has_include
-# if __has_include(<dirent.h>)
-
-#  include <dirent.h>
-
-#  define direct dirent
-# endif
-#else
-# include <sys/dir.h>
-#endif
-
-#include <python/allobjects.h>
+#include <python/std.h>
 #include <python/modsupport.h>
+#include <python/errors.h>
+
+#include <python/stringobject.h>
+#include <python/intobject.h>
+#include <python/tupleobject.h>
+#include <python/listobject.h>
+#include <python/dictobject.h>
+#include <python/moduleobject.h>
 
 #ifndef _WIN32
 /* Return a dictionary corresponding to the POSIX environment table */
 
 extern char** environ;
 
-static object* convertenviron() {
-	object* d;
+static struct py_object* convertenviron() {
+	struct py_object* d;
 	char** e;
-	d = newdictobject();
+	d = py_dict_new();
 	if(d == NULL) {
 		return NULL;
 	}
@@ -68,17 +42,17 @@ static object* convertenviron() {
 	}
 	/* XXX This part ignores errors */
 	for(e = environ; *e != NULL; e++) {
-		object* v;
+		struct py_object* v;
 		char* p = strchr(*e, '=');
 		if(p == NULL) {
 			continue;
 		}
-		v = newstringobject(p + 1);
+		v = py_string_new(p + 1);
 		if(v == NULL) {
 			continue;
 		}
 		*p = '\0';
-		(void) dictinsert(d, *e, v);
+		(void) py_dict_insert(d, *e, v);
 		*p = '=';
 		PY_DECREF(v);
 	}
@@ -87,96 +61,96 @@ static object* convertenviron() {
 
 #endif
 
-static object* PosixError; /* Exception posix.error */
+static struct py_object* PosixError; /* Exception posix.error */
 
 /* Set a POSIX-specific error from errno, and return NULL */
 
-static object* posix_error() {
-	return err_errno(PosixError);
+static struct py_object* posix_error() {
+	return py_error_set_errno(PosixError);
 }
 
 
 /* POSIX generic methods */
 
-static object* posix_1str(args, func)object* args;
+static struct py_object* posix_1str(args, func)struct py_object* args;
 									 int (* func)(const char*);
 {
-	object* path1;
-	if(!getstrarg(args, &path1)) {
+	struct py_object* path1;
+	if(!py_arg_str(args, &path1)) {
 		return NULL;
 	}
 	if((*func)(
-			getstringvalue(path1)) < 0) {
+			py_string_get_value(path1)) < 0) {
 		return
 
 				posix_error();
 	}
-	PY_INCREF(None);
-	return None;
+	PY_INCREF(PY_NONE);
+	return PY_NONE;
 }
 
-static object* posix_2str(args, func)object* args;
+static struct py_object* posix_2str(args, func)struct py_object* args;
 									 int (* func)(const char*, const char*);
 {
-	object* path1, * path2;
-	if(!getstrstrarg(args, &path1, &path2)) {
+	struct py_object* path1, * path2;
+	if(!py_arg_str_str(args, &path1, &path2)) {
 		return NULL;
 	}
 	if((*func)(
-			getstringvalue(path1), getstringvalue(path2)) < 0) {
+			py_string_get_value(path1), py_string_get_value(path2)) < 0) {
 		return
 
 				posix_error();
 	}
-	PY_INCREF(None);
-	return None;
+	PY_INCREF(PY_NONE);
+	return PY_NONE;
 }
 
-static object* posix_strint(args, func)object* args;
+static struct py_object* posix_strint(args, func)struct py_object* args;
 									   int (* func)(const char*, int);
 {
-	object* path1;
+	struct py_object* path1;
 	int i;
-	if(!getstrintarg(args, &path1, &i)) {
+	if(!py_arg_str_int(args, &path1, &i)) {
 		return NULL;
 	}
 	if((*func)(
-			getstringvalue(path1), i) < 0) {
+			py_string_get_value(path1), i) < 0) {
 		return
 
 				posix_error();
 	}
-	PY_INCREF(None);
-	return None;
+	PY_INCREF(PY_NONE);
+	return PY_NONE;
 }
 
-static object* posix_do_stat(self, args, statfunc)object* self;
-												  object* args;
+static struct py_object* posix_do_stat(self, args, statfunc)struct py_object* self;
+												  struct py_object* args;
 												  int (* statfunc)(
 														  const char*,
 														  struct stat*);
 {
 	struct stat st;
-	object* path;
-	object* v;
+	struct py_object* path;
+	struct py_object* v;
 
 	(void) self;
 
-	if(!getstrarg(args, &path)) {
+	if(!py_arg_str(args, &path)) {
 		return NULL;
 	}
 	if((*statfunc)(
-			getstringvalue(path), &st) != 0) {
+			py_string_get_value(path), &st) != 0) {
 		return
 
 				posix_error();
 	}
 
-	v = newtupleobject(10);
+	v = py_tuple_new(10);
 	if(v == NULL) {
 		return NULL;
 	}
-#define SET(i, st_member) settupleitem(v, i, newintobject((long)st.st_member))
+#define SET(i, st_member) py_tuple_set(v, i, py_int_new((long)st.st_member))
 	SET(0, st_mode);
 	SET(1, st_ino);
 	SET(2, st_dev);
@@ -190,7 +164,7 @@ static object* posix_do_stat(self, args, statfunc)object* self;
 #undef SET
 	if(
 
-			err_occurred()
+			py_error_occurred()
 
 			) {
 		PY_DECREF(v);
@@ -202,8 +176,8 @@ static object* posix_do_stat(self, args, statfunc)object* self;
 
 /* POSIX methods */
 
-static object* posix_chdir(self, args)object* self;
-									  object* args;
+static struct py_object* posix_chdir(self, args)struct py_object* self;
+									  struct py_object* args;
 {
 	int chdir(const char*);
 
@@ -212,8 +186,8 @@ static object* posix_chdir(self, args)object* self;
 	return posix_1str(args, chdir);
 }
 
-static object* posix_chmod(self, args)object* self;
-									  object* args;
+static struct py_object* posix_chmod(self, args)struct py_object* self;
+									  struct py_object* args;
 {
 #ifdef _WIN32
 	int chmod(const char*, int);
@@ -225,28 +199,28 @@ static object* posix_chmod(self, args)object* self;
 	return posix_strint(args, chmod);
 }
 
-static object* posix_getcwd(self, args)object* self;
-									   object* args;
+static struct py_object* posix_getcwd(self, args)struct py_object* self;
+									   struct py_object* args;
 {
 	char buf[1026];
 	char* getcwd(char*, int);
 
 	(void) self;
 
-	if(!getnoarg(args)) {
+	if(!py_arg_none(args)) {
 		return NULL;
 	}
 	if(getcwd(buf, sizeof buf) == NULL) {
 		return posix_error();
 	}
-	return newstringobject(buf);
+	return py_string_new(buf);
 }
 
 #ifndef _WIN32
-static object *
+static struct py_object*
 posix_link(self, args)
-	   object *self;
-	   object *args;
+	   struct py_object*self;
+	   struct py_object*args;
 {
 	(void) self;
 
@@ -256,33 +230,33 @@ posix_link(self, args)
 #endif
 
 #ifndef _MSC_VER
-static object* posix_listdir(self, args)object* self;
-										object* args;
+static struct py_object* posix_listdir(self, args)struct py_object* self;
+										struct py_object* args;
 {
-	object* name, * d, * v;
+	struct py_object* name, * d, * v;
 	DIR* dirp;
-	struct direct* ep;
+	struct dirent* ep;
 
 	(void) self;
 
-	if(!getstrarg(args, &name)) {
+	if(!py_arg_str(args, &name)) {
 		return NULL;
 	}
-	if((dirp = opendir(getstringvalue(name))) == NULL) {
+	if((dirp = opendir(py_string_get_value(name))) == NULL) {
 		return posix_error();
 	}
-	if((d = newlistobject(0)) == NULL) {
+	if((d = py_list_new(0)) == NULL) {
 		closedir(dirp);
 		return NULL;
 	}
 	while((ep = readdir(dirp)) != NULL) {
-		v = newstringobject(ep->d_name);
+		v = py_string_new(ep->d_name);
 		if(v == NULL) {
 			PY_DECREF(d);
 			d = NULL;
 			break;
 		}
-		if(addlistitem(d, v) != 0) {
+		if(py_list_add(d, v) != 0) {
 			PY_DECREF(v);
 			PY_DECREF(d);
 			d = NULL;
@@ -304,8 +278,8 @@ static int winmkdir(const char* path, int mode) {
 
 #endif
 
-static object* posix_mkdir(self, args)object* self;
-									  object* args;
+static struct py_object* posix_mkdir(self, args)struct py_object* self;
+									  struct py_object* args;
 {
 #ifndef _WIN32
 	int mkdir (const char* mode_t);
@@ -320,8 +294,8 @@ static object* posix_mkdir(self, args)object* self;
 #endif
 }
 
-static object* posix_rename(self, args)object* self;
-									   object* args;
+static struct py_object* posix_rename(self, args)struct py_object* self;
+									   struct py_object* args;
 {
 	int rename(const char*, const char*);
 
@@ -330,8 +304,8 @@ static object* posix_rename(self, args)object* self;
 	return posix_2str(args, rename);
 }
 
-static object* posix_rmdir(self, args)object* self;
-									  object* args;
+static struct py_object* posix_rmdir(self, args)struct py_object* self;
+									  struct py_object* args;
 {
 	int rmdir(const char*);
 
@@ -340,8 +314,8 @@ static object* posix_rmdir(self, args)object* self;
 	return posix_1str(args, rmdir);
 }
 
-static object* posix_stat(self, args)object* self;
-									 object* args;
+static struct py_object* posix_stat(self, args)struct py_object* self;
+									 struct py_object* args;
 {
 	int stat(const char*, struct stat*);
 
@@ -350,40 +324,40 @@ static object* posix_stat(self, args)object* self;
 	return posix_do_stat(self, args, stat);
 }
 
-static object* posix_system(self, args)object* self;
-									   object* args;
+static struct py_object* posix_system(self, args)struct py_object* self;
+									   struct py_object* args;
 {
-	object* command;
+	struct py_object* command;
 	int sts;
 
 	(void) self;
 
-	if(!getstrarg(args, &command)) {
+	if(!py_arg_str(args, &command)) {
 		return NULL;
 	}
-	sts = system(getstringvalue(command));
-	return newintobject((long) sts);
+	sts = system(py_string_get_value(command));
+	return py_int_new((long) sts);
 }
 
-static object* posix_umask(self, args)object* self;
-									  object* args;
+static struct py_object* posix_umask(self, args)struct py_object* self;
+									  struct py_object* args;
 {
 	int i;
 
 	(void) self;
 
-	if(!getintarg(args, &i)) {
+	if(!py_arg_int(args, &i)) {
 		return NULL;
 	}
 	i = umask(i);
 	if(i < 0) {
 		return posix_error();
 	}
-	return newintobject((long) i);
+	return py_int_new((long) i);
 }
 
-static object* posix_unlink(self, args)object* self;
-									   object* args;
+static struct py_object* posix_unlink(self, args)struct py_object* self;
+									   struct py_object* args;
 {
 	int unlink(const char*);
 
@@ -393,38 +367,38 @@ static object* posix_unlink(self, args)object* self;
 }
 
 #ifndef _WIN32
-static object *
+static struct py_object*
 posix_utimes(self, args)
-	   object *self;
-	   object *args;
+	   struct py_object*self;
+	   struct py_object*args;
 {
-	   object *path;
+	   struct py_object*path;
 	   struct timeval tv[2];
 
 		(void) self;
 
-	   if (args == NULL || !is_tupleobject(args) || gettuplesize(args) != 2) {
-			   err_badarg();
+	   if (args == NULL || !py_is_tuple(args) || py_tuple_size(args) != 2) {
+			   py_error_set_badarg();
 			   return NULL;
 	   }
-	   if (!getstrarg(gettupleitem(args, 0), &path) ||
-							   !getlonglongargs(gettupleitem(args, 1),
+	   if (!py_arg_str(py_tuple_get(args, 0), &path) ||
+							   !py_arg_long_long(py_tuple_get(args, 1),
 									   &tv[0].tv_sec, &tv[1].tv_sec))
 			   return NULL;
 	   tv[0].tv_usec = tv[1].tv_usec = 0;
-	   if (utimes(getstringvalue(path), tv) < 0)
+	   if (utimes(py_string_get_value(path), tv) < 0)
 			   return posix_error();
-	   PY_INCREF(None);
-	   return None;
+	   PY_INCREF(PY_NONE);
+	   return PY_NONE;
 }
 #endif
 
 #ifndef _WIN32
 
-static object *
+static struct py_object*
 posix_lstat(self, args)
-	   object *self;
-	   object *args;
+	   struct py_object*self;
+	   struct py_object*args;
 {
 	   int lstat (const char* struct stat *);
 
@@ -433,26 +407,26 @@ posix_lstat(self, args)
 	   return posix_do_stat(self, args, lstat);
 }
 
-static object *
+static struct py_object*
 posix_readlink(self, args)
-	   object *self;
-	   object *args;
+	   struct py_object*self;
+	   struct py_object*args;
 {
 	   char buf[1024]; /* XXX Should use MAXPATHLEN */
-	   object *path;
+	   struct py_object*path;
 	   int n;
-	   if (!getstrarg(args, &path))
+	   if (!py_arg_str(args, &path))
 			   return NULL;
-	   n = readlink(getstringvalue(path), buf, sizeof buf);
+	   n = readlink(py_string_get_value(path), buf, sizeof buf);
 	   if (n < 0)
 			   return posix_error();
-	   return newsizedstringobject(buf, n);
+	   return py_string_new_size(buf, n);
 }
 
-static object *
+static struct py_object*
 posix_symlink(self, args)
-	   object *self;
-	   object *args;
+	   struct py_object*self;
+	   struct py_object*args;
 {
 	   int symlink (const char* const char *);
 	   return posix_2str(args, symlink);
@@ -461,7 +435,7 @@ posix_symlink(self, args)
 #endif /* NO_LSTAT */
 
 
-static struct methodlist posix_methods[] = {
+static struct py_methodlist posix_methods[] = {
 		{ "chdir", posix_chdir }, { "chmod", posix_chmod },
 		{ "getcwd", posix_getcwd },
 #ifndef _WIN32
@@ -485,23 +459,23 @@ static struct methodlist posix_methods[] = {
 
 
 void initposix() {
-	object* m, * d;
+	struct py_object* m, * d;
 
-	m = initmodule("posix", posix_methods);
-	d = getmoduledict(m);
+	m = py_module_init("posix", posix_methods);
+	d = py_module_get_dict(m);
 
 	/* Initialize posix.environ dictionary */
 #ifndef _WIN32
 	v = convertenviron();
-	if(v == NULL || dictinsert(d, "environ", v) != 0) {
-		fatal("can't define posix.environ");
+	if(v == NULL || py_dict_insert(d, "environ", v) != 0) {
+		py_fatal("can't define posix.environ");
 	}
 	PY_DECREF(v);
 #endif
 
 	/* Initialize posix.error exception */
-	PosixError = newstringobject("posix.error");
-	if(PosixError == NULL || dictinsert(d, "error", PosixError) != 0) {
-		fatal("can't define posix.error");
+	PosixError = py_string_new("posix.error");
+	if(PosixError == NULL || py_dict_insert(d, "error", PosixError) != 0) {
+		py_fatal("can't define posix.error");
 	}
 }

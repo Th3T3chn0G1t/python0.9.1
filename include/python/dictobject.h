@@ -1,57 +1,36 @@
-/***********************************************************
-Copyright 1991 by Stichting Mathematisch Centrum, Amsterdam, The
-Netherlands.
-
-                        All Rights Reserved
-
-Permission to use, copy, modify, and distribute this software and its
-documentation for any purpose and without fee is hereby granted,
-provided that the above copyright notice appear in all copies and that
-both that copyright notice and this permission notice appear in
-supporting documentation, and that the names of Stichting Mathematisch
-Centrum or CWI not be used in advertising or publicity pertaining to
-distribution of the software without specific, written prior permission.
-
-STICHTING MATHEMATISCH CENTRUM DISCLAIMS ALL WARRANTIES WITH REGARD TO
-THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
-FITNESS, IN NO EVENT SHALL STICHTING MATHEMATISCH CENTRUM BE LIABLE
-FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
-OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-
-******************************************************************/
+/*
+ * Copyright 1991 by Stichting Mathematisch Centrum
+ * See `LICENCE' for more information.
+ */
 
 /*
-Dictionary object type -- mapping from char * to object.
-NB: the key is given as a char *, not as a stringobject.
-These functions set errno for errors.  Functions dictremove() and
-dictinsert() return nonzero for errors, getdictsize() returns -1,
-the others NULL.  A successful call to dictinsert() calls PY_INCREF()
-for the inserted item.
-*/
+ * Dictionary object type -- mapping from char * to object.
+ * NB: the key is given as a char *, not as a struct py_string.
+ * These functions set errno for errors. Functions py_dict_remove() and
+ * py_dict_insert() return nonzero for errors, py_dict_size() returns -1,
+ * the others NULL. A successful call to py_dict_insert() calls PY_INCREF()
+ * for the inserted item.
+ */
 
 #ifndef PY_DICTOBJECT_H
 #define PY_DICTOBJECT_H
 
-extern typeobject Dicttype;
+#include <python/object.h>
 
-#define is_dictobject(op) ((op)->ob_type == &Dicttype)
+/* TODO: Python global state. */
+extern struct py_type py_dict_type;
 
-object* newdictobject(void);
+#define py_is_dict(op) ((op)->type == &py_dict_type)
 
-object* dictlookup(object* dp, char* key);
+struct py_object* py_dict_new(void);
 
-int dictinsert(object* dp, char* key, object* item);
+struct py_object* py_dict_lookup(struct py_object* dp, const char* key);
+int py_dict_insert(struct py_object* dp, const char* key, struct py_object* item);
+int py_dict_remove(struct py_object* dp, const char* key);
+int py_dict_size(struct py_object* dp);
+char* py_dict_get_key(struct py_object* dp, int i);
+struct py_object* py_dict_get_keys(struct py_object* dp);
 
-int dictremove(object* dp, char* key);
-
-int getdictsize(object* dp);
-
-char* getdictkey(object* dp, int i);
-
-object* getdictkeys(object* dp);
-
-void donedict(void);
+void py_done_dict(void);
 
 #endif

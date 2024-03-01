@@ -1,26 +1,7 @@
-/***********************************************************
-Copyright 1991 by Stichting Mathematisch Centrum, Amsterdam, The
-Netherlands.
-
-                        All Rights Reserved
-
-Permission to use, copy, modify, and distribute this software and its
-documentation for any purpose and without fee is hereby granted,
-provided that the above copyright notice appear in all copies and that
-both that copyright notice and this permission notice appear in
-supporting documentation, and that the names of Stichting Mathematisch
-Centrum or CWI not be used in advertising or publicity pertaining to
-distribution of the software without specific, written prior permission.
-
-STICHTING MATHEMATISCH CENTRUM DISCLAIMS ALL WARRANTIES WITH REGARD TO
-THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
-FITNESS, IN NO EVENT SHALL STICHTING MATHEMATISCH CENTRUM BE LIABLE
-FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
-OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-
-******************************************************************/
+/*
+ * Copyright 1991 by Stichting Mathematisch Centrum
+ * See `LICENCE' for more information.
+ */
 
 /* Dictionary object implementation; using a hash table */
 
@@ -35,10 +16,14 @@ A similar module that I saw by Chris Torek:
        h = 0; p = str; while (*p) h = (h<<5) - h + *p++;
 */
 
-#include <stdlib.h>
-
-#include <python/allobjects.h>
+#include <python/std.h>
 #include <python/modsupport.h>
+#include <python/errors.h>
+
+#include <python/stringobject.h>
+#include <python/dictobject.h>
+#include <python/listobject.h>
+#include <python/intobject.h>
 
 /*
 Table of primes suitable as keys, in ascending order.
@@ -55,17 +40,17 @@ static unsigned int primes[] = {
 };
 
 /* String used as dummy key to fill deleted entries */
-static stringobject* dummy; /* Initialized by first call to newdictobject() */
+static struct py_string* dummy; /* Initialized by first call to py_dict_new() */
 
 /*
 Invariant for entries: when in use, de_value is not NULL and de_key is
 not NULL and not dummy; when not in use, de_value is NULL and de_key
-is either NULL or dummy.  A dummy key value cannot be replaced by NULL,
+is either NULL or dummy. A dummy key value cannot be replaced by NULL,
 since otherwise other keys may be lost.
 */
 typedef struct {
-	stringobject* de_key;
-	object* de_value;
+	struct py_string* de_key;
+	struct py_object* de_value;
 } dictentry;
 
 /*
@@ -77,22 +62,22 @@ To avoid slowing down lookups on a near-full table, we resize the table
 when it is more than half filled.
 */
 typedef struct {
-	OB_HEAD
+	PY_OB_SEQ
 	int di_fill;
 	int di_used;
 	int di_size;
 	dictentry* di_table;
 } dictobject;
 
-object* newdictobject() {
+struct py_object* py_dict_new() {
 	dictobject* dp;
 	if(dummy == NULL) { /* Auto-initialize dummy */
-		dummy = (stringobject*) newstringobject("");
+		dummy = (struct py_string*) py_string_new("");
 		if(dummy == NULL) {
 			return NULL;
 		}
 	}
-	dp = NEWOBJ(dictobject, &Dicttype);
+	dp = py_object_new(&py_dict_type);
 	if(dp == NULL) {
 		return NULL;
 	}
@@ -100,11 +85,11 @@ object* newdictobject() {
 	dp->di_table = (dictentry*) calloc(sizeof(dictentry), dp->di_size);
 	if(dp->di_table == NULL) {
 		free(dp);
-		return err_nomem();
+		return py_error_set_nomem();
 	}
 	dp->di_fill = 0;
 	dp->di_used = 0;
-	return (object*) dp;
+	return (struct py_object*) dp;
 }
 
 /*
@@ -122,11 +107,11 @@ The initial probe index is then computed as sum mod the table size.
 Subsequent probe indices are incr apart (mod table size), where incr
 is also derived from sum, with the additional requirement that it is
 relative prime to the table size (i.e., 1 <= incr < size, since the size
-is a prime number).  My choice for incr is somewhat arbitrary.
+is a prime number). My choice for incr is somewhat arbitrary.
 */
 
 static dictentry* lookdict(dp, key)dictobject* dp;
-								   char* key;
+								   const char* key;
 {
 	int i, incr;
 	dictentry* freeslot = NULL;
@@ -168,7 +153,7 @@ Internal routine to insert a new item into the table.
 Used both by the internal resize routine and by the public insert routine.
 Eats a reference to key and one to value.
 */
-static void insertdict(dictobject* dp, stringobject* key, object* value) {
+static void insertdict(dictobject* dp, struct py_string* key, struct py_object* value) {
 	dictentry* ep;
 	ep = lookdict(dp, GETSTRINGVALUE(key));
 	if(ep->de_value != NULL) {
@@ -188,7 +173,7 @@ static void insertdict(dictobject* dp, stringobject* key, object* value) {
 
 /*
 Restructure the table by allocating a new table and reinserting all
-items again.  When entries have been deleted, the new table may
+items again. When entries have been deleted, the new table may
 actually be smaller than the old one.
 */
 
@@ -208,7 +193,7 @@ static int dictresize(dictobject* dp) {
 	}
 	newtable = (dictentry*) calloc(sizeof(dictentry), newsize);
 	if(newtable == NULL) {
-		err_nomem();
+		py_error_set_nomem();
 		return -1;
 	}
 	dp->di_size = newsize;
@@ -226,54 +211,52 @@ static int dictresize(dictobject* dp) {
 	return 0;
 }
 
-object* dictlookup(op, key)object* op;
-						   char* key;
-{
-	if(!is_dictobject(op)) {
-		fatal("dictlookup on non-dictionary");
+struct py_object* py_dict_lookup(struct py_object* op, const char* key) {
+	if(!py_is_dict(op)) {
+		py_fatal("py_dict_lookup on non-dictionary");
 	}
 	return lookdict((dictobject*) op, key)->de_value;
 }
 
 #ifdef NOT_USED
-static object *
+static struct py_object*
 dict2lookup(op, key)
-	   object *op;
-	   object *key;
+	   struct py_object*op;
+	   struct py_object*key;
 {
-	   object *res;
-	   if (!is_dictobject(op)) {
-			   err_badcall();
+	   struct py_object*res;
+	   if (!py_is_dict(op)) {
+			   py_error_set_badcall();
 			   return NULL;
 	   }
-	   if (!is_stringobject(key)) {
-			   err_badarg();
+	   if (!py_is_string(key)) {
+			   py_error_set_badarg();
 			   return NULL;
 	   }
-	   res = lookdict((dictobject *)op, ((stringobject *)key)->ob_sval)
+	   res = lookdict((dictobject *)op, ((struct py_string *)key)->value)
 															   -> de_value;
 	   if (res == NULL)
-			   err_setstr(KeyError, "key not in dictionary");
+			   py_error_set_string(PY_KEY_ERROR, "key not in dictionary");
 	   return res;
 }
 #endif
 
-static int dict2insert(op, key, value)object* op;
-									  object* key;
-									  object* value;
+static int dict2insert(op, key, value)struct py_object* op;
+									  struct py_object* key;
+									  struct py_object* value;
 {
 	dictobject* dp;
-	stringobject* keyobj;
-	if(!is_dictobject(op)) {
-		err_badcall();
+	struct py_string* keyobj;
+	if(!py_is_dict(op)) {
+		py_error_set_badcall();
 		return -1;
 	}
 	dp = (dictobject*) op;
-	if(!is_stringobject(key)) {
-		err_badarg();
+	if(!py_is_string(key)) {
+		py_error_set_badarg();
 		return -1;
 	}
-	keyobj = (stringobject*) key;
+	keyobj = (struct py_string*) key;
 	/* if fill >= 2/3 size, resize */
 	if(dp->di_fill * 3 >= dp->di_size * 2) {
 		if(dictresize(dp) != 0) {
@@ -288,15 +271,15 @@ static int dict2insert(op, key, value)object* op;
 	return 0;
 }
 
-int dictinsert(op, key, value)object* op;
-							  char* key;
-							  object* value;
+int py_dict_insert(op, key, value)struct py_object* op;
+							  const char* key;
+							  struct py_object* value;
 {
-	object* keyobj;
+	struct py_object* keyobj;
 	int err;
-	keyobj = newstringobject(key);
+	keyobj = py_string_new(key);
 	if(keyobj == NULL) {
-		err_nomem();
+		py_error_set_nomem();
 		return -1;
 	}
 	err = dict2insert(op, keyobj, value);
@@ -304,19 +287,19 @@ int dictinsert(op, key, value)object* op;
 	return err;
 }
 
-int dictremove(op, key)object* op;
-					   char* key;
+int py_dict_remove(op, key)struct py_object* op;
+					   const char* key;
 {
 	dictobject* dp;
 	dictentry* ep;
-	if(!is_dictobject(op)) {
-		err_badcall();
+	if(!py_is_dict(op)) {
+		py_error_set_badcall();
 		return -1;
 	}
 	dp = (dictobject*) op;
 	ep = lookdict(dp, key);
 	if(ep->de_value == NULL) {
-		err_setstr(KeyError, "key not in dictionary");
+		py_error_set_string(PY_KEY_ERROR, "key not in dictionary");
 		return -1;
 	}
 	PY_DECREF(ep->de_key);
@@ -328,55 +311,55 @@ int dictremove(op, key)object* op;
 	return 0;
 }
 
-static int dict2remove(op, key)object* op;
-							   object* key;
+static int dict2remove(op, key)struct py_object* op;
+							   struct py_object* key;
 {
-	if(!is_stringobject(key)) {
-		err_badarg();
+	if(!py_is_string(key)) {
+		py_error_set_badarg();
 		return -1;
 	}
-	return dictremove(op, GETSTRINGVALUE((stringobject*) key));
+	return py_dict_remove(op, GETSTRINGVALUE((struct py_string*) key));
 }
 
-int getdictsize(op)object* op;
+int py_dict_size(op)struct py_object* op;
 {
-	if(!is_dictobject(op)) {
-		err_badcall();
+	if(!py_is_dict(op)) {
+		py_error_set_badcall();
 		return -1;
 	}
 	return ((dictobject*) op)->di_size;
 }
 
-static object* getdict2key(op, i)object* op;
+static struct py_object* getdict2key(op, i)struct py_object* op;
 								 int i;
 {
 	/* XXX This can't return errors since its callers assume
 	   that NULL means there was no key at that point */
 	dictobject* dp;
-	if(!is_dictobject(op)) {
-		/* err_badcall(); */
+	if(!py_is_dict(op)) {
+		/* py_error_set_badcall(); */
 		return NULL;
 	}
 	dp = (dictobject*) op;
 	if(i < 0 || i >= dp->di_size) {
-		/* err_badarg(); */
+		/* py_error_set_badarg(); */
 		return NULL;
 	}
 	if(dp->di_table[i].de_value == NULL) {
 		/* Not an error! */
 		return NULL;
 	}
-	return (object*) dp->di_table[i].de_key;
+	return (struct py_object*) dp->di_table[i].de_key;
 }
 
-char* getdictkey(op, i)object* op;
+char* py_dict_get_key(op, i)struct py_object* op;
 					   int i;
 {
-	object* keyobj = getdict2key(op, i);
+	struct py_object* keyobj = getdict2key(op, i);
 	if(keyobj == NULL) {
 		return NULL;
 	}
-	return GETSTRINGVALUE((stringobject*) keyobj);
+	return GETSTRINGVALUE((struct py_string*) keyobj);
 }
 
 /* Methods */
@@ -406,50 +389,50 @@ static void dict_print(dp, fp, flags)dictobject* dp;
 	dictentry* ep;
 	fprintf(fp, "{");
 	any = 0;
-	for(i = 0, ep = dp->di_table; i < dp->di_size && !StopPrint; i++, ep++) {
+	for(i = 0, ep = dp->di_table; i < dp->di_size && !py_stop_print; i++, ep++) {
 		if(ep->de_value != NULL) {
 			if(any++ > 0) {
 				fprintf(fp, "; ");
 			}
-			printobject((object*) ep->de_key, fp, flags);
+			py_object_print((struct py_object*) ep->de_key, fp, flags);
 			fprintf(fp, ": ");
-			printobject(ep->de_value, fp, flags);
+			py_object_print(ep->de_value, fp, flags);
 		}
 	}
 	fprintf(fp, "}");
 }
 
-static void js(pv, w)object** pv;
-					 object* w;
+static void js(pv, w)struct py_object** pv;
+					 struct py_object* w;
 {
-	joinstring(pv, w);
+	py_string_join(pv, w);
 	if(w != NULL)
 		PY_DECREF(w);
 }
 
-static object* dict_repr(dp)dictobject* dp;
+static struct py_object* dict_repr(dp)dictobject* dp;
 {
-	auto object* v;
-	object* w;
-	object* semi, * colon;
+	auto struct py_object* v;
+	struct py_object* w;
+	struct py_object* semi, * colon;
 	int i;
 	int any;
 	dictentry* ep;
-	v = newstringobject("{");
-	semi = newstringobject("; ");
-	colon = newstringobject(": ");
+	v = py_string_new("{");
+	semi = py_string_new("; ");
+	colon = py_string_new(": ");
 	any = 0;
-	for(i = 0, ep = dp->di_table; i < dp->di_size && !StopPrint; i++, ep++) {
+	for(i = 0, ep = dp->di_table; i < dp->di_size && !py_stop_print; i++, ep++) {
 		if(ep->de_value != NULL) {
 			if(any++) {
-				joinstring(&v, semi);
+				py_string_join(&v, semi);
 			}
-			js(&v, w = reprobject((object*) ep->de_key));
-			joinstring(&v, colon);
-			js(&v, w = reprobject(ep->de_value));
+			js(&v, w = py_object_repr((struct py_object*) ep->de_key));
+			py_string_join(&v, colon);
+			js(&v, w = py_object_repr(ep->de_value));
 		}
 	}
-	js(&v, w = newstringobject("}"));
+	js(&v, w = py_string_new("}"));
 	if(semi != NULL)
 		PY_DECREF(semi);
 	if(colon != NULL)
@@ -462,16 +445,16 @@ static int dict_length(dp)dictobject* dp;
 	return dp->di_used;
 }
 
-static object* dict_subscript(dp, v)dictobject* dp;
-									object* v;
+static struct py_object* dict_subscript(dp, v)dictobject* dp;
+									struct py_object* v;
 {
-	if(!is_stringobject(v)) {
-		err_badarg();
+	if(!py_is_string(v)) {
+		py_error_set_badarg();
 		return NULL;
 	}
-	v = lookdict(dp, GETSTRINGVALUE((stringobject*) v))->de_value;
+	v = lookdict(dp, GETSTRINGVALUE((struct py_string*) v))->de_value;
 	if(v == NULL) {
-		err_setstr(KeyError, "key not in dictionary");
+		py_error_set_string(PY_KEY_ERROR, "key not in dictionary");
 	}
 	else
 		PY_INCREF(v);
@@ -479,91 +462,91 @@ static object* dict_subscript(dp, v)dictobject* dp;
 }
 
 static int dict_ass_sub(dp, v, w)dictobject* dp;
-								 object* v, * w;
+								 struct py_object* v, * w;
 {
 	if(w == NULL) {
-		return dict2remove((object*) dp, v);
+		return dict2remove((struct py_object*) dp, v);
 	}
 	else {
-		return dict2insert((object*) dp, v, w);
+		return dict2insert((struct py_object*) dp, v, w);
 	}
 }
 
-static mapping_methods dict_as_mapping = {
-		dict_length,    /*mp_length*/
-		dict_subscript, /*mp_subscript*/
-		dict_ass_sub,   /*mp_ass_subscript*/
+static struct py_mappingmethods dict_as_mapping = {
+		dict_length,    /*len*/
+		dict_subscript, /*ind*/
+		dict_ass_sub,   /*assign*/
 };
 
-static object* dict_keys(dp, args)dictobject* dp;
-								  object* args;
+static struct py_object* dict_keys(dp, args)dictobject* dp;
+								  struct py_object* args;
 {
-	object* v;
+	struct py_object* v;
 	int i, j;
-	if(!getnoarg(args)) {
+	if(!py_arg_none(args)) {
 		return NULL;
 	}
-	v = newlistobject(dp->di_used);
+	v = py_list_new(dp->di_used);
 	if(v == NULL) {
 		return NULL;
 	}
 	for(i = 0, j = 0; i < dp->di_size; i++) {
 		if(dp->di_table[i].de_value != NULL) {
-			stringobject* key = dp->di_table[i].de_key;
+			struct py_string* key = dp->di_table[i].de_key;
 			PY_INCREF(key);
-			setlistitem(v, j, (object*) key);
+			py_list_set(v, j, (struct py_object*) key);
 			j++;
 		}
 	}
 	return v;
 }
 
-object* getdictkeys(dp)object* dp;
+struct py_object* py_dict_get_keys(dp)struct py_object* dp;
 {
-	if(dp == NULL || !is_dictobject(dp)) {
-		err_badcall();
+	if(dp == NULL || !py_is_dict(dp)) {
+		py_error_set_badcall();
 		return NULL;
 	}
-	return dict_keys((dictobject*) dp, (object*) NULL);
+	return dict_keys((dictobject*) dp, (struct py_object*) NULL);
 }
 
-static object* dict_has_key(dp, args)dictobject* dp;
-									 object* args;
+static struct py_object* dict_has_key(dp, args)dictobject* dp;
+									 struct py_object* args;
 {
-	object* key;
+	struct py_object* key;
 	long ok;
-	if(!getstrarg(args, &key)) {
+	if(!py_arg_str(args, &key)) {
 		return NULL;
 	}
-	ok = lookdict(dp, GETSTRINGVALUE((stringobject*) key))->de_value != NULL;
-	return newintobject(ok);
+	ok = lookdict(dp, GETSTRINGVALUE((struct py_string*) key))->de_value != NULL;
+	return py_int_new(ok);
 }
 
-static struct methodlist dict_methods[] = {
+static struct py_methodlist dict_methods[] = {
 		{ "keys",    dict_keys },
 		{ "has_key", dict_has_key },
 		{ NULL, NULL }           /* sentinel */
 };
 
-static object* dict_getattr(dp, name)dictobject* dp;
+static struct py_object* dict_getattr(dp, name)dictobject* dp;
 									 char* name;
 {
-	return findmethod(dict_methods, (object*) dp, name);
+	return py_methodlist_find(dict_methods, (struct py_object*) dp, name);
 }
 
-void donedict(void) {
+void py_done_dict(void) {
 	PY_DECREF(dummy);
 }
 
-typeobject Dicttype = {
-		OB_HEAD_INIT(&Typetype) 0, "dictionary", sizeof(dictobject), 0,
-		dict_dealloc,   /*tp_dealloc*/
-		dict_print,     /*tp_print*/
-		dict_getattr,   /*tp_getattr*/
-		0,              /*tp_setattr*/
-		0,              /*tp_compare*/
-		dict_repr,      /*tp_repr*/
-		0,              /*tp_as_number*/
-		0,              /*tp_as_sequence*/
-		&dict_as_mapping,   /*tp_as_mapping*/
+struct py_type py_dict_type = {
+		PY_OB_SEQ_INIT(&py_type_type) 0, "dictionary", sizeof(dictobject), 0,
+		dict_dealloc,   /*dealloc*/
+		dict_print,     /*print*/
+		dict_getattr,   /*get_attr*/
+		0,              /*set_attr*/
+		0,              /*cmp*/
+		dict_repr,      /*repr*/
+		0,              /*numbermethods*/
+		0,              /*sequencemethods*/
+		&dict_as_mapping,   /*mappingmethods*/
 };

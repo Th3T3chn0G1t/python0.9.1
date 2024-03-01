@@ -1,73 +1,48 @@
-/***********************************************************
-Copyright 1991 by Stichting Mathematisch Centrum, Amsterdam, The
-Netherlands.
-
-                        All Rights Reserved
-
-Permission to use, copy, modify, and distribute this software and its
-documentation for any purpose and without fee is hereby granted,
-provided that the above copyright notice appear in all copies and that
-both that copyright notice and this permission notice appear in
-supporting documentation, and that the names of Stichting Mathematisch
-Centrum or CWI not be used in advertising or publicity pertaining to
-distribution of the software without specific, written prior permission.
-
-STICHTING MATHEMATISCH CENTRUM DISCLAIMS ALL WARRANTIES WITH REGARD TO
-THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
-FITNESS, IN NO EVENT SHALL STICHTING MATHEMATISCH CENTRUM BE LIABLE
-FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
-OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-
-******************************************************************/
+/*
+ * Copyright 1991 by Stichting Mathematisch Centrum
+ * See `LICENCE' for more information.
+ */
 
 /* Error handling definitions */
 
 #ifndef PY_ERRORS_H
 #define PY_ERRORS_H
 
-void err_set(object*);
-
-void err_setval(object*, object*);
-
-void err_setstr(object*, char*);
-
-int err_occurred(void);
-
-void err_get(object**, object**);
-
-void err_clear(void);
+#include <python/object.h>
 
 /* Predefined exceptions */
 
-extern object* RuntimeError;
-extern object* EOFError;
-extern object* TypeError;
-extern object* MemoryError;
-extern object* NameError;
-extern object* SystemError;
-extern object* KeyboardInterrupt;
+/* TODO: Python global state. */
+extern struct py_object* py_runtime_error;
+extern struct py_object* py_eof_error;
+extern struct py_object* py_type_error;
+extern struct py_object* py_memory_error;
+extern struct py_object* py_name_error;
+extern struct py_object* py_system_error;
+extern struct py_object* py_interrupt_error;
 
 /* Some more planned for the future */
 
-#define IndexError             RuntimeError
-#define KeyError               RuntimeError
-#define ZeroDivisionError      RuntimeError
-#define OverflowError          RuntimeError
+#define PY_INDEX_ERROR py_runtime_error
+#define PY_KEY_ERROR py_runtime_error
+#define PY_ZERO_DIVISION_ERROR py_runtime_error
+#define PY_OVERFLOW_ERROR py_runtime_error
+
+void py_error_set(struct py_object*);
+void py_error_set_value(struct py_object*, struct py_object*);
+void py_error_set_string(struct py_object*, const char*);
+int py_error_occurred(void);
+void py_error_get(struct py_object**, struct py_object**);
+void py_error_clear(void);
 
 /* Convenience functions */
+int py_error_set_badarg(void);
+struct py_object* py_error_set_nomem(void);
+struct py_object* py_error_set_errno(struct py_object*);
+void py_error_set_input(int);
+void py_error_set_badcall(void);
 
-int err_badarg(void);
-
-object* err_nomem(void);
-
-object* err_errno(object*);
-
-void err_input(int);
-
-void err_badcall(void);
-
-void fatal(char*);
+/* TODO: Hook this. */
+void py_fatal(const char*);
 
 #endif

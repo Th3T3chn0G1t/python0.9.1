@@ -1,150 +1,133 @@
-/***********************************************************
-Copyright 1991 by Stichting Mathematisch Centrum, Amsterdam, The
-Netherlands.
-
-                        All Rights Reserved
-
-Permission to use, copy, modify, and distribute this software and its
-documentation for any purpose and without fee is hereby granted,
-provided that the above copyright notice appear in all copies and that
-both that copyright notice and this permission notice appear in
-supporting documentation, and that the names of Stichting Mathematisch
-Centrum or CWI not be used in advertising or publicity pertaining to
-distribution of the software without specific, written prior permission.
-
-STICHTING MATHEMATISCH CENTRUM DISCLAIMS ALL WARRANTIES WITH REGARD TO
-THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
-FITNESS, IN NO EVENT SHALL STICHTING MATHEMATISCH CENTRUM BE LIABLE
-FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
-OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-
-******************************************************************/
+/*
+ * Copyright 1991 by Stichting Mathematisch Centrum
+ * See `LICENCE' for more information.
+ */
 
 /* Map C struct members to Python object attributes */
 
-#include <python/allobjects.h>
 #include <python/structmember.h>
+#include <python/errors.h>
 
-object* getmember(addr, mlist, name)char* addr;
-									struct memberlist* mlist;
-									char* name;
-{
-	struct memberlist* l;
+#include <python/methodobject.h>
+#include <python/intobject.h>
+#include <python/floatobject.h>
+#include <python/stringobject.h>
+
+struct py_object* py_memberlist_get(char* addr, struct py_memberlist* mlist, const char* name) {
+	struct py_memberlist* l;
 
 	for(l = mlist; l->name != NULL; l++) {
 		if(strcmp(l->name, name) == 0) {
-			object* v;
+			struct py_object* v;
 			addr += l->offset;
 			switch(l->type) {
-				case T_SHORT:v = newintobject((long) *(short*) addr);
+				case PY_TYPE_SHORT: v = py_int_new((long) *(short*) addr);
 					break;
-				case T_INT:v = newintobject((long) *(int*) addr);
+				case PY_TYPE_INT: v = py_int_new((long) *(int*) addr);
 					break;
-				case T_LONG:v = newintobject(*(long*) addr);
+				case PY_TYPE_LONG: v = py_int_new(*(long*) addr);
 					break;
-				case T_FLOAT:v = newfloatobject((double) *(float*) addr);
+				case PY_TYPE_FLOAT: v = py_float_new((double) *(float*) addr);
 					break;
-				case T_DOUBLE:v = newfloatobject(*(double*) addr);
+				case PY_TYPE_DOUBLE: v = py_float_new(*(double*) addr);
 					break;
-				case T_STRING:
+				case PY_TYPE_STRING:
 					if(*(char**) addr == NULL) {
-						PY_INCREF(None);
-						v = None;
+						PY_INCREF(PY_NONE);
+						v = PY_NONE;
 					}
 					else {
-						v = newstringobject(*(char**) addr);
+						v = py_string_new(*(char**) addr);
 					}
 					break;
-				case T_OBJECT:v = *(object**) addr;
+				case PY_TYPE_OBJECT: v = *(struct py_object**) addr;
 					if(v == NULL) {
-						v = None;
+						v = PY_NONE;
 					}
 					PY_INCREF(v);
 					break;
-				default:err_setstr(SystemError, "bad memberlist type");
+				default: py_error_set_string(py_system_error, "bad memberlist type");
 					v = NULL;
 			}
 			return v;
 		}
 	}
 
-	err_setstr(NameError, name);
+	py_error_set_string(py_name_error, name);
 	return NULL;
 }
 
-int setmember(addr, mlist, name, v)char* addr;
-								   struct memberlist* mlist;
+int py_memberlist_set(addr, mlist, name, v)char* addr;
+								   struct py_memberlist* mlist;
 								   char* name;
-								   object* v;
+								   struct py_object* v;
 {
-	struct memberlist* l;
+	struct py_memberlist* l;
 
 	for(l = mlist; l->name != NULL; l++) {
 		if(strcmp(l->name, name) == 0) {
-			if(l->readonly || l->type == T_STRING) {
-				err_setstr(RuntimeError, "readonly attribute");
+			if(l->readonly || l->type == PY_TYPE_STRING) {
+				py_error_set_string(py_runtime_error, "readonly attribute");
 				return -1;
 			}
 			addr += l->offset;
 			switch(l->type) {
-				case T_SHORT:
-					if(!is_intobject(v)) {
-						err_badarg();
+				case PY_TYPE_SHORT:
+					if(!py_is_int(v)) {
+						py_error_set_badarg();
 						return -1;
 					}
-					*(short*) addr = getintvalue(v);
+					*(short*) addr = py_int_get(v);
 					break;
-				case T_INT:
-					if(!is_intobject(v)) {
-						err_badarg();
+				case PY_TYPE_INT:
+					if(!py_is_int(v)) {
+						py_error_set_badarg();
 						return -1;
 					}
-					*(int*) addr = getintvalue(v);
+					*(int*) addr = py_int_get(v);
 					break;
-				case T_LONG:
-					if(!is_intobject(v)) {
-						err_badarg();
+				case PY_TYPE_LONG:
+					if(!py_is_int(v)) {
+						py_error_set_badarg();
 						return -1;
 					}
-					*(long*) addr = getintvalue(v);
+					*(long*) addr = py_int_get(v);
 					break;
-				case T_FLOAT:
-					if(is_intobject(v)) {
-						*(float*) addr = getintvalue(v);
+				case PY_TYPE_FLOAT:
+					if(py_is_int(v)) {
+						*(float*) addr = py_int_get(v);
 					}
-					else if(is_floatobject(v)) {
-						*(float*) addr = getfloatvalue(v);
+					else if(py_is_float(v)) {
+						*(float*) addr = py_float_get(v);
 					}
 					else {
-						err_badarg();
+						py_error_set_badarg();
 						return -1;
 					}
 					break;
-				case T_DOUBLE:
-					if(is_intobject(v)) {
-						*(double*) addr = getintvalue(v);
+				case PY_TYPE_DOUBLE:
+					if(py_is_int(v)) {
+						*(double*) addr = py_int_get(v);
 					}
-					else if(is_floatobject(v)) {
-						*(double*) addr = getfloatvalue(v);
+					else if(py_is_float(v)) {
+						*(double*) addr = py_float_get(v);
 					}
 					else {
-						err_badarg();
+						py_error_set_badarg();
 						return -1;
 					}
 					break;
-				case T_OBJECT:XDECREF(*(object**) addr);
-					XINCREF(v);
-					*(object**) addr = v;
+				case PY_TYPE_OBJECT:PY_XDECREF(*(struct py_object**) addr);
+					PY_XINCREF(v);
+					*(struct py_object**) addr = v;
 					break;
-				default:err_setstr(SystemError, "bad memberlist type");
+				default:py_error_set_string(py_system_error, "bad memberlist type");
 					return -1;
 			}
 			return 0;
 		}
 	}
 
-	err_setstr(NameError, name);
+	py_error_set_string(py_name_error, name);
 	return -1;
 }

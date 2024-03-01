@@ -1,60 +1,35 @@
-/***********************************************************
-Copyright 1991 by Stichting Mathematisch Centrum, Amsterdam, The
-Netherlands.
-
-                        All Rights Reserved
-
-Permission to use, copy, modify, and distribute this software and its
-documentation for any purpose and without fee is hereby granted,
-provided that the above copyright notice appear in all copies and that
-both that copyright notice and this permission notice appear in
-supporting documentation, and that the names of Stichting Mathematisch
-Centrum or CWI not be used in advertising or publicity pertaining to
-distribution of the software without specific, written prior permission.
-
-STICHTING MATHEMATISCH CENTRUM DISCLAIMS ALL WARRANTIES WITH REGARD TO
-THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
-FITNESS, IN NO EVENT SHALL STICHTING MATHEMATISCH CENTRUM BE LIABLE
-FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
-OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-
-******************************************************************/
+/*
+ * Copyright 1991 by Stichting Mathematisch Centrum
+ * See `LICENCE' for more information.
+ */
 
 #ifndef PY_PARSER_H
 #define PY_PARSER_H
 
 /* Parser interface */
 
-#define MAXSTACK 100
+#define PY_MAX_STACK (100)
 
-typedef struct _stackentry {
-	int s_state;       /* State in current DFA */
-	dfa* s_dfa;         /* Current DFA */
-	struct _node* s_parent;      /* Where to add next node */
-} stackentry;
+struct py_stackentry {
+	int state; /* State in current DFA */
+	struct py_dfa* dfa; /* Current DFA */
+	struct py_node* parent; /* Where to add next struct py_node */
+};
 
-typedef struct _stack {
-	stackentry* s_top;         /* Top entry */
-	stackentry s_base[MAXSTACK];/* Array of stack entries */
+struct py_stack {
+	struct py_stackentry* top; /* Top entry */
+	struct py_stackentry base[PY_MAX_STACK];/* Array of stack entries */
 	/* NB The stack grows down */
-} stack;
+};
 
-typedef struct {
-	struct _stack p_stack;       /* Stack of parser states */
-	struct _grammar* p_grammar;     /* Grammar to use */
-	struct _node* p_tree;        /* Top of parse tree */
-} parser_state;
+struct py_parser {
+	struct py_stack stack; /* Stack of parser states */
+	struct py_grammar* grammar; /* Grammar to use */
+	struct py_node* tree; /* Top of parse tree */
+};
 
-parser_state* newparser(struct _grammar* g, int start);
-
-void delparser(parser_state* ps);
-
-int addtoken(parser_state* ps, int type, char* str, int lineno);
-
-void addaccelerators(grammar* g);
-
-void freeaccel(void);
+struct py_parser* py_parser_new(struct py_grammar*, int);
+void py_parser_delete(struct py_parser*);
+int py_parser_add(struct py_parser*, int, char*, int);
 
 #endif

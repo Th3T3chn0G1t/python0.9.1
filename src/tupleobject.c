@@ -1,98 +1,82 @@
-/***********************************************************
-Copyright 1991 by Stichting Mathematisch Centrum, Amsterdam, The
-Netherlands.
-
-                        All Rights Reserved
-
-Permission to use, copy, modify, and distribute this software and its
-documentation for any purpose and without fee is hereby granted,
-provided that the above copyright notice appear in all copies and that
-both that copyright notice and this permission notice appear in
-supporting documentation, and that the names of Stichting Mathematisch
-Centrum or CWI not be used in advertising or publicity pertaining to
-distribution of the software without specific, written prior permission.
-
-STICHTING MATHEMATISCH CENTRUM DISCLAIMS ALL WARRANTIES WITH REGARD TO
-THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
-FITNESS, IN NO EVENT SHALL STICHTING MATHEMATISCH CENTRUM BE LIABLE
-FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
-OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-
-******************************************************************/
+/*
+ * Copyright 1991 by Stichting Mathematisch Centrum
+ * See `LICENCE' for more information.
+ */
 
 /* Tuple object implementation */
 
-#include <stdlib.h>
+#include <python/std.h>
+#include <python/errors.h>
 
-#include <python/allobjects.h>
+#include <python/tupleobject.h>
+#include <python/stringobject.h>
+#include <python/intobject.h>
 
-object* newtupleobject(size)int size;
+struct py_object* py_tuple_new(size)int size;
 {
 	int i;
-	tupleobject* op;
+	struct py_tuple* op;
 	if(size < 0) {
-		err_badcall();
+		py_error_set_badcall();
 		return NULL;
 	}
-	op = malloc(sizeof(tupleobject) + size * sizeof(object*));
+	op = malloc(sizeof(struct py_tuple) + size * sizeof(struct py_object*));
 	if(op == NULL) {
-		return err_nomem();
+		return py_error_set_nomem();
 	}
-	NEWREF(op);
-	op->ob_type = &Tupletype;
-	op->ob_size = size;
+	PY_NEWREF(op);
+	op->type = &py_tuple_type;
+	op->size = size;
 	for(i = 0; i < size; i++) {
-		op->ob_item[i] = NULL;
+		op->item[i] = NULL;
 	}
-	return (object*) op;
+	return (struct py_object*) op;
 }
 
-int gettuplesize(op)object* op;
+int py_tuple_size(op)struct py_object* op;
 {
-	if(!is_tupleobject(op)) {
-		err_badcall();
+	if(!py_is_tuple(op)) {
+		py_error_set_badcall();
 		return -1;
 	}
 	else {
-		return ((tupleobject*) op)->ob_size;
+		return ((struct py_tuple*) op)->size;
 	}
 }
 
-object* gettupleitem(op, i)object* op;
+struct py_object* py_tuple_get(op, i)struct py_object* op;
 						   int i;
 {
-	if(!is_tupleobject(op)) {
-		err_badcall();
+	if(!py_is_tuple(op)) {
+		py_error_set_badcall();
 		return NULL;
 	}
-	if(i < 0 || i >= (int) ((tupleobject*) op)->ob_size) {
-		err_setstr(IndexError, "tuple index out of range");
+	if(i < 0 || i >= (int) ((struct py_tuple*) op)->size) {
+		py_error_set_string(PY_INDEX_ERROR, "tuple index out of range");
 		return NULL;
 	}
-	return ((tupleobject*) op)->ob_item[i];
+	return ((struct py_tuple*) op)->item[i];
 }
 
-int settupleitem(op, i, newitem)object* op;
+int py_tuple_set(op, i, newitem)struct py_object* op;
 								int i;
-								object* newitem;
+								struct py_object* newitem;
 {
-	object* olditem;
+	struct py_object* olditem;
 
-	if(!is_tupleobject(op)) {
+	if(!py_is_tuple(op)) {
 		if(newitem != NULL) PY_DECREF(newitem);
-		err_badcall();
+		py_error_set_badcall();
 		return -1;
 	}
 
-	if(i < 0 || i >= (int) ((tupleobject*) op)->ob_size) {
+	if(i < 0 || i >= (int) ((struct py_tuple*) op)->size) {
 		if(newitem != NULL) PY_DECREF(newitem);
-		err_setstr(IndexError, "tuple assignment index out of range");
+		py_error_set_string(PY_INDEX_ERROR, "tuple assignment index out of range");
 		return -1;
 	}
-	olditem = ((tupleobject*) op)->ob_item[i];
-	((tupleobject*) op)->ob_item[i] = newitem;
+	olditem = ((struct py_tuple*) op)->item[i];
+	((struct py_tuple*) op)->item[i] = newitem;
 	if(olditem != NULL)
 		PY_DECREF(olditem);
 	return 0;
@@ -100,174 +84,174 @@ int settupleitem(op, i, newitem)object* op;
 
 /* Methods */
 
-static void tupledealloc(op)tupleobject* op;
+static void tupledealloc(op)struct py_tuple* op;
 {
 	int i;
-	for(i = 0; i < (int) op->ob_size; i++) {
-		if(op->ob_item[i] != NULL)
-			PY_DECREF(op->ob_item[i]);
+	for(i = 0; i < (int) op->size; i++) {
+		if(op->item[i] != NULL)
+			PY_DECREF(op->item[i]);
 	}
 	free(op);
 }
 
-static void tupleprint(op, fp, flags)tupleobject* op;
+static void tupleprint(op, fp, flags)struct py_tuple* op;
 									 FILE* fp;
 									 int flags;
 {
 	int i;
 	fprintf(fp, "(");
-	for(i = 0; i < (int) op->ob_size && !StopPrint; i++) {
+	for(i = 0; i < (int) op->size && !py_stop_print; i++) {
 		if(i > 0) {
 			fprintf(fp, ", ");
 		}
-		printobject(op->ob_item[i], fp, flags);
+		py_object_print(op->item[i], fp, flags);
 	}
-	if(op->ob_size == 1) {
+	if(op->size == 1) {
 		fprintf(fp, ",");
 	}
 	fprintf(fp, ")");
 }
 
-object* tuplerepr(v)tupleobject* v;
+struct py_object* tuplerepr(v)struct py_tuple* v;
 {
-	object* s, * t, * comma;
+	struct py_object* s, * t, * comma;
 	int i;
-	s = newstringobject("(");
-	comma = newstringobject(", ");
-	for(i = 0; i < (int) v->ob_size && s != NULL; i++) {
+	s = py_string_new("(");
+	comma = py_string_new(", ");
+	for(i = 0; i < (int) v->size && s != NULL; i++) {
 		if(i > 0) {
-			joinstring(&s, comma);
+			py_string_join(&s, comma);
 		}
-		t = reprobject(v->ob_item[i]);
-		joinstring(&s, t);
+		t = py_object_repr(v->item[i]);
+		py_string_join(&s, t);
 		if(t != NULL)
 			PY_DECREF(t);
 	}
 	PY_DECREF(comma);
-	if(v->ob_size == 1) {
-		t = newstringobject(",");
-		joinstring(&s, t);
+	if(v->size == 1) {
+		t = py_string_new(",");
+		py_string_join(&s, t);
 		PY_DECREF(t);
 	}
-	t = newstringobject(")");
-	joinstring(&s, t);
+	t = py_string_new(")");
+	py_string_join(&s, t);
 	PY_DECREF(t);
 	return s;
 }
 
-static int tuplecompare(v, w)tupleobject* v, * w;
+static int tuplecompare(v, w)struct py_tuple* v, * w;
 {
-	int len = (v->ob_size < w->ob_size) ? v->ob_size : w->ob_size;
+	int len = (v->size < w->size) ? v->size : w->size;
 	int i;
 	for(i = 0; i < len; i++) {
-		int cmp = cmpobject(v->ob_item[i], w->ob_item[i]);
+		int cmp = py_object_cmp(v->item[i], w->item[i]);
 		if(cmp != 0) {
 			return cmp;
 		}
 	}
-	return v->ob_size - w->ob_size;
+	return v->size - w->size;
 }
 
-static int tuplelength(a)tupleobject* a;
+static int tuplelength(a)struct py_tuple* a;
 {
-	return a->ob_size;
+	return a->size;
 }
 
-static object* tupleitem(a, i)tupleobject* a;
+static struct py_object* tupleitem(a, i)struct py_tuple* a;
 							  int i;
 {
-	if(i < 0 || i >= (int) a->ob_size) {
-		err_setstr(IndexError, "tuple index out of range");
+	if(i < 0 || i >= (int) a->size) {
+		py_error_set_string(PY_INDEX_ERROR, "tuple index out of range");
 		return NULL;
 	}
-	PY_INCREF(a->ob_item[i]);
-	return a->ob_item[i];
+	PY_INCREF(a->item[i]);
+	return a->item[i];
 }
 
-static object* tupleslice(a, ilow, ihigh)tupleobject* a;
+static struct py_object* tupleslice(a, ilow, ihigh)struct py_tuple* a;
 										 int ilow, ihigh;
 {
-	tupleobject* np;
+	struct py_tuple* np;
 	int i;
 	if(ilow < 0) {
 		ilow = 0;
 	}
-	if(ihigh > (int) a->ob_size) {
-		ihigh = (int) a->ob_size;
+	if(ihigh > (int) a->size) {
+		ihigh = (int) a->size;
 	}
 	if(ihigh < ilow) {
 		ihigh = ilow;
 	}
-	if(ilow == 0 && ihigh == (int) a->ob_size) {
+	if(ilow == 0 && ihigh == (int) a->size) {
 		/* XXX can only do this if tuples are immutable! */
 		PY_INCREF(a);
-		return (object*) a;
+		return (struct py_object*) a;
 	}
-	np = (tupleobject*) newtupleobject(ihigh - ilow);
+	np = (struct py_tuple*) py_tuple_new(ihigh - ilow);
 	if(np == NULL) {
 		return NULL;
 	}
 	for(i = ilow; i < ihigh; i++) {
-		object* v = a->ob_item[i];
+		struct py_object* v = a->item[i];
 		PY_INCREF(v);
-		np->ob_item[i - ilow] = v;
+		np->item[i - ilow] = v;
 	}
-	return (object*) np;
+	return (struct py_object*) np;
 }
 
-static object* tupleconcat(a, bb)tupleobject* a;
-								 object* bb;
+static struct py_object* tupleconcat(a, bb)struct py_tuple* a;
+								 struct py_object* bb;
 {
 	int size;
 	int i;
-	tupleobject* np;
-	tupleobject* b = (tupleobject*) bb;
+	struct py_tuple* np;
+	struct py_tuple* b = (struct py_tuple*) bb;
 
-	if(!is_tupleobject(bb)) {
-		err_badarg();
+	if(!py_is_tuple(bb)) {
+		py_error_set_badarg();
 		return NULL;
 	}
 
-	size = (int) (a->ob_size + b->ob_size);
-	np = (tupleobject*) newtupleobject(size);
+	size = (int) (a->size + b->size);
+	np = (struct py_tuple*) py_tuple_new(size);
 	if(np == NULL) {
-		return err_nomem();
+		return py_error_set_nomem();
 	}
-	for(i = 0; i < (int) a->ob_size; i++) {
-		object* v = a->ob_item[i];
+	for(i = 0; i < (int) a->size; i++) {
+		struct py_object* v = a->item[i];
 		PY_INCREF(v);
-		np->ob_item[i] = v;
+		np->item[i] = v;
 	}
 
-	for(i = 0; i < (int) b->ob_size; i++) {
-		object* v = b->ob_item[i];
+	for(i = 0; i < (int) b->size; i++) {
+		struct py_object* v = b->item[i];
 		PY_INCREF(v);
-		np->ob_item[i + a->ob_size] = v;
+		np->item[i + a->size] = v;
 	}
 
-	return (object*) np;
+	return (struct py_object*) np;
 }
 
-static sequence_methods tuple_as_sequence = {
-		tuplelength,    /*sq_length*/
-		tupleconcat,    /*sq_concat*/
-		0,              /*sq_repeat*/
-		tupleitem,      /*sq_item*/
-		tupleslice,     /*sq_slice*/
-		0,              /*sq_ass_item*/
-		0,              /*sq_ass_slice*/
+static struct py_sequencemethods tuple_as_sequence = {
+		tuplelength,    /*len*/
+		tupleconcat,    /*cat*/
+		0,              /*rep*/
+		tupleitem,      /*ind*/
+		tupleslice,     /*slice*/
+		0,              /*assign_item*/
+		0,              /*assign_slice*/
 };
 
-typeobject Tupletype = {
-		OB_HEAD_INIT(&Typetype) 0, "tuple",
-		sizeof(tupleobject) - sizeof(object*), sizeof(object*),
-		tupledealloc,   /*tp_dealloc*/
-		tupleprint,     /*tp_print*/
-		0,              /*tp_getattr*/
-		0,              /*tp_setattr*/
-		tuplecompare,   /*tp_compare*/
-		tuplerepr,      /*tp_repr*/
-		0,              /*tp_as_number*/
-		&tuple_as_sequence, /*tp_as_sequence*/
-		0,              /*tp_as_mapping*/
+struct py_type py_tuple_type = {
+		PY_OB_SEQ_INIT(&py_type_type) 0, "tuple",
+		sizeof(struct py_tuple) - sizeof(struct py_object*), sizeof(struct py_object*),
+		tupledealloc,   /*dealloc*/
+		tupleprint,     /*print*/
+		0,              /*get_attr*/
+		0,              /*set_attr*/
+		tuplecompare,   /*cmp*/
+		tuplerepr,      /*repr*/
+		0,              /*numbermethods*/
+		&tuple_as_sequence, /*sequencemethods*/
+		0,              /*mappingmethods*/
 };

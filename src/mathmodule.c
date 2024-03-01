@@ -1,63 +1,48 @@
-/***********************************************************
-Copyright 1991 by Stichting Mathematisch Centrum, Amsterdam, The
-Netherlands.
-
-                        All Rights Reserved
-
-Permission to use, copy, modify, and distribute this software and its
-documentation for any purpose and without fee is hereby granted,
-provided that the above copyright notice appear in all copies and that
-both that copyright notice and this permission notice appear in
-supporting documentation, and that the names of Stichting Mathematisch
-Centrum or CWI not be used in advertising or publicity pertaining to
-distribution of the software without specific, written prior permission.
-
-STICHTING MATHEMATISCH CENTRUM DISCLAIMS ALL WARRANTIES WITH REGARD TO
-THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
-FITNESS, IN NO EVENT SHALL STICHTING MATHEMATISCH CENTRUM BE LIABLE
-FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
-OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-
-******************************************************************/
+/*
+ * Copyright 1991 by Stichting Mathematisch Centrum
+ * See `LICENCE' for more information.
+ */
 
 /* Math module -- standard C math library functions, pi and e */
 
-#include <math.h>
-#include <errno.h>
-
-#include <python/allobjects.h>
+#include <python/std.h>
 #include <python/modsupport.h>
+#include <python/errors.h>
 
-static int getdoublearg(args, px)object* args;
+#include <python/floatobject.h>
+#include <python/intobject.h>
+#include <python/tupleobject.h>
+#include <python/dictobject.h>
+#include <python/moduleobject.h>
+
+static int getdoublearg(args, px)struct py_object* args;
 								 double* px;
 {
 	if(args == NULL) {
-		return err_badarg();
+		return py_error_set_badarg();
 	}
-	if(is_floatobject(args)) {
-		*px = getfloatvalue(args);
+	if(py_is_float(args)) {
+		*px = py_float_get(args);
 		return 1;
 	}
-	if(is_intobject(args)) {
-		*px = getintvalue(args);
+	if(py_is_int(args)) {
+		*px = py_int_get(args);
 		return 1;
 	}
-	return err_badarg();
+	return py_error_set_badarg();
 }
 
-static int get2doublearg(args, px, py)object* args;
+static int get2doublearg(args, px, py)struct py_object* args;
 									  double* px, * py;
 {
-	if(args == NULL || !is_tupleobject(args) || gettuplesize(args) != 2) {
-		return err_badarg();
+	if(args == NULL || !py_is_tuple(args) || py_tuple_size(args) != 2) {
+		return py_error_set_badarg();
 	}
-	return getdoublearg(gettupleitem(args, 0), px) &&
-		   getdoublearg(gettupleitem(args, 1), py);
+	return getdoublearg(py_tuple_get(args, 0), px) &&
+		   getdoublearg(py_tuple_get(args, 1), py);
 }
 
-static object* math_1(args, func)object* args;
+static struct py_object* math_1(args, func)struct py_object* args;
 								 double (* func)(double);
 {
 	double x;
@@ -71,11 +56,11 @@ static object* math_1(args, func)object* args;
 		return NULL;
 	}
 	else {
-		return newfloatobject(x);
+		return py_float_new(x);
 	}
 }
 
-static object* math_2(args, func)object* args;
+static struct py_object* math_2(args, func)struct py_object* args;
 								 double (* func)(double, double);
 {
 	double x, y;
@@ -89,18 +74,18 @@ static object* math_2(args, func)object* args;
 		return NULL;
 	}
 	else {
-		return newfloatobject(x);
+		return py_float_new(x);
 	}
 }
 
 #define FUNC1(stubname, func) \
-       static object* stubname(self, args) object *self, *args; { \
+       static struct py_object* stubname(self, args) struct py_object*self, *args; { \
                (void) self; \
                return math_1(args, func); \
        }
 
 #define FUNC2(stubname, func) \
-       static object* stubname(self, args) object *self, *args; { \
+       static struct py_object* stubname(self, args) struct py_object*self, *args; { \
                (void) self; \
                return math_2(args, func); \
        }
@@ -135,7 +120,7 @@ double ldexp(double x, int n);
 double modf(double x, double *i);
 #endif
 
-static struct methodlist math_methods[] = {
+static struct py_methodlist math_methods[] = {
 		{ "acos", math_acos }, { "asin", math_asin }, { "atan", math_atan },
 		{ "atan2", math_atan2 }, { "ceil", math_ceil }, { "cos", math_cos },
 		{ "cosh", math_cosh }, { "exp", math_exp }, { "fabs", math_fabs },
@@ -155,12 +140,12 @@ static struct methodlist math_methods[] = {
 };
 
 void initmath() {
-	object* m, * d, * v;
+	struct py_object* m, * d, * v;
 
-	m = initmodule("math", math_methods);
-	d = getmoduledict(m);
-	dictinsert(d, "pi", v = newfloatobject(atan(1.0) * 4.0));
+	m = py_module_init("math", math_methods);
+	d = py_module_get_dict(m);
+	py_dict_insert(d, "pi", v = py_float_new(atan(1.0) * 4.0));
 	PY_DECREF(v);
-	dictinsert(d, "e", v = newfloatobject(exp(1.0)));
+	py_dict_insert(d, "e", v = py_float_new(exp(1.0)));
 	PY_DECREF(v);
 }

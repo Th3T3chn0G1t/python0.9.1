@@ -1,26 +1,7 @@
-/***********************************************************
-Copyright 1991 by Stichting Mathematisch Centrum, Amsterdam, The
-Netherlands.
-
-                        All Rights Reserved
-
-Permission to use, copy, modify, and distribute this software and its
-documentation for any purpose and without fee is hereby granted,
-provided that the above copyright notice appear in all copies and that
-both that copyright notice and this permission notice appear in
-supporting documentation, and that the names of Stichting Mathematisch
-Centrum or CWI not be used in advertising or publicity pertaining to
-distribution of the software without specific, written prior permission.
-
-STICHTING MATHEMATISCH CENTRUM DISCLAIMS ALL WARRANTIES WITH REGARD TO
-THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
-FITNESS, IN NO EVENT SHALL STICHTING MATHEMATISCH CENTRUM BE LIABLE
-FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
-OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-
-******************************************************************/
+/*
+ * Copyright 1991 by Stichting Mathematisch Centrum
+ * See `LICENCE' for more information.
+ */
 
 /* System module */
 
@@ -37,36 +18,41 @@ Data members:
 - ps1, ps2: optional primary and secondary prompts (strings)
 */
 
-#include <stdlib.h>
-
-#include <python/allobjects.h>
+#include <python/std.h>
 #include <python/sysmodule.h>
-#include <python/pythonrun.h>
 #include <python/import.h>
+#include <python/errors.h>
+
 #include <python/modsupport.h>
 
-static object* sysdict;
-static object* sysin, * sysout, * syserr;
+#include <python/moduleobject.h>
+#include <python/fileobject.h>
+#include <python/listobject.h>
+#include <python/dictobject.h>
+#include <python/stringobject.h>
 
-object* sysget(name)char* name;
+static struct py_object* sysdict;
+static struct py_object* sysin, * sysout, * syserr;
+
+struct py_object* py_system_get(name)char* name;
 {
-	return dictlookup(sysdict, name);
+	return py_dict_lookup(sysdict, name);
 }
 
-void donesys(void) {
+void py_system_done(void) {
 	PY_DECREF(sysin);
 	PY_DECREF(sysout);
 	PY_DECREF(syserr);
 	PY_DECREF(sysdict);
 }
 
-FILE* sysgetfile(name, def)char* name;
+FILE* py_system_get_file(name, def)char* name;
 						   FILE* def;
 {
 	FILE* fp = NULL;
-	object* v = sysget(name);
+	struct py_object* v = py_system_get(name);
 	if(v != NULL) {
-		fp = getfilefile(v);
+		fp = py_file_get(v);
 	}
 	if(fp == NULL) {
 		fp = def;
@@ -74,64 +60,63 @@ FILE* sysgetfile(name, def)char* name;
 	return fp;
 }
 
-int sysset(name, v)char* name;
-				   object* v;
+int py_system_set(name, v)char* name;
+				   struct py_object* v;
 {
 	if(v == NULL) {
-		return dictremove(sysdict, name);
+		return py_dict_remove(sysdict, name);
 	}
 	else {
-		return dictinsert(sysdict, name, v);
+		return py_dict_insert(sysdict, name, v);
 	}
 }
 
-static object* sys_exit(object* self, object* args) {
+static struct py_object* sys_exit(struct py_object* self, struct py_object* args) {
 	int sts;
 
 	(void) self;
 
 	PY_DECREF(sysdict);
-	if(!getintarg(args, &sts)) {
+	if(!py_arg_int(args, &sts)) {
 		return NULL;
 	}
-	goaway(sts);
 	exit(sts); /* Just in case */
 	/* NOTREACHED */
 }
 
-static struct methodlist sys_methods[] = {
+static struct py_methodlist sys_methods[] = {
 		{ "exit", sys_exit },
 		{ NULL, NULL }           /* sentinel */
 };
 
-void initsys() {
-	object* m = initmodule("sys", sys_methods);
-	sysdict = getmoduledict(m);
+void py_system_init() {
+	struct py_object* m = py_module_init("sys", sys_methods);
+	sysdict = py_module_get_dict(m);
 	PY_INCREF(sysdict);
 	/* NB keep an extra ref to the std files to avoid closing them
 	   when the user deletes them */
 	/* XXX File objects should have a "don't close" flag instead */
-	sysin = newopenfileobject(stdin, "<stdin>", "r");
-	sysout = newopenfileobject(stdout, "<stdout>", "w");
-	syserr = newopenfileobject(stderr, "<stderr>", "w");
-	if(err_occurred()) {
-		fatal("can't create sys.std* file objects");
+	sysin = py_openfile_new(stdin, "<stdin>", "r");
+	sysout = py_openfile_new(stdout, "<stdout>", "w");
+	syserr = py_openfile_new(stderr, "<stderr>", "w");
+	if(py_error_occurred()) {
+		py_fatal("can't create sys.std* file objects");
 	}
-	dictinsert(sysdict, "stdin", sysin);
-	dictinsert(sysdict, "stdout", sysout);
-	dictinsert(sysdict, "stderr", syserr);
-	dictinsert(sysdict, "modules", get_modules());
-	if(err_occurred()) {
-		fatal("can't insert sys.* objects in sys dict");
+	py_dict_insert(sysdict, "stdin", sysin);
+	py_dict_insert(sysdict, "stdout", sysout);
+	py_dict_insert(sysdict, "stderr", syserr);
+	py_dict_insert(sysdict, "modules", py_get_modules());
+	if(py_error_occurred()) {
+		py_fatal("can't insert sys.* objects in sys dict");
 	}
 }
 
-static object* makepathobject(path, delim)char* path;
+static struct py_object* makepathobject(path, delim)char* path;
 										  int delim;
 {
 	int i, n;
 	char* p;
-	object* v, * w;
+	struct py_object* v, * w;
 
 	n = 1;
 	p = path;
@@ -139,7 +124,7 @@ static object* makepathobject(path, delim)char* path;
 		n++;
 		p++;
 	}
-	v = newlistobject(n);
+	v = py_list_new(n);
 	if(v == NULL) {
 		return NULL;
 	}
@@ -148,12 +133,12 @@ static object* makepathobject(path, delim)char* path;
 		if(p == NULL) {
 			p = strchr(path, '\0');
 		} /* End of string */
-		w = newsizedstringobject(path, (int) (p - path));
+		w = py_string_new_size(path, (int) (p - path));
 		if(w == NULL) {
 			PY_DECREF(v);
 			return NULL;
 		}
-		setlistitem(v, i, w);
+		py_list_set(v, i, w);
 		if(*p == '\0') {
 			break;
 		}
@@ -162,47 +147,47 @@ static object* makepathobject(path, delim)char* path;
 	return v;
 }
 
-void setpythonpath(char* path) {
-	object* v;
+void py_system_set_path(const char* path) {
+	struct py_object* v;
 	if((v = makepathobject(path, ':')) == NULL) {
-		fatal("can't create sys.path");
+		py_fatal("can't create sys.path");
 	}
-	if(sysset("path", v) != 0) {
-		fatal("can't assign sys.path");
+	if(py_system_set("path", v) != 0) {
+		py_fatal("can't assign sys.path");
 	}
 	PY_DECREF(v);
 }
 
-static object* makeargvobject(argc, argv)int argc;
+static struct py_object* makeargvobject(argc, argv)int argc;
 										 char** argv;
 {
-	object* av;
+	struct py_object* av;
 	if(argc < 0 || argv == NULL) {
 		argc = 0;
 	}
-	av = newlistobject(argc);
+	av = py_list_new(argc);
 	if(av != NULL) {
 		int i;
 		for(i = 0; i < argc; i++) {
-			object* v = newstringobject(argv[i]);
+			struct py_object* v = py_string_new(argv[i]);
 			if(v == NULL) {
 				PY_DECREF(av);
 				av = NULL;
 				break;
 			}
-			setlistitem(av, i, v);
+			py_list_set(av, i, v);
 		}
 	}
 	return av;
 }
 
-void setpythonargv(int argc, char** argv) {
-	object* av = makeargvobject(argc, argv);
+void py_system_set_argv(int argc, char** argv) {
+	struct py_object* av = makeargvobject(argc, argv);
 	if(av == NULL) {
-		fatal("no mem for sys.argv");
+		py_fatal("no mem for sys.argv");
 	}
-	if(sysset("argv", av) != 0) {
-		fatal("can't assign sys.argv");
+	if(py_system_set("argv", av) != 0) {
+		py_fatal("can't assign sys.argv");
 	}
 	PY_DECREF(av);
 }

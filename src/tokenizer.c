@@ -1,72 +1,52 @@
-/***********************************************************
-Copyright 1991 by Stichting Mathematisch Centrum, Amsterdam, The
-Netherlands.
-
-                        All Rights Reserved
-
-Permission to use, copy, modify, and distribute this software and its
-documentation for any purpose and without fee is hereby granted,
-provided that the above copyright notice appear in all copies and that
-both that copyright notice and this permission notice appear in
-supporting documentation, and that the names of Stichting Mathematisch
-Centrum or CWI not be used in advertising or publicity pertaining to
-distribution of the software without specific, written prior permission.
-
-STICHTING MATHEMATISCH CENTRUM DISCLAIMS ALL WARRANTIES WITH REGARD TO
-THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
-FITNESS, IN NO EVENT SHALL STICHTING MATHEMATISCH CENTRUM BE LIABLE
-FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
-OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-
-******************************************************************/
+/*
+ * Copyright 1991 by Stichting Mathematisch Centrum
+ * See `LICENCE' for more information.
+ */
 
 /* Tokenizer implementation */
 
 /* XXX This is rather old, should be restructured perhaps */
+
 /* XXX Need a better interface to report errors than writing to stderr */
+
 /* XXX Should use editor resource to fetch true tab size on Macintosh */
 
-#include <ctype.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include <python/pgenheaders.h>
+#include <python/std.h>
 #include <python/fgetsintr.h>
 #include <python/tokenizer.h>
-#include <python/errcode.h>
+#include <python/result.h>
+#include <python/token.h>
 
 #ifndef TABSIZE
 #define TABSIZE 8
 #endif
 
 /* Forward */
-static struct tok_state* tok_new(void);
+static struct py_tokenizer* tok_new(void);
 
-static int tok_nextc(struct tok_state* tok);
+static int tok_nextc(struct py_tokenizer* tok);
 
-static void tok_backup(struct tok_state* tok, int c);
+static void tok_backup(struct py_tokenizer* tok, int c);
 
 /* Token names */
 
-char* tok_name[] = {
-		"ENDMARKER", "NAME", "NUMBER", "STRING", "NEWLINE", "INDENT", "DEDENT",
-		"LPAR", "RPAR", "LSQB", "RSQB", "COLON", "COMMA", "SEMI", "PLUS",
-		"MINUS", "STAR", "SLASH", "VBAR", "AMPER", "LESS", "GREATER", "EQUAL",
-		"DOT", "PERCENT", "BACKQUOTE", "LBRACE", "RBRACE", "OP", "<ERRORTOKEN>",
-		"<N_TOKENS>" };
+char* py_token_names[] = {
+		"PY_ENDMARKER", "PY_NAME", "PY_NUMBER", "PY_STRING", "PY_NEWLINE", "PY_INDENT", "PY_DEDENT",
+		"PY_LPAR", "PY_RPAR", "PY_LSQB", "PY_RSQB", "PY_COLON", "PY_COMMA", "PY_SEMI", "PY_PLUS",
+		"PY_MINUS", "PY_STAR", "PY_SLASH", "PY_VBAR", "PY_AMPER", "PY_LESS", "PY_GREATER", "PY_EQUAL",
+		"PY_DOT", "PY_PERCENT", "PY_BACKQUOTE", "PY_LBRACE", "PY_RBRACE", "PY_OP", "<PY_ERRORTOKEN>",
+		"<PY_N_TOKENS>" };
 
 
 /* Create and initialize a new tok_state structure */
 
-static struct tok_state* tok_new() {
-	struct tok_state* tok = malloc(sizeof(struct tok_state));
+static struct py_tokenizer* tok_new() {
+	struct py_tokenizer* tok = malloc(sizeof(struct py_tokenizer));
 	if(tok == NULL) {
 		return NULL;
 	}
 	tok->buf = tok->cur = tok->end = tok->inp = NULL;
-	tok->done = E_OK;
+	tok->done = PY_RESULT_OK;
 	tok->fp = NULL;
 	tok->tabsize = TABSIZE;
 	tok->indent = 0;
@@ -78,27 +58,12 @@ static struct tok_state* tok_new() {
 	return tok;
 }
 
+/* Set up tokenizer for file */
 
-/* Set up tokenizer for string */
-
-struct tok_state* tok_setups(str)char* str;
-{
-	struct tok_state* tok = tok_new();
-	if(tok == NULL) {
-		return NULL;
-	}
-	tok->buf = tok->cur = str;
-	tok->end = tok->inp = strchr(str, '\0');
-	return tok;
-}
-
-
-/* Set up tokenizer for string */
-
-struct tok_state* tok_setupf(fp, ps1, ps2)FILE* fp;
+struct py_tokenizer* py_tokenizer_setup_file(fp, ps1, ps2)FILE* fp;
 										  char* ps1, * ps2;
 {
-	struct tok_state* tok = tok_new();
+	struct py_tokenizer* tok = tok_new();
 	if(tok == NULL) {
 		return NULL;
 	}
@@ -117,7 +82,7 @@ struct tok_state* tok_setupf(fp, ps1, ps2)FILE* fp;
 
 /* Free a tok_state structure */
 
-void tok_free(tok)struct tok_state* tok;
+void py_tokenizer_delete(tok)struct py_tokenizer* tok;
 {
 	/* XXX really need a separate flag to say 'my buffer' */
 	if(tok->fp != NULL && tok->buf != NULL) {
@@ -129,9 +94,9 @@ void tok_free(tok)struct tok_state* tok;
 
 /* Get next char, updating state; error code goes into tok->done */
 
-static int tok_nextc(tok)struct tok_state* tok;
+static int tok_nextc(tok)struct py_tokenizer* tok;
 {
-	if(tok->done != E_OK) {
+	if(tok->done != PY_RESULT_OK) {
 		return EOF;
 	}
 
@@ -140,7 +105,7 @@ static int tok_nextc(tok)struct tok_state* tok;
 			return *tok->cur++;
 		}
 		if(tok->fp == NULL) {
-			tok->done = E_EOF;
+			tok->done = PY_RESULT_EOF;
 			return EOF;
 		}
 		if(tok->inp > tok->buf && tok->inp[-1] == '\n') {
@@ -153,7 +118,7 @@ static int tok_nextc(tok)struct tok_state* tok;
 			new = realloc(new, (n + n) * sizeof(char));
 			if(new == NULL) {
 				fprintf(stderr, "tokenizer out of mem\n");
-				tok->done = E_NOMEM;
+				tok->done = PY_RESULT_OOM;
 				return EOF;
 			}
 			tok->buf = new;
@@ -166,10 +131,10 @@ static int tok_nextc(tok)struct tok_state* tok;
 				fprintf(stderr, "%s", tok->prompt);
 				tok->prompt = tok->nextprompt;
 			}
-			tok->done = fgets_intr(
+			tok->done = py_fgets_intr(
 					tok->inp, (int) (tok->end - tok->inp), tok->fp);
 		}
-		if(tok->done != E_OK) {
+		if(tok->done != PY_RESULT_OK) {
 			if(tok->prompt != NULL) {
 				fprintf(stderr, "\n");
 			}
@@ -182,7 +147,7 @@ static int tok_nextc(tok)struct tok_state* tok;
 
 /* Back-up one character */
 
-static void tok_backup(tok, c)struct tok_state* tok;
+static void tok_backup(tok, c)struct py_tokenizer* tok;
 							  int c;
 {
 	if(c != EOF && c != 0xFF) {
@@ -199,39 +164,39 @@ static void tok_backup(tok, c)struct tok_state* tok;
 
 /* Return the token corresponding to a single character */
 
-int tok_1char(c)int c;
+int py_token_char(c)int c;
 {
 	switch(c) {
-		case '(': return LPAR;
-		case ')': return RPAR;
-		case '[': return LSQB;
-		case ']': return RSQB;
-		case ':': return COLON;
-		case ',': return COMMA;
-		case ';': return SEMI;
-		case '+': return PLUS;
-		case '-': return MINUS;
-		case '*': return STAR;
-		case '/': return SLASH;
-		case '|': return VBAR;
-		case '&': return AMPER;
-		case '<': return LESS;
-		case '>': return GREATER;
-		case '=': return EQUAL;
-		case '.': return DOT;
-		case '%': return PERCENT;
-		case '`': return BACKQUOTE;
-		case '{': return LBRACE;
-		case '}': return RBRACE;
-		default: return OP;
+		case '(': return PY_LPAR;
+		case ')': return PY_RPAR;
+		case '[': return PY_LSQB;
+		case ']': return PY_RSQB;
+		case ':': return PY_COLON;
+		case ',': return PY_COMMA;
+		case ';': return PY_SEMI;
+		case '+': return PY_PLUS;
+		case '-': return PY_MINUS;
+		case '*': return PY_STAR;
+		case '/': return PY_SLASH;
+		case '|': return PY_VBAR;
+		case '&': return PY_AMPER;
+		case '<': return PY_LESS;
+		case '>': return PY_GREATER;
+		case '=': return PY_EQUAL;
+		case '.': return PY_DOT;
+		case '%': return PY_PERCENT;
+		case '`': return PY_BACKQUOTE;
+		case '{': return PY_LBRACE;
+		case '}': return PY_RBRACE;
+		default: return PY_OP;
 	}
 }
 
 
 /* Get next token, after space stripping etc. */
 
-int tok_get(tok, p_start, p_end)
-		struct tok_state* tok; /* In/out: tokenizer state */
+int py_tokenizer_get(tok, p_start, p_end)
+		struct py_tokenizer* tok; /* In/out: tokenizer state */
 		char** p_start, ** p_end; /* Out: point to start/end of token */
 {
 	int c;
@@ -259,10 +224,10 @@ int tok_get(tok, p_start, p_end)
 		}
 		else if(col > tok->indstack[tok->indent]) {
 			/* Indent -- always one */
-			if(tok->indent + 1 >= MAXINDENT) {
+			if(tok->indent + 1 >= PY_MAX_INDENT) {
 				fprintf(stderr, "excessive indent\n");
-				tok->done = E_TOKEN;
-				return ERRORTOKEN;
+				tok->done = PY_RESULT_TOKEN;
+				return PY_ERRORTOKEN;
 			}
 			tok->pendin++;
 			tok->indstack[++tok->indent] = col;
@@ -275,8 +240,8 @@ int tok_get(tok, p_start, p_end)
 			}
 			if(col != tok->indstack[tok->indent]) {
 				fprintf(stderr, "inconsistent dedent\n");
-				tok->done = E_TOKEN;
-				return ERRORTOKEN;
+				tok->done = PY_RESULT_TOKEN;
+				return PY_ERRORTOKEN;
 			}
 		}
 	}
@@ -287,11 +252,11 @@ int tok_get(tok, p_start, p_end)
 	if(tok->pendin != 0) {
 		if(tok->pendin < 0) {
 			tok->pendin++;
-			return DEDENT;
+			return PY_DEDENT;
 		}
 		else {
 			tok->pendin--;
-			return INDENT;
+			return PY_INDENT;
 		}
 	}
 
@@ -301,7 +266,7 @@ int tok_get(tok, p_start, p_end)
 	 * 				  Crashes or unstable script engine state.
 	 */
 	if(c == EOF || c == 0xFF) {
-		return ENDMARKER;
+		return PY_ENDMARKER;
 	}
 
 	again:
@@ -317,7 +282,7 @@ int tok_get(tok, p_start, p_end)
 	if(c == '#') {
 		/* Hack to allow overriding the tabsize in the file.
 		   This is also recognized by vi, when it occurs near the
-		   beginning or end of the file.  (Will vi never die...?) */
+		   beginning or end of the file. (Will vi never die...?) */
 		int x;
 		/* XXX The case to (unsigned char *) is needed by THINK C 3.0 */
 		if(sscanf(/*(unsigned char *)*/tok->cur, " vi:set tabsize=%d:", &x) ==
@@ -332,7 +297,7 @@ int tok_get(tok, p_start, p_end)
 
 	/* Check for EOF and errors now */
 	if(c == EOF || c == 0xFF) {
-		return tok->done == E_EOF ? ENDMARKER : ERRORTOKEN;
+		return tok->done == PY_RESULT_EOF ? PY_ENDMARKER : PY_ERRORTOKEN;
 	}
 
 	/* Identifier (most frequent token!) */
@@ -342,14 +307,14 @@ int tok_get(tok, p_start, p_end)
 		} while(isalnum(c) || c == '_');
 		tok_backup(tok, c);
 		*p_end = tok->cur;
-		return NAME;
+		return PY_NAME;
 	}
 
 	/* Newline */
 	if(c == '\n') {
 		tok->atbol = 1;
 		*p_end = tok->cur - 1; /* Leave '\n' out of the string */
-		return NEWLINE;
+		return PY_NEWLINE;
 	}
 
 	/* Number */
@@ -403,7 +368,7 @@ int tok_get(tok, p_start, p_end)
 		}
 		tok_backup(tok, c);
 		*p_end = tok->cur;
-		return NUMBER;
+		return PY_NUMBER;
 	}
 
 	/* String */
@@ -411,15 +376,15 @@ int tok_get(tok, p_start, p_end)
 		for(;;) {
 			c = tok_nextc(tok);
 			if(c == '\n' || c == EOF || c == 0xFF) {
-				tok->done = E_TOKEN;
-				return ERRORTOKEN;
+				tok->done = PY_RESULT_TOKEN;
+				return PY_ERRORTOKEN;
 			}
 			if(c == '\\') {
 				c = tok_nextc(tok);
 				*p_end = tok->cur;
 				if(c == '\n' || c == EOF || c == 0xFF) {
-					tok->done = E_TOKEN;
-					return ERRORTOKEN;
+					tok->done = PY_RESULT_TOKEN;
+					return PY_ERRORTOKEN;
 				}
 				continue;
 			}
@@ -428,7 +393,7 @@ int tok_get(tok, p_start, p_end)
 			}
 		}
 		*p_end = tok->cur;
-		return STRING;
+		return PY_STRING;
 	}
 
 	/* Line continuation */
@@ -436,8 +401,8 @@ int tok_get(tok, p_start, p_end)
 		c = tok_nextc(tok);
 		if(c == '\r') c = tok_nextc(tok);
 		if(c != '\n') {
-			tok->done = E_TOKEN;
-			return ERRORTOKEN;
+			tok->done = PY_RESULT_TOKEN;
+			return PY_ERRORTOKEN;
 		}
 		tok->lineno++;
 		goto again; /* Read next line */
@@ -445,7 +410,7 @@ int tok_get(tok, p_start, p_end)
 
 	/* Punctuation character */
 	*p_end = tok->cur;
-	return tok_1char(c);
+	return py_token_char(c);
 }
 
 
@@ -454,8 +419,8 @@ int tok_get(tok, p_start, p_end)
 void tok_dump(type, start, end)int type;
 							   char* start, * end;
 {
-	printf("%s", tok_name[type]);
-	if(type == NAME || type == NUMBER || type == STRING || type == OP) {
+	printf("%s", py_token_names[type]);
+	if(type == PY_NAME || type == PY_NUMBER || type == PY_STRING || type == PY_OP) {
 		printf("(%.*s)", (int) (end - start), start);
 	}
 }

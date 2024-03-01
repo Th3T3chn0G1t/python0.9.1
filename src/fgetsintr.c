@@ -1,26 +1,7 @@
-/***********************************************************
-Copyright 1991 by Stichting Mathematisch Centrum, Amsterdam, The
-Netherlands.
-
-                        All Rights Reserved
-
-Permission to use, copy, modify, and distribute this software and its
-documentation for any purpose and without fee is hereby granted,
-provided that the above copyright notice appear in all copies and that
-both that copyright notice and this permission notice appear in
-supporting documentation, and that the names of Stichting Mathematisch
-Centrum or CWI not be used in advertising or publicity pertaining to
-distribution of the software without specific, written prior permission.
-
-STICHTING MATHEMATISCH CENTRUM DISCLAIMS ALL WARRANTIES WITH REGARD TO
-THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
-FITNESS, IN NO EVENT SHALL STICHTING MATHEMATISCH CENTRUM BE LIABLE
-FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
-OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-
-******************************************************************/
+/*
+ * Copyright 1991 by Stichting Mathematisch Centrum
+ * See `LICENCE' for more information.
+ */
 
 /* Interruptable version of fgets().
    Return < 0 for interrupted, 1 for EOF, 0 for valid input. */
@@ -31,8 +12,7 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #include <signal.h>
 #include <setjmp.h>
 
-#include <python/pgenheaders.h>
-#include <python/errcode.h>
+#include <python/result.h>
 #include <python/fgetsintr.h>
 
 static jmp_buf jback;
@@ -43,7 +23,7 @@ static void catcher(int sig) {
 	longjmp(jback, 1);
 }
 
-int fgets_intr(buf, size, fp)char* buf;
+int py_fgets_intr(buf, size, fp)char* buf;
 							 int size;
 							 FILE* fp;
 {
@@ -54,7 +34,7 @@ int fgets_intr(buf, size, fp)char* buf;
 		clearerr(fp);
 		signal(SIGINT, sigsave);
 
-		return E_INTR;
+		return PY_RESULT_INTERRUPT;
 	}
 
 	/* The casts to (void(*)()) are needed by THINK_C only */
@@ -64,8 +44,8 @@ int fgets_intr(buf, size, fp)char* buf;
 		signal(SIGINT, (void (*)()) catcher);
 	}
 
-	if(intrcheck()) ret = E_INTR;
-	else ret = (fgets(buf, size, fp) == NULL) ? E_EOF : E_OK;
+	if(py_intrcheck()) ret = PY_RESULT_INTERRUPT;
+	else ret = (fgets(buf, size, fp) == NULL) ? PY_RESULT_EOF : PY_RESULT_OK;
 
 	if(sigsave != (void (*)()) SIG_IGN) {
 		signal(SIGINT, (void (*)()) sigsave);

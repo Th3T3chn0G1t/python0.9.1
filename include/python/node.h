@@ -1,66 +1,44 @@
-/***********************************************************
-Copyright 1991 by Stichting Mathematisch Centrum, Amsterdam, The
-Netherlands.
+/*
+ * Copyright 1991 by Stichting Mathematisch Centrum
+ * See `LICENCE' for more information.
+ */
 
-                        All Rights Reserved
-
-Permission to use, copy, modify, and distribute this software and its
-documentation for any purpose and without fee is hereby granted,
-provided that the above copyright notice appear in all copies and that
-both that copyright notice and this permission notice appear in
-supporting documentation, and that the names of Stichting Mathematisch
-Centrum or CWI not be used in advertising or publicity pertaining to
-distribution of the software without specific, written prior permission.
-
-STICHTING MATHEMATISCH CENTRUM DISCLAIMS ALL WARRANTIES WITH REGARD TO
-THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
-FITNESS, IN NO EVENT SHALL STICHTING MATHEMATISCH CENTRUM BE LIABLE
-FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
-OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-
-******************************************************************/
+/* Parse tree node interface */
 
 #ifndef PY_NODE_H
 #define PY_NODE_H
 
-/* Parse tree node interface */
+#include <python/std.h>
 
-typedef struct _node {
-	int n_type;
-	char* n_str;
-	int n_lineno;
-	int n_nchildren;
-	struct _node* n_child;
-} node;
+struct py_node {
+	int type;
+	char* str;
+	int lineno;
 
-node* newtree(int type);
+	int count;
+	struct py_node* children;
+};
 
-node* addchild(node* n, int type, char* str, int lineno);
+struct py_node* py_tree_new(int);
+void py_tree_delete(struct py_node* n);
+struct py_node* py_tree_add(struct py_node*, int, char*, int);
+void py_tree_list(FILE*, struct py_node*);
+struct py_object* py_tree_eval(struct py_node*, char*, struct py_object*, struct py_object*);
+struct py_object* py_tree_run(struct py_node*, char*, struct py_object*, struct py_object*);
 
-void freetree(node* n);
-
-/* Node access functions */
-#define NCH(n)         ((n)->n_nchildren)
-#define CHILD(n, i)    (&(n)->n_child[i])
-#define TYPE(n)                ((n)->n_type)
-#define STR(n)         ((n)->n_str)
-
-/* Assert that the type of a node is what we expect */
+/* Assert that the type of node is what we expect */
+/* TODO: Handle this better. */
 #ifndef _DEBUG
-#define REQ(n, type) { /*pass*/ ; }
+# define PY_REQ(n, type) do { /* pass */ } while(0)
 #else
-#define REQ(n, type) \
-       { if (TYPE(n) != (type)) { \
-               fprintf(stderr, "FATAL: node type %d, required %d\n", \
-                       TYPE(n), type); \
-               abort(); \
-       } }
+# define PY_REQ(n, t) \
+    do { \
+		if((n)->type != (t)) { \
+            fprintf( \
+                stderr, "FATAL: node type %d, required %d\n", (n)->type, t); \
+            abort(); \
+        } \
+    } while(0)
 #endif
-
-void listtree(node*);
-
-void listnode(FILE*, node*);
 
 #endif

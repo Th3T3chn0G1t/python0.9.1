@@ -1,43 +1,35 @@
-/***********************************************************
-Copyright 1991 by Stichting Mathematisch Centrum, Amsterdam, The
-Netherlands.
-
-                        All Rights Reserved
-
-Permission to use, copy, modify, and distribute this software and its
-documentation for any purpose and without fee is hereby granted,
-provided that the above copyright notice appear in all copies and that
-both that copyright notice and this permission notice appear in
-supporting documentation, and that the names of Stichting Mathematisch
-Centrum or CWI not be used in advertising or publicity pertaining to
-distribution of the software without specific, written prior permission.
-
-STICHTING MATHEMATISCH CENTRUM DISCLAIMS ALL WARRANTIES WITH REGARD TO
-THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
-FITNESS, IN NO EVENT SHALL STICHTING MATHEMATISCH CENTRUM BE LIABLE
-FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
-OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-
-******************************************************************/
+/*
+ * Copyright 1991 by Stichting Mathematisch Centrum
+ * See `LICENCE' for more information.
+ */
 
 /* Execute compiled code */
 
-#include <stdlib.h>
-
-#include <python/allobjects.h>
+#include <python/std.h>
+#include <python/env.h>
 #include <python/import.h>
-#include <python/sysmodule.h>
 #include <python/opcode.h>
 #include <python/traceback.h>
 #include <python/fgetsintr.h>
 #include <python/compile.h>
-#include <python/frameobject.h>
 #include <python/ceval.h>
-#include <python/bltinmodule.h>
+#include <python/errors.h>
 
-frameobject* current_frame;
+#include <python/bltinmodule.h>
+#include <python/sysmodule.h>
+
+#include <python/frameobject.h>
+#include <python/intobject.h>
+#include <python/floatobject.h>
+#include <python/dictobject.h>
+#include <python/listobject.h>
+#include <python/tupleobject.h>
+#include <python/methodobject.h>
+#include <python/moduleobject.h>
+#include <python/classobject.h>
+#include <python/funcobject.h>
+
+struct py_frame* py_frame_current;
 static int needspace;
 
 #ifndef NDEBUG
@@ -46,11 +38,11 @@ static int needspace;
 
 #ifdef TRACE
 
-static int prtrace(object* v, char* str, int trace) {
+static int prtrace(struct py_object* v, char* str, int trace) {
 	if(!trace) return 0;
 
 	printf("%s ", str);
-	printobject(v, stdout, 0);
+	py_object_print(v, stdout, PY_PRINT_NORMAL);
 	printf("\n");
 
 	return 0;
@@ -59,289 +51,264 @@ static int prtrace(object* v, char* str, int trace) {
 #endif
 
 
-object* getlocals(void) {
-	if(current_frame == NULL) { return NULL; }
-	else { return current_frame->f_locals; }
+struct py_object* py_get_locals(void) {
+	if(py_frame_current == NULL) { return NULL; }
+	else { return py_frame_current->locals; }
 }
 
-object* getglobals(void) {
-	if(current_frame == NULL) { return NULL; }
-	else { return current_frame->f_globals; }
+struct py_object* py_get_globals(void) {
+	if(py_frame_current == NULL) { return NULL; }
+	else { return py_frame_current->globals; }
 }
-
-void printtraceback(FILE* fp) {
-	object* v = tb_fetch();
-
-	if(v != NULL) {
-		fprintf(fp, "Stack backtrace (innermost last):\n");
-		tb_print(v, fp);
-		PY_DECREF(v);
-	}
-}
-
-
-/* XXX Mixing "print ...," and direct file I/O on stdin/stdout
-   XXX has some bad consequences.  The needspace flag should
-   XXX really be part of the file object. */
-
-void flushline(void) {
-	FILE* fp = sysgetfile("stdout", stdout);
-
-	if(needspace) {
-		fprintf(fp, "\n");
-		needspace = 0;
-	}
-}
-
 
 /* Test a value used as condition, e.g., in a for or if statement */
 
-static int testbool(object* v) {
-	if(is_intobject(v)) return getintvalue(v) != 0;
-	if(is_floatobject(v)) return getfloatvalue(v) != 0.0;
+static int testbool(struct py_object* v) {
+	if(py_is_int(v)) return py_int_get(v) != 0;
+	if(py_is_float(v)) return py_float_get(v) != 0.0;
 
-	if(v->ob_type->tp_as_sequence != NULL) {
-		return (*v->ob_type->tp_as_sequence->sq_length)(v) != 0;
+	if(v->type->sequencemethods != NULL) {
+		return (*v->type->sequencemethods->len)(v) != 0;
 	}
 
-	if(v->ob_type->tp_as_mapping != NULL) {
-		return (*v->ob_type->tp_as_mapping->mp_length)(v) != 0;
+	if(v->type->mappingmethods != NULL) {
+		return (*v->type->mappingmethods->len)(v) != 0;
 	}
 
-	if(v == None) return 0;
+	if(v == PY_NONE) return 0;
 
 	/* All other objects are 'true' */
 	return 1;
 }
 
-static object* add(object* v, object* w) {
-	if(v->ob_type->tp_as_number != NULL) {
-		v = (*v->ob_type->tp_as_number->nb_add)(v, w);
+static struct py_object* add(struct py_object* v, struct py_object* w) {
+	if(v->type->numbermethods != NULL) {
+		v = (*v->type->numbermethods->add)(v, w);
 	}
-	else if(v->ob_type->tp_as_sequence != NULL) {
-		v = (*v->ob_type->tp_as_sequence->sq_concat)(v, w);
+	else if(v->type->sequencemethods != NULL) {
+		v = (*v->type->sequencemethods->cat)(v, w);
 	}
 	else {
-		err_setstr(TypeError, "+ not supported by operands");
+		py_error_set_string(py_type_error, "+ not supported by operands");
 		return NULL;
 	}
 
 	return v;
 }
 
-static object* sub(object* v, object* w) {
-	if(v->ob_type->tp_as_number != NULL) {
-		return (*v->ob_type->tp_as_number->nb_subtract)(v, w);
+static struct py_object* sub(struct py_object* v, struct py_object* w) {
+	if(v->type->numbermethods != NULL) {
+		return (*v->type->numbermethods->sub)(v, w);
 	}
 
-	err_setstr(TypeError, "bad operand type(s) for -");
+	py_error_set_string(py_type_error, "bad operand type(s) for -");
 	return NULL;
 }
 
-static object* mul(object* v, object* w) {
-	typeobject * tp;
+static struct py_object* mul(struct py_object* v, struct py_object* w) {
+	struct py_type * tp;
 
-	if(is_intobject(v) && w->ob_type->tp_as_sequence != NULL) {
+	if(py_is_int(v) && w->type->sequencemethods != NULL) {
 		/* int*sequence -- swap v and w */
-		object* tmp = v;
+		struct py_object* tmp = v;
 
 		v = w;
 		w = tmp;
 	}
 
-	tp = v->ob_type;
+	tp = v->type;
 
-	if(tp->tp_as_number != NULL) return (*tp->tp_as_number->nb_multiply)(v, w);
-	if(tp->tp_as_sequence != NULL) {
-		if(!is_intobject(w)) {
-			err_setstr(TypeError, "can't multiply sequence with non-int");
+	if(tp->numbermethods != NULL) return (*tp->numbermethods->mul)(v, w);
+	if(tp->sequencemethods != NULL) {
+		if(!py_is_int(w)) {
+			py_error_set_string(py_type_error, "can't mul sequence with non-int");
 			return NULL;
 		}
 
-		if(tp->tp_as_sequence->sq_repeat == NULL) {
-			err_setstr(TypeError, "sequence does not support *");
+		if(tp->sequencemethods->rep == NULL) {
+			py_error_set_string(py_type_error, "sequence does not support *");
 			return NULL;
 		}
 
-		return (*tp->tp_as_sequence->sq_repeat)(v, (int) getintvalue(w));
+		return (*tp->sequencemethods->rep)(v, (int) py_int_get(w));
 	}
 
-	err_setstr(TypeError, "bad operand type(s) for *");
+	py_error_set_string(py_type_error, "bad operand type(s) for *");
 	return NULL;
 }
 
-static object* divide(object* v, object* w) {
-	if(v->ob_type->tp_as_number != NULL) {
-		return (*v->ob_type->tp_as_number->nb_divide)(v, w);
+static struct py_object* divide(struct py_object* v, struct py_object* w) {
+	if(v->type->numbermethods != NULL) {
+		return (*v->type->numbermethods->div)(v, w);
 	}
 
-	err_setstr(TypeError, "bad operand type(s) for /");
+	py_error_set_string(py_type_error, "bad operand type(s) for /");
 	return NULL;
 }
 
-static object* rem(object* v, object* w) {
-	if(v->ob_type->tp_as_number != NULL) {
-		return (*v->ob_type->tp_as_number->nb_remainder)(v, w);
+static struct py_object* rem(struct py_object* v, struct py_object* w) {
+	if(v->type->numbermethods != NULL) {
+		return (*v->type->numbermethods->mod)(v, w);
 	}
 
-	err_setstr(TypeError, "bad operand type(s) for %");
+	py_error_set_string(py_type_error, "bad operand type(s) for %");
 	return NULL;
 }
 
-static object* neg(object* v) {
-	if(v->ob_type->tp_as_number != NULL) {
-		return (*v->ob_type->tp_as_number->nb_negative)(v);
+static struct py_object* neg(struct py_object* v) {
+	if(v->type->numbermethods != NULL) {
+		return (*v->type->numbermethods->neg)(v);
 	}
 
-	err_setstr(TypeError, "bad operand type(s) for unary -");
+	py_error_set_string(py_type_error, "bad operand type(s) for unary -");
 	return NULL;
 }
 
-static object* pos(object* v) {
-	if(v->ob_type->tp_as_number != NULL) {
-		return (*v->ob_type->tp_as_number->nb_positive)(v);
+static struct py_object* pos(struct py_object* v) {
+	if(v->type->numbermethods != NULL) {
+		return (*v->type->numbermethods->pos)(v);
 	}
 
-	err_setstr(TypeError, "bad operand type(s) for unary +");
+	py_error_set_string(py_type_error, "bad operand type(s) for unary +");
 	return NULL;
 }
 
-static object* not(object* v) {
+static struct py_object* not(struct py_object* v) {
 	int outcome = testbool(v);
-	object* w = outcome == 0 ? PyTrue : PyFalse;
+	struct py_object* w = outcome == 0 ? PY_TRUE : PY_FALSE;
 
 	PY_INCREF(w);
 	return w;
 }
 
-static object* call_builtin(object* func, object* arg) {
-	if(is_methodobject(func)) {
-		method meth = getmethod(func);
-		object* self = getself(func);
+static struct py_object* call_builtin(struct py_object* func, struct py_object* arg) {
+	if(py_is_method(func)) {
+		py_method_t meth = py_method_get(func);
+		struct py_object* self = py_method_get_self(func);
 
 		return (*meth)(self, arg);
 	}
 
-	if(is_classobject(func)) {
+	if(py_is_class(func)) {
 		if(arg != NULL) {
-			err_setstr(TypeError, "classobject() allows no arguments");
+			py_error_set_string(py_type_error, "classobject() allows no arguments");
 			return NULL;
 		}
 
-		return newclassmemberobject(func);
+		return py_classmember_new(func);
 	}
 
-	err_setstr(TypeError, "call of non-function");
+	py_error_set_string(py_type_error, "call of non-function");
 	return NULL;
 }
 
-object* call_function(object* func, object* arg) {
-	object* newarg = NULL;
-	object* newlocals;
-	object* newglobals;
-	object* co;
-	object* v;
+struct py_object* py_call_function(struct py_object* func, struct py_object* arg) {
+	struct py_object* newarg = NULL;
+	struct py_object* newlocals;
+	struct py_object* newglobals;
+	struct py_object* co;
+	struct py_object* v;
 
-	if(is_classmethodobject(func)) {
-		object* self = classmethodgetself(func);
-		func = classmethodgetfunc(func);
+	if(py_is_classmethod(func)) {
+		struct py_object* self = py_classmethod_get_self(func);
+		func = py_classmethod_get_func(func);
 
 		if(arg == NULL) { arg = self; }
 		else {
-			newarg = newtupleobject(2);
+			newarg = py_tuple_new(2);
 
 			if(newarg == NULL) return NULL;
 
 			PY_INCREF(self);
 			PY_INCREF(arg);
-			settupleitem(newarg, 0, self);
-			settupleitem(newarg, 1, arg);
+			py_tuple_set(newarg, 0, self);
+			py_tuple_set(newarg, 1, arg);
 			arg = newarg;
 		}
 	}
-	else if(!is_funcobject(func)) {
-		err_setstr(TypeError, "call of non-function");
+	else if(!py_is_func(func)) {
+		py_error_set_string(py_type_error, "call of non-function");
 		return NULL;
 	}
 
-	co = getfunccode(func);
+	co = py_func_get_code(func);
 	if(co == NULL) {
-		XDECREF(newarg);
+		PY_XDECREF(newarg);
 		return NULL;
 	}
 
-	if(!is_codeobject(co)) {
+	if(!py_is_code(co)) {
 		fprintf(stderr, "XXX Bad code\n");
 		abort();
 	}
 
-	newlocals = newdictobject();
+	newlocals = py_dict_new();
 	if(newlocals == NULL) {
-		XDECREF(newarg);
+		PY_XDECREF(newarg);
 		return NULL;
 	}
 
-	newglobals = getfuncglobals(func);
+	newglobals = py_func_get_globals(func);
 	PY_INCREF(newglobals);
 
-	v = eval_code((codeobject*) co, newglobals, newlocals, arg);
+	v = py_code_eval((struct py_code*) co, newglobals, newlocals, arg);
 
 	PY_DECREF(newlocals);
 	PY_DECREF(newglobals);
 
-	XDECREF(newarg);
+	PY_XDECREF(newarg);
 
 	return v;
 }
 
-static object* apply_subscript(object* v, object* w) {
-	typeobject * tp = v->ob_type;
+static struct py_object* apply_subscript(struct py_object* v, struct py_object* w) {
+	struct py_type * tp = v->type;
 
-	if(tp->tp_as_sequence == NULL && tp->tp_as_mapping == NULL) {
-		err_setstr(TypeError, "unsubscriptable object");
+	if(tp->sequencemethods == NULL && tp->mappingmethods == NULL) {
+		py_error_set_string(py_type_error, "unsubscriptable object");
 		return NULL;
 	}
 
-	if(tp->tp_as_sequence != NULL) {
+	if(tp->sequencemethods != NULL) {
 		int i;
 
-		if(!is_intobject(w)) {
-			err_setstr(TypeError, "sequence subscript not int");
+		if(!py_is_int(w)) {
+			py_error_set_string(py_type_error, "sequence subscript not int");
 			return NULL;
 		}
 
-		i = getintvalue(w);
-		return (*tp->tp_as_sequence->sq_item)(v, i);
+		i = py_int_get(w);
+		return (*tp->sequencemethods->ind)(v, i);
 	}
 
-	return (*tp->tp_as_mapping->mp_subscript)(v, w);
+	return (*tp->mappingmethods->ind)(v, w);
 }
 
-static object* loop_subscript(object* v, object* w) {
-	sequence_methods* sq = v->ob_type->tp_as_sequence;
+static struct py_object* loop_subscript(struct py_object* v, struct py_object* w) {
+	struct py_sequencemethods* sq = v->type->sequencemethods;
 	int i, n;
 
 	if(sq == NULL) {
-		err_setstr(TypeError, "loop over non-sequence");
+		py_error_set_string(py_type_error, "loop over non-sequence");
 		return NULL;
 	}
 
-	i = getintvalue(w);
-	n = (*sq->sq_length)(v);
+	i = py_int_get(w);
+	n = (*sq->len)(v);
 
 	if(i >= n) return NULL; /* End of loop */
 
-	return (*sq->sq_item)(v, i);
+	return (*sq->ind)(v, i);
 }
 
-static int slice_index(object* v, int isize, int* pi) {
+static int slice_index(struct py_object* v, int isize, int* pi) {
 	if(v != NULL) {
-		if(!is_intobject(v)) {
-			err_setstr(TypeError, "slice index must be int");
+		if(!py_is_int(v)) {
+			py_error_set_string(py_type_error, "slice index must be int");
 			return -1;
 		}
 
-		*pi = getintvalue(v);
+		*pi = py_int_get(v);
 		if(*pi < 0) *pi += isize;
 	}
 
@@ -349,82 +316,82 @@ static int slice_index(object* v, int isize, int* pi) {
 }
 
 /* return u[v:w] */
-static object* apply_slice(object* u, object* v, object* w) {
-	typeobject * tp = u->ob_type;
+static struct py_object* apply_slice(struct py_object* u, struct py_object* v, struct py_object* w) {
+	struct py_type * tp = u->type;
 	int ilow, ihigh, isize;
 
-	if(tp->tp_as_sequence == NULL) {
-		err_setstr(TypeError, "only sequences can be sliced");
+	if(tp->sequencemethods == NULL) {
+		py_error_set_string(py_type_error, "only sequences can be sliced");
 		return NULL;
 	}
 
 	ilow = 0;
-	isize = ihigh = (*tp->tp_as_sequence->sq_length)(u);
+	isize = ihigh = (*tp->sequencemethods->len)(u);
 
 	if(slice_index(v, isize, &ilow) != 0) return NULL;
 	if(slice_index(w, isize, &ihigh) != 0) return NULL;
 
-	return (*tp->tp_as_sequence->sq_slice)(u, ilow, ihigh);
+	return (*tp->sequencemethods->slice)(u, ilow, ihigh);
 }
 
 /* w[key] = v */
-static int assign_subscript(object* w, object* key, object* v) {
-	typeobject * tp = w->ob_type;
-	sequence_methods* sq;
-	mapping_methods* mp;
+static int assign_subscript(struct py_object* w, struct py_object* key, struct py_object* v) {
+	struct py_type * tp = w->type;
+	struct py_sequencemethods* sq;
+	struct py_mappingmethods* mp;
 	int (* func)();
 
-	sq = tp->tp_as_sequence;
-	mp = tp->tp_as_mapping;
+	sq = tp->sequencemethods;
+	mp = tp->mappingmethods;
 
-	if(sq != NULL && (func = sq->sq_ass_item) != NULL) {
-		if(!is_intobject(key)) {
-			err_setstr(TypeError, "sequence subscript must be integer");
+	if(sq != NULL && (func = sq->assign_item) != NULL) {
+		if(!py_is_int(key)) {
+			py_error_set_string(py_type_error, "sequence subscript must be integer");
 			return -1;
 		}
 
-		else { return (*func)(w, (int) getintvalue(key), v); }
+		else { return (*func)(w, (int) py_int_get(key), v); }
 	}
-	else if(mp != NULL && (func = mp->mp_ass_subscript) != NULL) {
+	else if(mp != NULL && (func = mp->assign) != NULL) {
 		return (*func)(w, key, v);
 	}
 	else {
-		err_setstr(TypeError, "can't assign to this subscripted object");
+		py_error_set_string(py_type_error, "can't assign to this subscripted object");
 		return -1;
 	}
 }
 
 /* u[v:w] = x */
-static int assign_slice(object* u, object* v, object* w, object* x) {
-	sequence_methods* sq = u->ob_type->tp_as_sequence;
+static int assign_slice(struct py_object* u, struct py_object* v, struct py_object* w, struct py_object* x) {
+	struct py_sequencemethods* sq = u->type->sequencemethods;
 	int ilow, ihigh, isize;
 
 	if(sq == NULL) {
-		err_setstr(TypeError, "assign to slice of non-sequence");
+		py_error_set_string(py_type_error, "assign to slice of non-sequence");
 		return -1;
 	}
 
-	if(sq->sq_ass_slice == NULL) {
-		err_setstr(TypeError, "unassignable slice");
+	if(sq->assign_slice == NULL) {
+		py_error_set_string(py_type_error, "unassignable slice");
 		return -1;
 	}
 
 	ilow = 0;
-	isize = ihigh = (*sq->sq_length)(u);
+	isize = ihigh = (*sq->len)(u);
 
 	if(slice_index(v, isize, &ilow) != 0) return -1;
 	if(slice_index(w, isize, &ihigh) != 0) return -1;
 
-	return (*sq->sq_ass_slice)(u, ilow, ihigh, x);
+	return (*sq->assign_slice)(u, ilow, ihigh, x);
 }
 
-static int cmp_exception(object* err, object* v) {
-	if(is_tupleobject(v)) {
+static int cmp_exception(struct py_object* err, struct py_object* v) {
+	if(py_is_tuple(v)) {
 		int i, n;
 
-		n = gettuplesize(v);
+		n = py_tuple_size(v);
 		for(i = 0; i < n; i++) {
-			if(err == gettupleitem(v, i)) return 1;
+			if(err == py_tuple_get(v, i)) return 1;
 		}
 
 		return 0;
@@ -433,26 +400,26 @@ static int cmp_exception(object* err, object* v) {
 	return err == v;
 }
 
-static int cmp_member(object* v, object* w) {
+static int cmp_member(struct py_object* v, struct py_object* w) {
 	int i, n, cmp;
-	object* x;
-	sequence_methods* sq;
+	struct py_object* x;
+	struct py_sequencemethods* sq;
 
 	/* Special case for char in string */
-	if(is_stringobject(w)) {
+	if(py_is_string(w)) {
 		char* s;
 		char* end;
 		char c;
 
-		if(!is_stringobject(v) || getstringsize(v) != 1) {
-			err_setstr(
-					TypeError, "string member test needs char left operand");
+		if(!py_is_string(v) || py_string_size(v) != 1) {
+			py_error_set_string(
+					py_type_error, "string member test needs char left operand");
 			return -1;
 		}
 
-		c = getstringvalue(v)[0];
-		s = getstringvalue(w);
-		end = s + getstringsize(w);
+		c = py_string_get_value(v)[0];
+		s = py_string_get_value(w);
+		end = s + py_string_size(w);
 
 		while(s < end) {
 			if(c == *s++) return 1;
@@ -461,20 +428,20 @@ static int cmp_member(object* v, object* w) {
 		return 0;
 	}
 
-	sq = w->ob_type->tp_as_sequence;
+	sq = w->type->sequencemethods;
 
 	if(sq == NULL) {
-		err_setstr(
-				TypeError, "'in' or 'not in' needs sequence right argument");
+		py_error_set_string(
+				py_type_error, "'in' or 'not in' needs sequence right argument");
 		return -1;
 	}
 
-	n = (*sq->sq_length)(w);
+	n = (*sq->len)(w);
 
 	for(i = 0; i < n; i++) {
-		x = (*sq->sq_item)(w, i);
-		cmp = cmpobject(v, x);
-		XDECREF(x);
+		x = (*sq->ind)(w, i);
+		cmp = py_object_cmp(v, x);
+		PY_XDECREF(x);
 
 		if(cmp == 0) return 1;
 	}
@@ -482,128 +449,128 @@ static int cmp_member(object* v, object* w) {
 	return 0;
 }
 
-static object* cmp_outcome(enum cmp_op op, object* v, object* w) {
+static struct py_object* cmp_outcome(enum py_cmp_op op, struct py_object* v, struct py_object* w) {
 	int cmp;
 	int res = 0;
 
 	switch(op) {
-		case IS: {
+		case PY_CMP_IS: {
 			PY_FALLTHROUGH;
 			/* FALLTHRU */
 		}
-		case IS_NOT: {
+		case PY_CMP_IS_NOT: {
 			res = (v == w);
-			if(op == IS_NOT) res = !res;
+			if(op == PY_CMP_IS_NOT) res = !res;
 
 			break;
 		}
 
-		case IN: {
+		case PY_CMP_IN: {
 			PY_FALLTHROUGH;
 			/* FALLTHRU */
 		}
-		case NOT_IN: {
+		case PY_CMP_NOT_IN: {
 			res = cmp_member(v, w);
 
 			if(res < 0) return NULL;
-			if(op == NOT_IN) res = !res;
+			if(op == PY_CMP_NOT_IN) res = !res;
 
 			break;
 		}
 
-		case EXC_MATCH: {
+		case PY_CMP_EXC_MATCH: {
 			res = cmp_exception(v, w);
 			break;
 		}
 
 		default: {
-			cmp = cmpobject(v, w);
+			cmp = py_object_cmp(v, w);
 
 			switch(op) {
 				default: break;
-				case LT: res = cmp < 0;
+				case PY_CMP_LT: res = cmp < 0;
 					break;
-				case LE: res = cmp <= 0;
+				case PY_CMP_LE: res = cmp <= 0;
 					break;
-				case EQ: res = cmp == 0;
+				case PY_CMP_EQ: res = cmp == 0;
 					break;
-				case NE: res = cmp != 0;
+				case PY_CMP_NE: res = cmp != 0;
 					break;
-				case GT: res = cmp > 0;
+				case PY_CMP_GT: res = cmp > 0;
 					break;
-				case GE: res = cmp >= 0;
+				case PY_CMP_GE: res = cmp >= 0;
 					break;
 					/* XXX no default? (res is initialized to 0 though) */
 			}
 		}
 	}
 
-	v = res ? PyTrue : PyFalse;
+	v = res ? PY_TRUE : PY_FALSE;
 	PY_INCREF(v);
 
 	return v;
 }
 
-static int import_from(object* locals, object* v, char* name) {
-	object* w;
-	object* x;
+static int import_from(struct py_object* locals, struct py_object* v, char* name) {
+	struct py_object* w;
+	struct py_object* x;
 
-	w = getmoduledict(v);
+	w = py_module_get_dict(v);
 
 	if(name[0] == '*') {
 		int i;
-		int n = getdictsize(w);
+		int n = py_dict_size(w);
 
 		for(i = 0; i < n; i++) {
-			name = getdictkey(w, i);
+			name = py_dict_get_key(w, i);
 
 			if(name == NULL || name[0] == '_') continue;
 
-			x = dictlookup(w, name);
+			x = py_dict_lookup(w, name);
 
 			if(x == NULL) {
 				/* XXX can't happen? */
-				err_setstr(NameError, name);
+				py_error_set_string(py_name_error, name);
 				return -1;
 			}
 
-			if(dictinsert(locals, name, x) != 0) return -1;
+			if(py_dict_insert(locals, name, x) != 0) return -1;
 		}
 
 		return 0;
 	}
 	else {
-		x = dictlookup(w, name);
+		x = py_dict_lookup(w, name);
 
 		if(x == NULL) {
-			err_setstr(NameError, name);
+			py_error_set_string(py_name_error, name);
 			return -1;
 		}
-		else { return dictinsert(locals, name, x); }
+		else { return py_dict_insert(locals, name, x); }
 	}
 }
 
-static object* build_class(object* v, object* w) {
-	if(is_tupleobject(v)) {
+static struct py_object* build_class(struct py_object* v, struct py_object* w) {
+	if(py_is_tuple(v)) {
 		int i;
 
-		for(i = gettuplesize(v); --i >= 0;) {
-			object* x = gettupleitem(v, i);
+		for(i = py_tuple_size(v); --i >= 0;) {
+			struct py_object* x = py_tuple_get(v, i);
 
-			if(!is_classobject(x)) {
-				err_setstr(TypeError, "base is not a class object");
+			if(!py_is_class(x)) {
+				py_error_set_string(py_type_error, "base is not a class object");
 				return NULL;
 			}
 		}
 	}
 	else { v = NULL; }
 
-	if(!is_dictobject(w)) {
-		err_setstr(SystemError, "build_class with non-dictionary");
+	if(!py_is_dict(w)) {
+		py_error_set_string(py_system_error, "build_class with non-dictionary");
 		return NULL;
 	}
 
-	return newclassobject(v, w);
+	return py_class_new(v, w);
 }
 
 
@@ -617,37 +584,40 @@ enum why_code {
 	WHY_BREAK       /* 'break' statement */
 };
 
+char* getname(struct py_frame* f, int i) {
+	return py_string_get_value(py_list_get(f->code->names, i));
+}
+
 /* Interpreter main loop */
 
-object* eval_code(
-		codeobject* co, object* globals, object* locals, object* arg) {
+struct py_object* py_code_eval(
+		struct py_code* co, struct py_object* globals, struct py_object* locals, struct py_object* arg) {
 
 	unsigned char* next_instr;
 	int opcode; /* Current opcode */
 	int oparg; /* Current opcode argument, if any */
-	object** stack_pointer;
+	struct py_object** stack_pointer;
 	enum why_code why; /* Reason for block stack unwind */
 	int err; /* Error status -- nonzero if error */
-	object* x; /* Result object -- NULL if error */
-	object* v; /* Temporary objects popped off stack */
-	object* w;
-	object* u;
-	object* t;
-	frameobject* f; /* Current frame */
+	struct py_object* x; /* Result object -- NULL if error */
+	struct py_object* v; /* Temporary objects popped off stack */
+	struct py_object* w;
+	struct py_object* u;
+	struct py_object* t;
+	struct py_frame* f; /* Current frame */
 	int lineno; /* Current line number */
-	object* retval; /* Return value iff why == WHY_RETURN */
+	struct py_object* retval; /* Return value iff why == WHY_RETURN */
 	char* name; /* Name used by some instructions */
 	FILE* fp; /* Used by print operations */
 
 #ifdef TRACE
-	int trace = dictlookup(globals, "__trace__") != NULL;
+	int trace = py_dict_lookup(globals, "__trace__") != NULL;
 #endif
 
 	/* Code access macros */
 
-#define GETCONST(i) Getconst(f, i)
-#define GETNAME(i) Getname(f, i)
-#define FIRST_INSTR() (GETUSTRINGVALUE(f->f_code->co_code))
+#define GETNAME(i) getname(f, i)
+#define FIRST_INSTR() (GETUSTRINGVALUE(f->code->code))
 #define INSTR_OFFSET() (next_instr - FIRST_INSTR())
 #define NEXTOP() (*next_instr++)
 #define NEXTARG() (next_instr += 2, (next_instr[-1]<<8) + next_instr[-2])
@@ -658,7 +628,7 @@ object* eval_code(
 
 /* TODO: These could largely be functions. */
 
-#define STACK_LEVEL() (stack_pointer - f->f_valuestack)
+#define STACK_LEVEL() (stack_pointer - f->valuestack)
 #define EMPTY() (STACK_LEVEL() == 0)
 #define TOP() (stack_pointer[-1])
 #define BASIC_PUSH(v) (*stack_pointer++ = (v))
@@ -672,8 +642,8 @@ object* eval_code(
 # define POP() BASIC_POP()
 #endif
 
-	f = newframeobject(
-			current_frame, /* back */
+	f = py_frame_new(
+			py_frame_current, /* back */
 			co, /* code */
 			globals, /* globals */
 			locals, /* locals */
@@ -681,9 +651,9 @@ object* eval_code(
 			20); /* nblocks */
 	if(f == NULL) return NULL;
 
-	current_frame = f;
-	next_instr = GETUSTRINGVALUE(f->f_code->co_code);
-	stack_pointer = f->f_valuestack;
+	py_frame_current = f;
+	next_instr = GETUSTRINGVALUE(f->code->code);
+	stack_pointer = f->valuestack;
 
 	if(arg != NULL) {
 		PY_INCREF(arg);
@@ -692,7 +662,7 @@ object* eval_code(
 
 	why = WHY_NOT;
 	err = 0;
-	x = None;       /* Not a reference, just anything non-NULL */
+	x = PY_NONE;       /* Not a reference, just anything non-NULL */
 	lineno = -1;
 
 	for(;;) {
@@ -703,10 +673,10 @@ object* eval_code(
 		if(--ticker < 0) {
 			ticker = 100;
 
-			if(intrcheck()) {
-				err_set(KeyboardInterrupt);
+			if(py_intrcheck()) {
+				py_error_set(py_interrupt_error);
 				why = WHY_EXCEPTION;
-				tb_here(f, INSTR_OFFSET(), lineno);
+				py_traceback_new(f, INSTR_OFFSET(), lineno);
 				break;
 			}
 		}
@@ -714,13 +684,13 @@ object* eval_code(
 		/* Extract opcode and argument */
 
 		opcode = NEXTOP();
-		if(HAS_ARG(opcode)) oparg = NEXTARG();
+		if(opcode >= PY_OP_HAVE_ARGUMENT) oparg = NEXTARG();
 
 #ifdef TRACE
 		/* Instruction tracing */
 
 		if(trace) {
-			if(HAS_ARG(opcode)) {
+			if(opcode >= PY_OP_HAVE_ARGUMENT) {
 				printf(
 						"%d: %d, %d\n", (int) (INSTR_OFFSET() - 3), opcode,
 						oparg);
@@ -742,16 +712,16 @@ object* eval_code(
 			 * and that no operation that succeeds does this!
 			 */
 
-			/* case STOP_CODE: this is an error! */
+			/* case PY_OP_STOP: this is an error! */
 
-			case POP_TOP: {
+			case PY_OP_POP_TOP: {
 				v = POP();
 				PY_DECREF(v);
 
 				break;
 			}
 
-			case ROT_TWO: {
+			case PY_OP_ROT_TWO: {
 				v = POP();
 				w = POP();
 				PUSH(v);
@@ -760,7 +730,7 @@ object* eval_code(
 				break;
 			}
 
-			case ROT_THREE: {
+			case PY_OP_ROT_THREE: {
 				v = POP();
 				w = POP();
 				x = POP();
@@ -771,7 +741,7 @@ object* eval_code(
 				break;
 			}
 
-			case DUP_TOP: {
+			case PY_OP_DUP_TOP: {
 				v = TOP();
 				PY_INCREF(v);
 				PUSH(v);
@@ -779,7 +749,7 @@ object* eval_code(
 				break;
 			}
 
-			case UNARY_POSITIVE: {
+			case PY_OP_UNARY_POSITIVE: {
 				v = POP();
 				x = pos(v);
 				PY_DECREF(v);
@@ -788,7 +758,7 @@ object* eval_code(
 				break;
 			}
 
-			case UNARY_NEGATIVE: {
+			case PY_OP_UNARY_NEGATIVE: {
 				v = POP();
 				x = neg(v);
 				PY_DECREF(v);
@@ -797,7 +767,7 @@ object* eval_code(
 				break;
 			}
 
-			case UNARY_NOT: {
+			case PY_OP_UNARY_NOT: {
 				v = POP();
 				x = not(v);
 				PY_DECREF(v);
@@ -806,22 +776,22 @@ object* eval_code(
 				break;
 			}
 
-			case UNARY_CONVERT: {
+			case PY_OP_UNARY_CONVERT: {
 				v = POP();
-				x = reprobject(v);
+				x = py_object_repr(v);
 				PY_DECREF(v);
 				PUSH(x);
 
 				break;
 			}
 
-			case UNARY_CALL: {
+			case PY_OP_UNARY_CALL: {
 				v = POP();
 
-				if(is_classmethodobject(v) || is_funcobject(v)) {
-					x = call_function(v, (object*) NULL);
+				if(py_is_classmethod(v) || py_is_func(v)) {
+					x = py_call_function(v, (struct py_object*) NULL);
 				}
-				else { x = call_builtin(v, (object*) NULL); }
+				else { x = call_builtin(v, (struct py_object*) NULL); }
 
 				PY_DECREF(v);
 				PUSH(x);
@@ -829,7 +799,7 @@ object* eval_code(
 				break;
 			}
 
-			case BINARY_MULTIPLY: {
+			case PY_OP_BINARY_MULTIPLY: {
 				w = POP();
 				v = POP();
 				x = mul(v, w);
@@ -840,7 +810,7 @@ object* eval_code(
 				break;
 			}
 
-			case BINARY_DIVIDE: {
+			case PY_OP_BINARY_DIVIDE: {
 				w = POP();
 				v = POP();
 				x = divide(v, w);
@@ -851,7 +821,7 @@ object* eval_code(
 				break;
 			}
 
-			case BINARY_MODULO: {
+			case PY_OP_BINARY_MODULO: {
 				w = POP();
 				v = POP();
 				x = rem(v, w);
@@ -862,7 +832,7 @@ object* eval_code(
 				break;
 			}
 
-			case BINARY_ADD: {
+			case PY_OP_BINARY_ADD: {
 				w = POP();
 				v = POP();
 				x = add(v, w);
@@ -873,7 +843,7 @@ object* eval_code(
 				break;
 			}
 
-			case BINARY_SUBTRACT: {
+			case PY_OP_BINARY_SUBTRACT: {
 				w = POP();
 				v = POP();
 				x = sub(v, w);
@@ -884,7 +854,7 @@ object* eval_code(
 				break;
 			}
 
-			case BINARY_SUBSCR: {
+			case PY_OP_BINARY_SUBSCR: {
 				w = POP();
 				v = POP();
 				x = apply_subscript(v, w);
@@ -895,12 +865,12 @@ object* eval_code(
 				break;
 			}
 
-			case BINARY_CALL: {
+			case PY_OP_BINARY_CALL: {
 				w = POP();
 				v = POP();
 
-				if(is_classmethodobject(v) || is_funcobject(v)) {
-					x = call_function(v, w);
+				if(py_is_classmethod(v) || py_is_func(v)) {
+					x = py_call_function(v, w);
 				}
 				else { x = call_builtin(v, w); }
 
@@ -911,52 +881,52 @@ object* eval_code(
 				break;
 			}
 
-			case SLICE + 0: {
+			case PY_OP_SLICE + 0: {
 				PY_FALLTHROUGH;
 				/* FALLTHRU */
 			}
-			case SLICE + 1: {
+			case PY_OP_SLICE + 1: {
 				PY_FALLTHROUGH;
 				/* FALLTHRU */
 			}
-			case SLICE + 2: {
+			case PY_OP_SLICE + 2: {
 				PY_FALLTHROUGH;
 				/* FALLTHRU */
 			}
-			case SLICE + 3: {
-				if((opcode - SLICE) & 2) { w = POP(); }
+			case PY_OP_SLICE + 3: {
+				if((opcode - PY_OP_SLICE) & 2) { w = POP(); }
 				else { w = NULL; }
 
-				if((opcode - SLICE) & 1) { v = POP(); }
+				if((opcode - PY_OP_SLICE) & 1) { v = POP(); }
 				else { v = NULL; }
 
 				u = POP();
 				x = apply_slice(u, v, w);
 				PY_DECREF(u);
-				XDECREF(v);
-				XDECREF(w);
+				PY_XDECREF(v);
+				PY_XDECREF(w);
 				PUSH(x);
 
 				break;
 			}
 
-			case STORE_SLICE + 0: {
+			case PY_OP_STORE_SLICE + 0: {
 				PY_FALLTHROUGH;
 				/* FALLTHRU */
 			}
-			case STORE_SLICE + 1: {
+			case PY_OP_STORE_SLICE + 1: {
 				PY_FALLTHROUGH;
 				/* FALLTHRU */
 			}
-			case STORE_SLICE + 2: {
+			case PY_OP_STORE_SLICE + 2: {
 				PY_FALLTHROUGH;
 				/* FALLTHRU */
 			}
-			case STORE_SLICE + 3: {
-				if((opcode - STORE_SLICE) & 2) { w = POP(); }
+			case PY_OP_STORE_SLICE + 3: {
+				if((opcode - PY_OP_STORE_SLICE) & 2) { w = POP(); }
 				else { w = NULL; }
 
-				if((opcode - STORE_SLICE) & 1) { v = POP(); }
+				if((opcode - PY_OP_STORE_SLICE) & 1) { v = POP(); }
 				else { v = NULL; }
 
 				u = POP();
@@ -964,42 +934,42 @@ object* eval_code(
 				err = assign_slice(u, v, w, t); /* u[v:w] = t */
 				PY_DECREF(t);
 				PY_DECREF(u);
-				XDECREF(v);
-				XDECREF(w);
+				PY_XDECREF(v);
+				PY_XDECREF(w);
 
 				break;
 			}
 
-			case DELETE_SLICE + 0: {
+			case PY_OP_DELETE_SLICE + 0: {
 				PY_FALLTHROUGH;
 				/* FALLTHRU */
 			}
-			case DELETE_SLICE + 1: {
+			case PY_OP_DELETE_SLICE + 1: {
 				PY_FALLTHROUGH;
 				/* FALLTHRU */
 			}
-			case DELETE_SLICE + 2: {
+			case PY_OP_DELETE_SLICE + 2: {
 				PY_FALLTHROUGH;
 				/* FALLTHRU */
 			}
-			case DELETE_SLICE + 3: {
-				if((opcode - DELETE_SLICE) & 2) { w = POP(); }
+			case PY_OP_DELETE_SLICE + 3: {
+				if((opcode - PY_OP_DELETE_SLICE) & 2) { w = POP(); }
 				else { w = NULL; }
 
-				if((opcode - DELETE_SLICE) & 1) { v = POP(); }
+				if((opcode - PY_OP_DELETE_SLICE) & 1) { v = POP(); }
 				else { v = NULL; }
 
 				u = POP();
-				err = assign_slice(u, v, w, (object*) NULL);
+				err = assign_slice(u, v, w, (struct py_object*) NULL);
 				/* del u[v:w] */
 				PY_DECREF(u);
-				XDECREF(v);
-				XDECREF(w);
+				PY_XDECREF(v);
+				PY_XDECREF(w);
 
 				break;
 			}
 
-			case STORE_SUBSCR: {
+			case PY_OP_STORE_SUBSCR: {
 				w = POP();
 				v = POP();
 				u = POP();
@@ -1012,25 +982,24 @@ object* eval_code(
 				break;
 			}
 
-			case DELETE_SUBSCR: {
+			case PY_OP_DELETE_SUBSCR: {
 				w = POP();
 				v = POP();
 				/* del v[w] */
-				err = assign_subscript(v, w, (object*) NULL);
+				err = assign_subscript(v, w, (struct py_object*) NULL);
 				PY_DECREF(v);
 				PY_DECREF(w);
 
 				break;
 			}
 
-			case PRINT_EXPR: {
+			case PY_OP_PRINT_EXPR: {
 				v = POP();
-				fp = sysgetfile("stdout", stdout);
+				fp = py_system_get_file("stdout", stdout);
 
 				/* Print value except if procedure result */
-				if(v != None) {
-					flushline();
-					printobject(v, fp, 0);
+				if(v != PY_NONE) {
+					py_object_print(v, fp, PY_PRINT_NORMAL);
 					fprintf(fp, "\n");
 				}
 
@@ -1039,15 +1008,15 @@ object* eval_code(
 				break;
 			}
 
-			case PRINT_ITEM: {
+			case PY_OP_PRINT_ITEM: {
 				v = POP();
-				fp = sysgetfile("stdout", stdout);
+				fp = py_system_get_file("stdout", stdout);
 
 				if(needspace) fprintf(fp, " ");
 
-				if(is_stringobject(v)) {
-					char* s = getstringvalue(v);
-					int len = getstringsize(v);
+				if(py_is_string(v)) {
+					char* s = py_string_get_value(v);
+					int len = py_string_size(v);
 
 					fwrite(s, 1, len, fp);
 
@@ -1055,7 +1024,7 @@ object* eval_code(
 					else { needspace = 1; }
 				}
 				else {
-					printobject(v, fp, 0);
+					py_object_print(v, fp, PY_PRINT_NORMAL);
 					needspace = 1;
 				}
 
@@ -1064,27 +1033,27 @@ object* eval_code(
 				break;
 			}
 
-			case PRINT_NEWLINE: {
-				fp = sysgetfile("stdout", stdout);
+			case PY_OP_PRINT_NEWLINE: {
+				fp = py_system_get_file("stdout", stdout);
 				fprintf(fp, "\n");
 				needspace = 0;
 
 				break;
 			}
 
-			case BREAK_LOOP: {
+			case PY_OP_BREAK_LOOP: {
 				why = WHY_BREAK;
 
 				break;
 			}
 
-			case RAISE_EXCEPTION: {
+			case PY_OP_RAISE_EXCEPTION: {
 				v = POP();
 				w = POP();
-				if(!is_stringobject(w)) {
-					err_setstr(TypeError, "exceptions must be strings");
+				if(!py_is_string(w)) {
+					py_error_set_string(py_type_error, "exceptions must be strings");
 				}
-				else { err_setval(w, v); }
+				else { py_error_set_value(w, v); }
 
 				PY_DECREF(v);
 				PY_DECREF(w);
@@ -1093,52 +1062,52 @@ object* eval_code(
 				break;
 			}
 
-			case LOAD_LOCALS: {
-				v = f->f_locals;
+			case PY_OP_LOAD_LOCALS: {
+				v = f->locals;
 				PY_INCREF(v);
 				PUSH(v);
 
 				break;
 			}
 
-			case RETURN_VALUE: {
+			case PY_OP_RETURN_VALUE: {
 				retval = POP();
 				why = WHY_RETURN;
 
 				break;
 			}
 
-			case REQUIRE_ARGS: {
+			case PY_OP_REQUIRE_ARGS: {
 				if(EMPTY()) {
-					err_setstr(TypeError, "function expects argument(s)");
+					py_error_set_string(py_type_error, "function expects argument(s)");
 					why = WHY_EXCEPTION;
 				}
 
 				break;
 			}
 
-			case REFUSE_ARGS: {
+			case PY_OP_REFUSE_ARGS: {
 				if(!EMPTY()) {
-					err_setstr(TypeError, "function expects no argument(s)");
+					py_error_set_string(py_type_error, "function expects no argument(s)");
 					why = WHY_EXCEPTION;
 				}
 
 				break;
 			}
 
-			case BUILD_FUNCTION: {
+			case PY_OP_BUILD_FUNCTION: {
 				v = POP();
-				x = newfuncobject(v, f->f_globals);
+				x = py_func_new(v, f->globals);
 				PY_DECREF(v);
 				PUSH(x);
 
 				break;
 			}
 
-			case POP_BLOCK: {
-				block* b = pop_block(f);
+			case PY_OP_POP_BLOCK: {
+				struct py_block* b = py_block_pop(f);
 
-				while(STACK_LEVEL() > b->b_level) {
+				while(STACK_LEVEL() > b->level) {
 					v = POP();
 					PY_DECREF(v);
 				}
@@ -1146,24 +1115,24 @@ object* eval_code(
 				break;
 			}
 
-			case END_FINALLY: {
+			case PY_OP_END_FINALLY: {
 				v = POP();
 
-				if(is_intobject(v)) {
-					why = (enum why_code) getintvalue(v);
+				if(py_is_int(v)) {
+					why = (enum why_code) py_int_get(v);
 					if(why == WHY_RETURN) retval = POP();
 				}
-				else if(is_stringobject(v)) {
+				else if(py_is_string(v)) {
 					w = POP();
-					err_setval(v, w);
+					py_error_set_value(v, w);
 					PY_DECREF(w);
 					w = POP();
-					tb_store(w);
+					py_traceback_set(w);
 					PY_DECREF(w);
 					why = WHY_RERAISE;
 				}
-				else if(v != None) {
-					err_setstr(SystemError, "'finally' pops bad exception");
+				else if(v != PY_NONE) {
+					py_error_set_string(py_system_error, "'finally' pops bad exception");
 					why = WHY_EXCEPTION;
 				}
 
@@ -1172,7 +1141,7 @@ object* eval_code(
 				break;
 			}
 
-			case BUILD_CLASS: {
+			case PY_OP_BUILD_CLASS: {
 				w = POP();
 				v = POP();
 				x = build_class(v, w);
@@ -1183,38 +1152,38 @@ object* eval_code(
 				break;
 			}
 
-			case STORE_NAME: {
+			case PY_OP_STORE_NAME: {
 				name = GETNAME(oparg);
 				v = POP();
-				err = dictinsert(f->f_locals, name, v);
+				err = py_dict_insert(f->locals, name, v);
 				PY_DECREF(v);
 
 				break;
 			}
 
-			case DELETE_NAME: {
+			case PY_OP_DELETE_NAME: {
 				name = GETNAME(oparg);
-				if((err = dictremove(f->f_locals, name)) != 0) {
-					err_setstr(NameError, name);
+				if((err = py_dict_remove(f->locals, name)) != 0) {
+					py_error_set_string(py_name_error, name);
 				}
 
 				break;
 			}
 
-			case UNPACK_TUPLE: {
+			case PY_OP_UNPACK_TUPLE: {
 				v = POP();
 
-				if(!is_tupleobject(v)) {
-					err_setstr(TypeError, "unpack non-tuple");
+				if(!py_is_tuple(v)) {
+					py_error_set_string(py_type_error, "unpack non-tuple");
 					why = WHY_EXCEPTION;
 				}
-				else if(gettuplesize(v) != oparg) {
-					err_setstr(RuntimeError, "unpack tuple of wrong size");
+				else if(py_tuple_size(v) != oparg) {
+					py_error_set_string(py_runtime_error, "unpack tuple of wrong size");
 					why = WHY_EXCEPTION;
 				}
 				else {
 					for(; --oparg >= 0;) {
-						w = gettupleitem(v, oparg);
+						w = py_tuple_get(v, oparg);
 						PY_INCREF(w);
 						PUSH(w);
 					}
@@ -1225,20 +1194,20 @@ object* eval_code(
 				break;
 			}
 
-			case UNPACK_LIST: {
+			case PY_OP_UNPACK_LIST: {
 				v = POP();
-				if(!is_listobject(v)) {
-					err_setstr(TypeError, "unpack non-list");
+				if(!py_is_list(v)) {
+					py_error_set_string(py_type_error, "unpack non-list");
 					why = WHY_EXCEPTION;
 				}
-				else if(getlistsize(v) != oparg) {
-					err_setstr(
-							RuntimeError, "unpack list of wrong size");
+				else if(py_list_size(v) != oparg) {
+					py_error_set_string(
+							py_runtime_error, "unpack list of wrong size");
 					why = WHY_EXCEPTION;
 				}
 				else {
 					for(; --oparg >= 0;) {
-						w = getlistitem(v, oparg);
+						w = py_list_get(v, oparg);
 						PY_INCREF(w);
 						PUSH(w);
 					}
@@ -1249,46 +1218,46 @@ object* eval_code(
 				break;
 			}
 
-			case STORE_ATTR: {
+			case PY_OP_STORE_ATTR: {
 				name = GETNAME(oparg);
 				v = POP();
 				u = POP();
-				err = setattr(v, name, u); /* v.name = u */
+				err = py_object_set_attr(v, name, u); /* v.name = u */
 				PY_DECREF(v);
 				PY_DECREF(u);
 
 				break;
 			}
 
-			case DELETE_ATTR: {
+			case PY_OP_DELETE_ATTR: {
 				name = GETNAME(oparg);
 				v = POP();
-				err = setattr(v, name, (object*) NULL);
+				err = py_object_set_attr(v, name, (struct py_object*) NULL);
 				/* del v.name */
 				PY_DECREF(v);
 
 				break;
 			}
 
-			case LOAD_CONST: {
-				x = GETCONST(oparg);
+			case PY_OP_LOAD_CONST: {
+				x = py_list_get(f->code->consts, oparg);
 				PY_INCREF(x);
 				PUSH(x);
 
 				break;
 			}
 
-			case LOAD_NAME: {
+			case PY_OP_LOAD_NAME: {
 				name = GETNAME(oparg);
-				x = dictlookup(f->f_locals, name);
+				x = py_dict_lookup(f->locals, name);
 				if(x == NULL) {
-					x = dictlookup(f->f_globals, name);
+					x = py_dict_lookup(f->globals, name);
 					if(x == NULL) {
-						x = getbuiltin(name);
+						x = py_builtin_get(name);
 					}
 				}
 				if(x == NULL) {
-					err_setstr(NameError, name);
+					py_error_set_string(py_name_error, name);
 				}
 				else
 					PY_INCREF(x);
@@ -1298,13 +1267,13 @@ object* eval_code(
 				break;
 			}
 
-			case BUILD_TUPLE: {
-				x = newtupleobject(oparg);
+			case PY_OP_BUILD_TUPLE: {
+				x = py_tuple_new(oparg);
 
 				if(x != NULL) {
 					for(; --oparg >= 0;) {
 						w = POP();
-						err = settupleitem(x, oparg, w);
+						err = py_tuple_set(x, oparg, w);
 
 						if(err != 0) break;
 					}
@@ -1315,13 +1284,13 @@ object* eval_code(
 				break;
 			}
 
-			case BUILD_LIST: {
-				x = newlistobject(oparg);
+			case PY_OP_BUILD_LIST: {
+				x = py_list_new(oparg);
 
 				if(x != NULL) {
 					for(; --oparg >= 0;) {
 						w = POP();
-						err = setlistitem(x, oparg, w);
+						err = py_list_set(x, oparg, w);
 
 						if(err != 0) break;
 					}
@@ -1332,70 +1301,70 @@ object* eval_code(
 				break;
 			}
 
-			case BUILD_MAP: {
-				x = newdictobject();
+			case PY_OP_BUILD_MAP: {
+				x = py_dict_new();
 				PUSH(x);
 
 				break;
 			}
 
-			case LOAD_ATTR: {
+			case PY_OP_LOAD_ATTR: {
 				name = GETNAME(oparg);
 				v = POP();
-				x = getattr(v, name);
+				x = py_object_get_attr(v, name);
 				PY_DECREF(v);
 				PUSH(x);
 
 				break;
 			}
 
-			case COMPARE_OP:w = POP();
+			case PY_OP_COMPARE_OP:w = POP();
 				v = POP();
-				x = cmp_outcome((enum cmp_op) oparg, v, w);
+				x = cmp_outcome((enum py_cmp_op) oparg, v, w);
 				PY_DECREF(v);
 				PY_DECREF(w);
 				PUSH(x);
 				break;
 
-			case IMPORT_NAME:name = GETNAME(oparg);
-				x = import_module(name);
-				XINCREF(x);
+			case PY_OP_IMPORT_NAME:name = GETNAME(oparg);
+				x = py_import_module(name);
+				PY_XINCREF(x);
 				PUSH(x);
 				break;
 
-			case IMPORT_FROM:name = GETNAME(oparg);
+			case PY_OP_IMPORT_FROM:name = GETNAME(oparg);
 				v = TOP();
-				err = import_from(f->f_locals, v, name);
+				err = import_from(f->locals, v, name);
 				break;
 
-			case JUMP_FORWARD:JUMPBY(oparg);
+			case PY_OP_JUMP_FORWARD:JUMPBY(oparg);
 				break;
 
-			case JUMP_IF_FALSE:
+			case PY_OP_JUMP_IF_FALSE:
 				if(!testbool(TOP()))
 					JUMPBY(oparg);
 				break;
 
-			case JUMP_IF_TRUE:
+			case PY_OP_JUMP_IF_TRUE:
 				if(testbool(TOP()))
 					JUMPBY(oparg);
 				break;
 
-			case JUMP_ABSOLUTE:JUMPTO(oparg);
+			case PY_OP_JUMP_ABSOLUTE:JUMPTO(oparg);
 				break;
 
-			case FOR_LOOP:
+			case PY_OP_FOR_LOOP:
 				/* for v in s: ...
 				On entry: stack contains s, i.
 				On exit: stack contains s, i+1, s[i];
 				but if loop exhausted:
 				s, i are popped, and we jump */
 				w = POP(); /* Loop index */
-				v = POP(); /* Sequence object*/
+				v = POP(); /* Sequence struct py_object*/
 				u = loop_subscript(v, w);
 				if(u != NULL) {
 					PUSH(v);
-					x = newintobject(getintvalue(w) + 1);
+					x = py_int_new(py_int_get(w) + 1);
 					PUSH(x);
 					PY_DECREF(w);
 					PUSH(u);
@@ -1405,7 +1374,7 @@ object* eval_code(
 					PY_DECREF(w);
 					/* A NULL can mean "s exhausted"
 					but also an error: */
-					if(err_occurred()) {
+					if(py_error_occurred()) {
 						why = WHY_EXCEPTION;
 					}
 					else
@@ -1413,14 +1382,14 @@ object* eval_code(
 				}
 				break;
 
-			case SETUP_LOOP:
-			case SETUP_EXCEPT:
-			case SETUP_FINALLY:
-				setup_block(
+			case PY_OP_SETUP_LOOP:
+			case PY_OP_SETUP_EXCEPT:
+			case PY_OP_SETUP_FINALLY:
+				py_block_setup(
 						f, opcode, INSTR_OFFSET() + oparg, STACK_LEVEL());
 				break;
 
-			case SET_LINENO:
+			case PY_OP_SET_LINENO:
 #ifdef TRACE
 				if(trace) {
 					printf("--- Line %d ---\n", oparg);
@@ -1432,7 +1401,7 @@ object* eval_code(
 			default:
 				fprintf(
 						stderr, "XXX lineno: %d, opcode: %d\n", lineno, opcode);
-				err_setstr(SystemError, "eval_code: unknown opcode");
+				py_error_set_string(py_system_error, "py_code_eval: unknown opcode");
 				why = WHY_EXCEPTION;
 				break;
 		} /* switch */
@@ -1445,7 +1414,7 @@ object* eval_code(
 				continue;
 			} /* Normal, fast path */
 			why = WHY_EXCEPTION;
-			x = None;
+			x = PY_NONE;
 			err = 0;
 		}
 
@@ -1453,14 +1422,14 @@ object* eval_code(
 		/* Double-check exception status */
 
 		if(why == WHY_EXCEPTION || why == WHY_RERAISE) {
-			if(!err_occurred()) {
+			if(!py_error_occurred()) {
 				fprintf(stderr, "XXX ghost error\n");
-				err_setstr(SystemError, "ghost error");
+				py_error_set_string(py_system_error, "ghost error");
 				why = WHY_EXCEPTION;
 			}
 		}
 		else {
-			if(err_occurred()) {
+			if(py_error_occurred()) {
 				fprintf(stderr, "XXX undetected error\n");
 				why = WHY_EXCEPTION;
 			}
@@ -1471,10 +1440,10 @@ object* eval_code(
 
 		if(why == WHY_EXCEPTION) {
 			int lasti = INSTR_OFFSET() - 1;
-			if(HAS_ARG(opcode)) {
+			if(opcode >= PY_OP_HAVE_ARGUMENT) {
 				lasti -= 2;
 			}
-			tb_here(f, lasti, lineno);
+			py_traceback_new(f, lasti, lineno);
 		}
 
 		/* For the rest, treat WHY_RERAISE as WHY_EXCEPTION */
@@ -1485,39 +1454,39 @@ object* eval_code(
 
 		/* Unwind stacks if a (pseudo) exception occurred */
 
-		while(why != WHY_NOT && f->f_iblock > 0) {
-			block* b = pop_block(f);
-			while(STACK_LEVEL() > b->b_level) {
+		while(why != WHY_NOT && f->iblock > 0) {
+			struct py_block* b = py_block_pop(f);
+			while(STACK_LEVEL() > b->level) {
 				v = POP();
-				XDECREF(v);
+				PY_XDECREF(v);
 			}
-			if(b->b_type == SETUP_LOOP && why == WHY_BREAK) {
+			if(b->type == PY_OP_SETUP_LOOP && why == WHY_BREAK) {
 				why = WHY_NOT;
-				JUMPTO(b->b_handler);
+				JUMPTO(b->handler);
 				break;
 			}
-			if(b->b_type == SETUP_FINALLY ||
-			   (b->b_type == SETUP_EXCEPT && why == WHY_EXCEPTION)) {
+			if(b->type == PY_OP_SETUP_FINALLY ||
+			   (b->type == PY_OP_SETUP_EXCEPT && why == WHY_EXCEPTION)) {
 				if(why == WHY_EXCEPTION) {
-					object* exc, * val;
-					err_get(&exc, &val);
+					struct py_object* exc, * val;
+					py_error_get(&exc, &val);
 					if(val == NULL) {
-						val = None;
+						val = PY_NONE;
 						PY_INCREF(val);
 					}
-					v = tb_fetch();
+					v = py_traceback_get();
 					/* Make the raw exception data
 					available to the handler,
 					so a program can emulate the
-					Python main loop.  Don't do
+					Python main loop. Don't do
 					this for 'finally'. */
-					if(b->b_type == SETUP_EXCEPT) {
+					if(b->type == PY_OP_SETUP_EXCEPT) {
 #if 0 /* Oops, this breaks too many things */
-						sysset("exc_traceback", v);
+						py_system_set("exc_traceback", v);
 #endif
-						sysset("exc_value", val);
-						sysset("exc_type", exc);
-						err_clear();
+						py_system_set("exc_value", val);
+						py_system_set("exc_type", exc);
+						py_error_clear();
 					}
 					PUSH(v);
 					PUSH(val);
@@ -1526,11 +1495,11 @@ object* eval_code(
 				else {
 					if(why == WHY_RETURN)
 						PUSH(retval);
-					v = newintobject((long) why);
+					v = py_int_new((long) why);
 					PUSH(v);
 				}
 				why = WHY_NOT;
-				JUMPTO(b->b_handler);
+				JUMPTO(b->handler);
 				break;
 			}
 		} /* unwind stack */
@@ -1547,12 +1516,12 @@ object* eval_code(
 
 	while(!EMPTY()) {
 		v = POP();
-		XDECREF(v);
+		PY_XDECREF(v);
 	}
 
 	/* Restore previous frame and release the current one */
 
-	current_frame = f->f_back;
+	py_frame_current = f->back;
 	PY_DECREF(f);
 
 	if(why == WHY_RETURN) {

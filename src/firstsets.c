@@ -1,102 +1,81 @@
-/***********************************************************
-Copyright 1991 by Stichting Mathematisch Centrum, Amsterdam, The
-Netherlands.
-
-                        All Rights Reserved
-
-Permission to use, copy, modify, and distribute this software and its
-documentation for any purpose and without fee is hereby granted,
-provided that the above copyright notice appear in all copies and that
-both that copyright notice and this permission notice appear in
-supporting documentation, and that the names of Stichting Mathematisch
-Centrum or CWI not be used in advertising or publicity pertaining to
-distribution of the software without specific, written prior permission.
-
-STICHTING MATHEMATISCH CENTRUM DISCLAIMS ALL WARRANTIES WITH REGARD TO
-THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
-FITNESS, IN NO EVENT SHALL STICHTING MATHEMATISCH CENTRUM BE LIABLE
-FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
-OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-
-******************************************************************/
+/*
+ * Copyright 1991 by Stichting Mathematisch Centrum
+ * See `LICENCE' for more information.
+ */
 
 /* Computation of FIRST stets */
 
-#include <stdlib.h>
-
-#include <python/pgenheaders.h>
+#include <python/errors.h>
 #include <python/grammar.h>
 #include <python/token.h>
 
 extern int debugging;
 
 /* Forward */
-static void calcfirstset(grammar*, dfa *);
+static void calcfirstset(struct py_grammar*, struct py_dfa *);
 
-void addfirstsets(g)grammar* g;
+void py_grammar_add_firsts(g)struct py_grammar* g;
 {
 	int i;
-	dfa* d;
+	struct py_dfa* d;
 
 	fprintf(stderr, "Adding FIRST sets ...\n");
-	for(i = 0; i < g->g_ndfas; i++) {
-		d = &g->g_dfa[i];
-		if(d->d_first == NULL) {
+	for(i = 0; i < g->count; i++) {
+		d = &g->dfas[i];
+		if(d->first == NULL) {
 			calcfirstset(g, d);
 		}
 	}
 }
 
-static void calcfirstset(g, d)grammar* g;
-							  dfa* d;
+static void calcfirstset(g, d)struct py_grammar* g;
+							  struct py_dfa* d;
 {
 	int i, j;
-	state* s;
-	arc* a;
+	struct py_state* s;
+	struct py_arc* a;
 	int nsyms;
 	int* sym;
 	int nbits;
 	static py_bitset_t dummy;
 	py_bitset_t result;
 	int type;
-	dfa* d1;
-	label* l0;
+	struct py_dfa* d1;
+	struct py_label* l0;
 
 	if(debugging) {
-		printf("Calculate FIRST set for '%s'\n", d->d_name);
+		printf("Calculate FIRST set for '%s'\n", d->name);
 	}
 
 	if(dummy == NULL) {
-		dummy = newbitset(1);
+		dummy = py_bitset_new(1);
 	}
-	if(d->d_first == dummy) {
-		fprintf(stderr, "Left-recursion for '%s'\n", d->d_name);
+	if(d->first == dummy) {
+		fprintf(stderr, "Left-recursion for '%s'\n", d->name);
 		return;
 	}
-	if(d->d_first != NULL) {
+	if(d->first != NULL) {
 		fprintf(
-				stderr, "Re-calculating FIRST set for '%s' ???\n", d->d_name);
+				stderr, "Re-calculating FIRST set for '%s' ???\n", d->name);
 	}
-	d->d_first = dummy;
+	d->first = dummy;
 
-	l0 = g->g_ll.ll_label;
-	nbits = g->g_ll.ll_nlabels;
-	result = newbitset(nbits);
+	l0 = g->labels.label;
+	nbits = g->labels.count;
+	result = py_bitset_new(nbits);
 
 	sym = malloc(sizeof(int));
 	if(sym == NULL) {
-		fatal("no mem for new sym in calcfirstset");
+		py_fatal("no mem for new sym in calcfirstset");
 	}
 	nsyms = 1;
-	sym[0] = findlabel(&g->g_ll, d->d_type, (char*) NULL);
+	sym[0] = py_labellist_find(&g->labels, d->type, (char*) NULL);
 
-	s = &d->d_state[d->d_initial];
-	for(i = 0; i < s->s_narcs; i++) {
-		a = &s->s_arc[i];
+	s = &d->states[d->initial];
+	for(i = 0; i < s->count; i++) {
+		a = &s->arcs[i];
 		for(j = 0; j < nsyms; j++) {
-			if(sym[j] == a->a_lbl) {
+			if(sym[j] == a->label) {
 				break;
 			}
 		}
@@ -104,34 +83,34 @@ static void calcfirstset(g, d)grammar* g;
 			/* TODO: Leaky realloc. */
 			sym = realloc(sym, (nsyms + 1) * sizeof(int));
 			if(sym == NULL) {
-				fatal("no mem to resize sym in calcfirstset");
+				py_fatal("no mem to resize sym in calcfirstset");
 			}
-			sym[nsyms++] = a->a_lbl;
-			type = l0[a->a_lbl].lb_type;
-			if(ISNONTERMINAL(type)) {
-				d1 = finddfa(g, type);
-				if(d1->d_first == dummy) {
+			sym[nsyms++] = a->label;
+			type = l0[a->label].type;
+			if(type >= PY_NONTERMINAL) {
+				d1 = py_grammar_find_dfa(g, type);
+				if(d1->first == dummy) {
 					fprintf(
-							stderr, "Left-recursion below '%s'\n", d->d_name);
+							stderr, "Left-recursion below '%s'\n", d->name);
 				}
 				else {
-					if(d1->d_first == NULL) {
+					if(d1->first == NULL) {
 						calcfirstset(g, d1);
 					}
-					mergebitset(result, d1->d_first, nbits);
+					py_bitset_merge(result, d1->first, nbits);
 				}
 			}
-			else if(ISTERMINAL(type)) {
-				addbit(result, a->a_lbl);
+			else if(type < PY_NONTERMINAL) {
+				py_bitset_add(result, a->label);
 			}
 		}
 	}
-	d->d_first = result;
+	d->first = result;
 	if(debugging) {
-		printf("FIRST set for '%s': {", d->d_name);
+		printf("FIRST set for '%s': {", d->name);
 		for(i = 0; i < nbits; i++) {
 			if(PY_TESTBIT(result, i)) {
-				printf(" %s", labelrepr(&l0[i]));
+				printf(" %s", py_label_repr(&l0[i]));
 			}
 		}
 		printf(" }\n");

@@ -1,61 +1,47 @@
-/***********************************************************
-Copyright 1991 by Stichting Mathematisch Centrum, Amsterdam, The
-Netherlands.
-
-                        All Rights Reserved
-
-Permission to use, copy, modify, and distribute this software and its
-documentation for any purpose and without fee is hereby granted,
-provided that the above copyright notice appear in all copies and that
-both that copyright notice and this permission notice appear in
-supporting documentation, and that the names of Stichting Mathematisch
-Centrum or CWI not be used in advertising or publicity pertaining to
-distribution of the software without specific, written prior permission.
-
-STICHTING MATHEMATISCH CENTRUM DISCLAIMS ALL WARRANTIES WITH REGARD TO
-THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
-FITNESS, IN NO EVENT SHALL STICHTING MATHEMATISCH CENTRUM BE LIABLE
-FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
-OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-
-******************************************************************/
+/*
+ * Copyright 1991 by Stichting Mathematisch Centrum
+ * See `LICENCE' for more information.
+ */
 
 /* Interface to map C struct members to Python object attributes */
 
 #ifndef PY_STRUCTMEMBER_H
 #define PY_STRUCTMEMBER_H
 
-#include <stddef.h>
+#include <python/std.h>
 
-/* An array of memberlist structures defines the name, type and offset
-   of selected members of a C structure.  These can be read by
-   getmember() and set by setmember() (except if their READONLY flag
-   is set).  The array must be terminated with an entry whose name
-   pointer is NULL. */
-
-struct memberlist {
-	char* name;
-	int type;
-	int offset;
-	int readonly;
-};
+/*
+ * An array of memberlist structures defines the name, type and offset
+ * of selected members of a C structure. These can be read by
+ * py_memberlist_get() and set by py_memberlist_set() (except if their PY_READONLY flag
+ * is set). The array must be terminated with an entry whose name
+ * pointer is NULL.
+ */
 
 /* Types */
-#define T_SHORT                0
-#define T_INT          1
-#define T_LONG         2
-#define T_FLOAT                3
-#define T_DOUBLE       4
-#define T_STRING       5
-#define T_OBJECT       6
+enum py_structtype {
+	PY_TYPE_SHORT = 0,
+	PY_TYPE_INT = 1,
+	PY_TYPE_LONG = 2,
+	PY_TYPE_FLOAT = 3,
+	PY_TYPE_DOUBLE = 4,
+	PY_TYPE_STRING = 5,
+	PY_TYPE_OBJECT = 6
+};
 
-/* Readonly flag */
-#define READONLY       1
-#define RO             READONLY                /* Shorthand */
+enum py_readonly {
+	PY_READWRITE,
+	PY_READONLY
+};
 
-object* getmember(char *, struct memberlist *, char *);
-int setmember(char *, struct memberlist *, char *, object *);
+struct py_memberlist {
+	char* name;
+	enum py_structtype type;
+	int offset;
+	enum py_readonly readonly;
+};
+
+struct py_object* py_memberlist_get(char*, struct py_memberlist*, const char*);
+int py_memberlist_set(char*, struct py_memberlist*, char*, struct py_object*);
 
 #endif

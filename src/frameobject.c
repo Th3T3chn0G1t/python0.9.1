@@ -1,110 +1,92 @@
-/***********************************************************
-Copyright 1991 by Stichting Mathematisch Centrum, Amsterdam, The
-Netherlands.
-
-                        All Rights Reserved
-
-Permission to use, copy, modify, and distribute this software and its
-documentation for any purpose and without fee is hereby granted,
-provided that the above copyright notice appear in all copies and that
-both that copyright notice and this permission notice appear in
-supporting documentation, and that the names of Stichting Mathematisch
-Centrum or CWI not be used in advertising or publicity pertaining to
-distribution of the software without specific, written prior permission.
-
-STICHTING MATHEMATISCH CENTRUM DISCLAIMS ALL WARRANTIES WITH REGARD TO
-THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
-FITNESS, IN NO EVENT SHALL STICHTING MATHEMATISCH CENTRUM BE LIABLE
-FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
-OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-
-******************************************************************/
+/*
+ * Copyright 1991 by Stichting Mathematisch Centrum
+ * See `LICENCE' for more information.
+ */
 
 /* Frame object implementation */
 
-#include <stdlib.h>
-
-#include <python/allobjects.h>
+#include <python/std.h>
 #include <python/compile.h>
-#include <python/frameobject.h>
+#include <python/errors.h>
 #include <python/opcode.h>
 #include <python/structmember.h>
 
-#define OFF(x) offsetof(frameobject, x)
+#include <python/frameobject.h>
+#include <python/dictobject.h>
 
-static struct memberlist frame_memberlist[] = {
-		{ "f_back",    T_OBJECT, OFF(f_back), 0 },
-		{ "f_code",    T_OBJECT, OFF(f_code), 0 },
-		{ "f_globals", T_OBJECT, OFF(f_globals), 0 },
-		{ "f_locals",  T_OBJECT, OFF(f_locals), 0 },
+#define OFF(x) offsetof(struct py_frame, x)
+
+static struct py_memberlist frame_memberlist[] = {
+		{ "back",    PY_TYPE_OBJECT, OFF(back), PY_READWRITE },
+		{ "code",    PY_TYPE_OBJECT, OFF(code), PY_READWRITE },
+		{ "globals", PY_TYPE_OBJECT, OFF(globals), PY_READWRITE },
+		{ "locals",  PY_TYPE_OBJECT, OFF(locals), PY_READWRITE },
 		{ NULL, 0, 0, 0 }  /* Sentinel */
 };
 
-static object* frame_getattr(f, name)frameobject* f;
+static struct py_object* frame_getattr(f, name)struct py_frame* f;
 									 char* name;
 {
-	return getmember((char*) f, frame_memberlist, name);
+	return py_memberlist_get((char*) f, frame_memberlist, name);
 }
 
-static void frame_dealloc(f)frameobject* f;
+static void frame_dealloc(f)struct py_frame* f;
 {
-	XDECREF(f->f_back);
-	XDECREF(f->f_code);
-	XDECREF(f->f_globals);
-	XDECREF(f->f_locals);
-	free(f->f_valuestack);
-	free(f->f_blockstack);
+	PY_XDECREF(f->back);
+	PY_XDECREF(f->code);
+	PY_XDECREF(f->globals);
+	PY_XDECREF(f->locals);
+	free(f->valuestack);
+	free(f->blockstack);
 	free(f);
 }
 
-typeobject Frametype = {
-		OB_HEAD_INIT(&Typetype) 0, "frame", sizeof(frameobject), 0,
-		frame_dealloc,  /*tp_dealloc*/
-		0,              /*tp_print*/
-		frame_getattr,  /*tp_getattr*/
-		0,              /*tp_setattr*/
-		0,              /*tp_compare*/
-		0,              /*tp_repr*/
-		0,              /*tp_as_number*/
-		0,              /*tp_as_sequence*/
-		0,              /*tp_as_mapping*/
+struct py_type py_frame_type = {
+		PY_OB_SEQ_INIT(&py_type_type) 0, "frame", sizeof(struct py_frame), 0,
+		frame_dealloc,  /*dealloc*/
+		0,              /*print*/
+		frame_getattr,  /*get_attr*/
+		0,              /*set_attr*/
+		0,              /*cmp*/
+		0,              /*repr*/
+		0,              /*numbermethods*/
+		0,              /*sequencemethods*/
+		0,              /*mappingmethods*/
 };
 
-frameobject* newframeobject(back, code, globals, locals, nvalues, nblocks)
-		frameobject* back;
-		codeobject* code;
-		object* globals;
-		object* locals;
+struct py_frame* py_frame_new(back, code, globals, locals, nvalues, nblocks)
+		struct py_frame* back;
+		struct py_code* code;
+		struct py_object* globals;
+		struct py_object* locals;
 		int nvalues;
 		int nblocks;
 {
-	frameobject* f;
-	if((back != NULL && !is_frameobject(back)) || code == NULL ||
-	   !is_codeobject(code) || globals == NULL || !is_dictobject(globals) ||
-	   locals == NULL || !is_dictobject(locals) || nvalues < 0 || nblocks < 0) {
-		err_badcall();
+	struct py_frame* f;
+	if((back != NULL && !py_is_frame(back)) || code == NULL ||
+	   !py_is_code(code) || globals == NULL || !py_is_dict(globals) ||
+	   locals == NULL || !py_is_dict(locals) || nvalues < 0 || nblocks < 0) {
+		py_error_set_badcall();
 		return NULL;
 	}
-	f = NEWOBJ(frameobject, &Frametype);
+	f = py_object_new(&py_frame_type);
 	if(f != NULL) {
 		if(back)
 			PY_INCREF(back);
-		f->f_back = back;
+		f->back = back;
 		PY_INCREF(code);
-		f->f_code = code;
+		f->code = code;
 		PY_INCREF(globals);
-		f->f_globals = globals;
+		f->globals = globals;
 		PY_INCREF(locals);
-		f->f_locals = locals;
-		f->f_valuestack = malloc((nvalues + 1) * sizeof(object*));
-		f->f_blockstack = malloc((nblocks + 1) * sizeof(block));
-		f->f_nvalues = nvalues;
-		f->f_nblocks = nblocks;
-		f->f_iblock = 0;
-		if(f->f_valuestack == NULL || f->f_blockstack == NULL) {
-			err_nomem();
+		f->locals = locals;
+		f->valuestack = malloc((nvalues + 1) * sizeof(struct py_object*));
+		f->blockstack = malloc((nblocks + 1) * sizeof(struct py_block));
+		f->nvalues = nvalues;
+		f->nblocks = nblocks;
+		f->iblock = 0;
+		if(f->valuestack == NULL || f->blockstack == NULL) {
+			py_error_set_nomem();
 			PY_DECREF(f);
 			f = NULL;
 		}
@@ -114,29 +96,29 @@ frameobject* newframeobject(back, code, globals, locals, nvalues, nblocks)
 
 /* Block management */
 
-void setup_block(f, type, handler, level)frameobject* f;
+void py_block_setup(f, type, handler, level)struct py_frame* f;
 										 int type;
 										 int handler;
 										 int level;
 {
-	block* b;
-	if(f->f_iblock >= f->f_nblocks) {
+	struct py_block* b;
+	if(f->iblock >= f->nblocks) {
 		fprintf(stderr, "XXX block stack overflow\n");
 		abort();
 	}
-	b = &f->f_blockstack[f->f_iblock++];
-	b->b_type = type;
-	b->b_level = level;
-	b->b_handler = handler;
+	b = &f->blockstack[f->iblock++];
+	b->type = type;
+	b->level = level;
+	b->handler = handler;
 }
 
-block* pop_block(f)frameobject* f;
+struct py_block* py_block_pop(f)struct py_frame* f;
 {
-	block* b;
-	if(f->f_iblock <= 0) {
+	struct py_block* b;
+	if(f->iblock <= 0) {
 		fprintf(stderr, "XXX block stack underflow\n");
 		abort();
 	}
-	b = &f->f_blockstack[--f->f_iblock];
+	b = &f->blockstack[--f->iblock];
 	return b;
 }

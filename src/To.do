@@ -8,4 +8,4 @@
   like getoserr()
 
 - fix interrupt handling (interruptable system calls should call
-  intrcheck() to clear the interrupt status)
+  py_intrcheck() to clear the interrupt status)

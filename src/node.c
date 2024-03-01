@@ -1,83 +1,63 @@
-/***********************************************************
-Copyright 1991 by Stichting Mathematisch Centrum, Amsterdam, The
-Netherlands.
-
-                        All Rights Reserved
-
-Permission to use, copy, modify, and distribute this software and its
-documentation for any purpose and without fee is hereby granted,
-provided that the above copyright notice appear in all copies and that
-both that copyright notice and this permission notice appear in
-supporting documentation, and that the names of Stichting Mathematisch
-Centrum or CWI not be used in advertising or publicity pertaining to
-distribution of the software without specific, written prior permission.
-
-STICHTING MATHEMATISCH CENTRUM DISCLAIMS ALL WARRANTIES WITH REGARD TO
-THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
-FITNESS, IN NO EVENT SHALL STICHTING MATHEMATISCH CENTRUM BE LIABLE
-FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
-OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-
-******************************************************************/
+/*
+ * Copyright 1991 by Stichting Mathematisch Centrum
+ * See `LICENCE' for more information.
+ */
 
 /* Parse tree node implementation */
 
 #include <stdlib.h>
 
-#include <python/pgenheaders.h>
 #include <python/node.h>
 
-node* newtree(type)int type;
+struct py_node* py_tree_new(type)int type;
 {
-	node* n = malloc(sizeof(node));
+	struct py_node* n = malloc(sizeof(struct py_node));
 	if(n == NULL) {
 		return NULL;
 	}
-	n->n_type = type;
-	n->n_str = NULL;
-	n->n_lineno = 0;
-	n->n_nchildren = 0;
-	n->n_child = NULL;
+	n->type = type;
+	n->str = NULL;
+	n->lineno = 0;
+	n->count = 0;
+	n->children = NULL;
 	return n;
 }
 
 #define XXX 3 /* Node alignment factor to speed up realloc */
 #define XXXROUNDUP(n) ((n) == 1 ? 1 : ((n) + XXX - 1) / XXX * XXX)
 
-node* addchild(n1, type, str, lineno)node* n1;
+struct py_node* py_tree_add(n1, type, str, lineno)struct py_node* n1;
 									 int type;
 									 char* str;
 									 int lineno;
 {
-	int nch = n1->n_nchildren;
+	int nch = n1->count;
 	int nch1 = nch + 1;
-	node* n;
+	struct py_node* n;
 	if(XXXROUNDUP(nch) < nch1) {
-		n = n1->n_child;
+		n = n1->children;
 		nch1 = XXXROUNDUP(nch1);
 		/* TODO: Leaky realloc. */
-		n = realloc(n, nch1 * sizeof(node));
+		n = realloc(n, nch1 * sizeof(struct py_node));
 		if(n == NULL) {
 			return NULL;
 		}
-		n1->n_child = n;
+		n1->children = n;
 	}
-	n = &n1->n_child[n1->n_nchildren++];
-	n->n_type = type;
-	n->n_str = str;
-	n->n_lineno = lineno;
-	n->n_nchildren = 0;
-	n->n_child = NULL;
+	n = &n1->children[n1->count++];
+	n->type = type;
+	n->str = str;
+	n->lineno = lineno;
+	n->count = 0;
+	n->children = NULL;
 	return n;
 }
 
 /* Forward */
-static void freechildren(node*);
+static void freechildren(struct py_node*);
 
 
-void freetree(n)node* n;
+void py_tree_delete(n)struct py_node* n;
 {
 	if(n != NULL) {
 		freechildren(n);
@@ -85,16 +65,16 @@ void freetree(n)node* n;
 	}
 }
 
-static void freechildren(n)node* n;
+static void freechildren(n)struct py_node* n;
 {
 	int i;
-	for(i = NCH(n); --i >= 0;) {
-		freechildren(CHILD(n, i));
+	for(i = n->count; --i >= 0;) {
+		freechildren(&n->children[i]);
 	}
-	if(n->n_child != NULL) {
-		free(n->n_child);
+	if(n->children != NULL) {
+		free(n->children);
 	}
-	if(STR(n) != NULL) {
-		free(STR(n));
+	if(n->str != NULL) {
+		free(n->str);
 	}
 }

@@ -11,9 +11,9 @@
 # Changes compared to version 1:
 #      modules and scripts are unified;
 #      'quit' is gone (use ^D);
-#      empty_stmt is gone, replaced by explicit NEWLINE where appropriate;
+#      empty_stmt is gone, replaced by explicit PY_NEWLINE where appropriate;
 #      'import' and 'def' aren't special any more;
-#      added 'from' NAME option on import clause, and '*' to import all;
+#      added 'from' PY_NAME option on import clause, and '*' to import all;
 #      added class definition.
 
 # Start symbols for the grammar:
@@ -22,36 +22,36 @@
 #      expr_input is the input for the input() function;
 #      eval_input is the input for the eval() function.
 
-# NB: compound_stmt in single_input is followed by extra NEWLINE!
-single_input: NEWLINE | simple_stmt | compound_stmt NEWLINE
-file_input: (NEWLINE | stmt)* ENDMARKER
-expr_input: testlist NEWLINE
-eval_input: testlist ENDMARKER
+# NB: compound_stmt in single_input is followed by extra PY_NEWLINE!
+single_input: PY_NEWLINE | simple_stmt | compound_stmt PY_NEWLINE
+file_input: (PY_NEWLINE | stmt)* PY_ENDMARKER
+expr_input: testlist PY_NEWLINE
+eval_input: testlist PY_ENDMARKER
 
-funcdef: 'def' NAME parameters ':' suite
+funcdef: 'def' PY_NAME parameters ':' suite
 parameters: '(' [fplist] ')'
 fplist: fpdef (',' fpdef)*
-fpdef: NAME | '(' fplist ')'
+fpdef: PY_NAME | '(' fplist ')'
 
 stmt: simple_stmt | compound_stmt
 simple_stmt: expr_stmt | print_stmt  | pass_stmt | del_stmt | flow_stmt | import_stmt
-expr_stmt: (exprlist '=')* exprlist NEWLINE
+expr_stmt: (exprlist '=')* exprlist PY_NEWLINE
 # For assignments, additional restrictions enforced by the interpreter
-print_stmt: 'print' (test ',')* [test] NEWLINE
-del_stmt: 'del' exprlist NEWLINE
-pass_stmt: 'pass' NEWLINE
+print_stmt: 'print' (test ',')* [test] PY_NEWLINE
+del_stmt: 'del' exprlist PY_NEWLINE
+pass_stmt: 'pass' PY_NEWLINE
 flow_stmt: break_stmt | return_stmt | raise_stmt
-break_stmt: 'break' NEWLINE
-return_stmt: 'return' [testlist] NEWLINE
-raise_stmt: 'raise' expr [',' expr] NEWLINE
-import_stmt: 'import' NAME (',' NAME)* NEWLINE | 'from' NAME 'import' ('*' | NAME (',' NAME)*) NEWLINE
+break_stmt: 'break' PY_NEWLINE
+return_stmt: 'return' [testlist] PY_NEWLINE
+raise_stmt: 'raise' expr [',' expr] PY_NEWLINE
+import_stmt: 'import' PY_NAME (',' PY_NAME)* PY_NEWLINE | 'from' PY_NAME 'import' ('*' | PY_NAME (',' PY_NAME)*) PY_NEWLINE
 compound_stmt: if_stmt | while_stmt | for_stmt | try_stmt | funcdef | classdef
 if_stmt: 'if' test ':' suite ('elif' test ':' suite)* ['else' ':' suite]
 while_stmt: 'while' test ':' suite ['else' ':' suite]
 for_stmt: 'for' exprlist 'in' exprlist ':' suite ['else' ':' suite]
 try_stmt: 'try' ':' suite (except_clause ':' suite)* ['finally' ':' suite]
 except_clause: 'except' [expr [',' expr]]
-suite: simple_stmt | NEWLINE INDENT NEWLINE* (stmt NEWLINE*)+ DEDENT
+suite: simple_stmt | PY_NEWLINE PY_INDENT PY_NEWLINE* (stmt PY_NEWLINE*)+ PY_DEDENT
 
 test: and_test ('or' and_test)*
 and_test: not_test ('and' not_test)*
@@ -61,12 +61,12 @@ comp_op: '<'|'>'|'='|'>' '='|'<' '='|'<' '>'|'in'|'not' 'in'|'is'|'is' 'not'
 expr: term (('+'|'-') term)*
 term: factor (('*'|'/'|'%') factor)*
 factor: ('+'|'-') factor | atom trailer*
-atom: '(' [testlist] ')' | '[' [testlist] ']' | '{' '}' | '`' testlist '`' | NAME | NUMBER | STRING
-trailer: '(' [testlist] ')' | '[' subscript ']' | '.' NAME
+atom: '(' [testlist] ')' | '[' [testlist] ']' | '{' '}' | '`' testlist '`' | PY_NAME | PY_NUMBER | PY_STRING
+trailer: '(' [testlist] ')' | '[' subscript ']' | '.' PY_NAME
 subscript: expr | [expr] ':' [expr]
 exprlist: expr (',' expr)* [',']
 testlist: test (',' test)* [',']
 
-classdef: 'class' NAME parameters ['=' baselist] ':' suite
+classdef: 'class' PY_NAME parameters ['=' baselist] ':' suite
 baselist: atom arguments (',' atom arguments)*
 arguments: '(' [testlist] ')'

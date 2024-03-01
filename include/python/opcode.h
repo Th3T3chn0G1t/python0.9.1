@@ -1,116 +1,110 @@
-/***********************************************************
-Copyright 1991 by Stichting Mathematisch Centrum, Amsterdam, The
-Netherlands.
-
-                        All Rights Reserved
-
-Permission to use, copy, modify, and distribute this software and its
-documentation for any purpose and without fee is hereby granted,
-provided that the above copyright notice appear in all copies and that
-both that copyright notice and this permission notice appear in
-supporting documentation, and that the names of Stichting Mathematisch
-Centrum or CWI not be used in advertising or publicity pertaining to
-distribution of the software without specific, written prior permission.
-
-STICHTING MATHEMATISCH CENTRUM DISCLAIMS ALL WARRANTIES WITH REGARD TO
-THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
-FITNESS, IN NO EVENT SHALL STICHTING MATHEMATISCH CENTRUM BE LIABLE
-FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
-OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-
-******************************************************************/
+/*
+ * Copyright 1991 by Stichting Mathematisch Centrum
+ * See `LICENCE' for more information.
+ */
 
 /* Instruction opcodes for compiled code */
 
 #ifndef PY_OPCODE_H
 #define PY_OPCODE_H
 
-#define STOP_CODE      0
-#define POP_TOP                1
-#define ROT_TWO                2
-#define ROT_THREE      3
-#define DUP_TOP                4
+enum py_opcode {
+	PY_OP_STOP = 0,
 
-#define UNARY_POSITIVE 10
-#define UNARY_NEGATIVE 11
-#define UNARY_NOT      12
-#define UNARY_CONVERT  13
-#define UNARY_CALL     14
+	PY_OP_POP_TOP = 1,
+	PY_OP_ROT_TWO = 2,
+	PY_OP_ROT_THREE = 3,
+	PY_OP_DUP_TOP = 4,
 
-#define BINARY_MULTIPLY        20
-#define BINARY_DIVIDE  21
-#define BINARY_MODULO  22
-#define BINARY_ADD     23
-#define BINARY_SUBTRACT        24
-#define BINARY_SUBSCR  25
-#define BINARY_CALL    26
+	PY_OP_UNARY_POSITIVE = 10,
+	PY_OP_UNARY_NEGATIVE = 11,
+	PY_OP_UNARY_NOT = 12,
+	PY_OP_UNARY_CONVERT = 13,
+	PY_OP_UNARY_CALL = 14,
 
-#define SLICE          30
-/* Also uses 31-33 */
+	PY_OP_BINARY_MULTIPLY = 20,
+	PY_OP_BINARY_DIVIDE = 21,
+	PY_OP_BINARY_MODULO = 22,
+	PY_OP_BINARY_ADD = 23,
+	PY_OP_BINARY_SUBTRACT = 24,
+	PY_OP_BINARY_SUBSCR = 25,
+	PY_OP_BINARY_CALL = 26,
 
-#define STORE_SLICE    40
-/* Also uses 41-43 */
+	PY_OP_SLICE = 30,
+	/* Also uses 31-33 */
 
-#define DELETE_SLICE   50
-/* Also uses 51-53 */
+	PY_OP_STORE_SLICE = 40,
+	/* Also uses 41-43 */
 
-#define STORE_SUBSCR   60
-#define DELETE_SUBSCR  61
+	PY_OP_DELETE_SLICE = 50,
+	/* Also uses 51-53 */
 
-#define PRINT_EXPR     70
-#define PRINT_ITEM     71
-#define PRINT_NEWLINE  72
+	PY_OP_STORE_SUBSCR = 60,
+	PY_OP_DELETE_SUBSCR = 61,
 
-#define BREAK_LOOP     80
-#define RAISE_EXCEPTION        81
-#define LOAD_LOCALS    82
-#define RETURN_VALUE   83
-#define REQUIRE_ARGS   84
-#define REFUSE_ARGS    85
-#define BUILD_FUNCTION 86
-#define POP_BLOCK      87
-#define END_FINALLY    88
-#define BUILD_CLASS    89
+	PY_OP_PRINT_EXPR = 70,
+	PY_OP_PRINT_ITEM = 71,
+	PY_OP_PRINT_NEWLINE = 72,
 
-#define HAVE_ARGUMENT  90      /* Opcodes from here have an argument: */
+	PY_OP_BREAK_LOOP = 80,
+	PY_OP_RAISE_EXCEPTION = 81,
+	PY_OP_LOAD_LOCALS = 82,
+	PY_OP_RETURN_VALUE = 83,
+	PY_OP_REQUIRE_ARGS = 84,
+	PY_OP_REFUSE_ARGS = 85,
+	PY_OP_BUILD_FUNCTION = 86,
+	PY_OP_POP_BLOCK = 87,
+	PY_OP_END_FINALLY = 88,
+	PY_OP_BUILD_CLASS = 89,
 
-#define STORE_NAME     90      /* Index in name list */
-#define DELETE_NAME    91      /* "" */
-#define UNPACK_TUPLE   92      /* Number of tuple items */
-#define UNPACK_LIST    93      /* Number of list items */
-/* unused:             94 */
-#define STORE_ATTR     95      /* Index in name list */
-#define DELETE_ATTR    96      /* "" */
+	PY_OP_HAVE_ARGUMENT = 90, /* Opcodes from here have an argument: */
 
-#define LOAD_CONST     100     /* Index in const list */
-#define LOAD_NAME      101     /* Index in name list */
-#define BUILD_TUPLE    102     /* Number of tuple items */
-#define BUILD_LIST     103     /* Number of list items */
-#define BUILD_MAP      104     /* Always zero for now */
-#define LOAD_ATTR      105     /* Index in name list */
-#define COMPARE_OP     106     /* Comparison operator */
-#define IMPORT_NAME    107     /* Index in name list */
-#define IMPORT_FROM    108     /* Index in name list */
+	PY_OP_STORE_NAME = 90, /* Index in name list */
+	PY_OP_DELETE_NAME = 91, /* "" */
+	PY_OP_UNPACK_TUPLE = 92, /* Number of tuple items */
+	PY_OP_UNPACK_LIST = 93, /* Number of list items */
 
-#define JUMP_FORWARD   110     /* Number of bytes to skip */
-#define JUMP_IF_FALSE  111     /* "" */
-#define JUMP_IF_TRUE   112     /* "" */
-#define JUMP_ABSOLUTE  113     /* Target byte offset from beginning of code */
-#define FOR_LOOP       114     /* Number of bytes to skip */
+	/* unused: 94 */
+	PY_OP_STORE_ATTR = 95, /* Index in name list */
+	PY_OP_DELETE_ATTR = 96, /* "" */
 
-#define SETUP_LOOP     120     /* Target address (absolute) */
-#define SETUP_EXCEPT   121     /* "" */
-#define SETUP_FINALLY  122     /* "" */
+	PY_OP_LOAD_CONST = 100, /* Index in const list */
+	PY_OP_LOAD_NAME = 101, /* Index in name list */
+	PY_OP_BUILD_TUPLE = 102, /* Number of tuple items */
+	PY_OP_BUILD_LIST = 103, /* Number of list items */
+	PY_OP_BUILD_MAP = 104, /* Always zero for now */
+	PY_OP_LOAD_ATTR = 105, /* Index in name list */
+	PY_OP_COMPARE_OP = 106, /* Comparison operator */
+	PY_OP_IMPORT_NAME = 107, /* Index in name list */
+	PY_OP_IMPORT_FROM = 108, /* Index in name list */
 
-#define SET_LINENO     127     /* Current line number */
+	PY_OP_JUMP_FORWARD = 110, /* Number of bytes to skip */
+	PY_OP_JUMP_IF_FALSE = 111, /* "" */
+	PY_OP_JUMP_IF_TRUE = 112, /* "" */
+	PY_OP_JUMP_ABSOLUTE = 113, /* Target byte offset from beginning of code */
+	PY_OP_FOR_LOOP = 114, /* Number of bytes to skip */
 
-/* Comparison operator codes (argument to COMPARE_OP) */
-enum cmp_op {
-	LT, LE, EQ, NE, GT, GE, IN, NOT_IN, IS, IS_NOT, EXC_MATCH, BAD
+	PY_OP_SETUP_LOOP = 120, /* Target address (absolute) */
+	PY_OP_SETUP_EXCEPT = 121, /* "" */
+	PY_OP_SETUP_FINALLY = 122, /* "" */
+
+	PY_OP_SET_LINENO = 127 /* Current line number */
 };
 
-#define HAS_ARG(op) ((op) >= HAVE_ARGUMENT)
+/* Comparison operator codes (argument to PY_OP_COMPARE_OP) */
+enum py_cmp_op {
+	PY_CMP_LT,
+	PY_CMP_LE,
+	PY_CMP_EQ,
+	PY_CMP_NE,
+	PY_CMP_GT,
+	PY_CMP_GE,
+	PY_CMP_IN,
+	PY_CMP_NOT_IN,
+	PY_CMP_IS,
+	PY_CMP_IS_NOT,
+	PY_CMP_EXC_MATCH,
+	PY_CMP_BAD
+};
 
 #endif

@@ -1,67 +1,47 @@
-/***********************************************************
-Copyright 1991 by Stichting Mathematisch Centrum, Amsterdam, The
-Netherlands.
-
-                        All Rights Reserved
-
-Permission to use, copy, modify, and distribute this software and its
-documentation for any purpose and without fee is hereby granted,
-provided that the above copyright notice appear in all copies and that
-both that copyright notice and this permission notice appear in
-supporting documentation, and that the names of Stichting Mathematisch
-Centrum or CWI not be used in advertising or publicity pertaining to
-distribution of the software without specific, written prior permission.
-
-STICHTING MATHEMATISCH CENTRUM DISCLAIMS ALL WARRANTIES WITH REGARD TO
-THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
-FITNESS, IN NO EVENT SHALL STICHTING MATHEMATISCH CENTRUM BE LIABLE
-FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
-OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-
-******************************************************************/
+/*
+ * Copyright 1991 by Stichting Mathematisch Centrum
+ * See `LICENCE' for more information.
+ */
 
 /* Float object implementation */
 
 /* XXX There should be overflow checks here, but it's hard to check
    for any kind of float exception without losing portability. */
 
-#include <python/allobjects.h>
+#include <python/std.h>
+#include <python/errors.h>
 
-#include <stdlib.h>
-#include <errno.h>
-#include <ctype.h>
-#include <math.h>
+#include <python/floatobject.h>
+#include <python/stringobject.h>
 
-object* newfloatobject(fval)double fval;
+struct py_object* py_float_new(fval)double fval;
 {
-	/* For efficiency, this code is copied from newobject() */
-	floatobject* op = malloc(sizeof(floatobject));
+	/* For efficiency, this code is copied from py_object_new() */
+	struct py_float* op = malloc(sizeof(struct py_float));
 	if(op == NULL) {
-		return err_nomem();
+		return py_error_set_nomem();
 	}
-	NEWREF(op);
-	op->ob_type = &Floattype;
-	op->ob_fval = fval;
-	return (object*) op;
+	PY_NEWREF(op);
+	op->type = &py_float_type;
+	op->value = fval;
+	return (struct py_object*) op;
 }
 
-double getfloatvalue(op)object* op;
+double py_float_get(op)struct py_object* op;
 {
-	if(!is_floatobject(op)) {
-		err_badarg();
+	if(!py_is_float(op)) {
+		py_error_set_badarg();
 		return -1;
 	}
 	else {
-		return ((floatobject*) op)->ob_fval;
+		return ((struct py_float*) op)->value;
 	}
 }
 
 /* Methods */
 
 static void float_buf_repr(buf, v)char* buf;
-								  floatobject* v;
+								  struct py_float* v;
 {
 	char* cp;
 	/* Subroutine for float_repr and float_print.
@@ -69,7 +49,7 @@ static void float_buf_repr(buf, v)char* buf;
 	   i.e., they should contain a decimal point or an exponent.
 	   However, %g may print the number as an integer;
 	   in such cases, we append ".0" to the string. */
-	sprintf(buf, "%.12g", v->ob_fval);
+	sprintf(buf, "%.12g", v->value);
 	cp = buf;
 	if(*cp == '-') {
 		cp++;
@@ -88,7 +68,7 @@ static void float_buf_repr(buf, v)char* buf;
 	}
 }
 
-static void float_print(v, fp, flags)floatobject* v;
+static void float_print(v, fp, flags)struct py_float* v;
 									 FILE* fp;
 									 int flags;
 {
@@ -100,117 +80,117 @@ static void float_print(v, fp, flags)floatobject* v;
 	fputs(buf, fp);
 }
 
-static object* float_repr(v)floatobject* v;
+static struct py_object* float_repr(v)struct py_float* v;
 {
 	char buf[100];
 	float_buf_repr(buf, v);
-	return newstringobject(buf);
+	return py_string_new(buf);
 }
 
-static int float_compare(v, w)floatobject* v, * w;
+static int float_compare(v, w)struct py_float* v, * w;
 {
-	double i = v->ob_fval;
-	double j = w->ob_fval;
+	double i = v->value;
+	double j = w->value;
 	return (i < j) ? -1 : (i > j) ? 1 : 0;
 }
 
-static object* float_add(v, w)floatobject* v;
-							  object* w;
+static struct py_object* float_add(v, w)struct py_float* v;
+							  struct py_object* w;
 {
-	if(!is_floatobject(w)) {
-		err_badarg();
+	if(!py_is_float(w)) {
+		py_error_set_badarg();
 		return NULL;
 	}
-	return newfloatobject(v->ob_fval + ((floatobject*) w)->ob_fval);
+	return py_float_new(v->value + ((struct py_float*) w)->value);
 }
 
-static object* float_sub(v, w)floatobject* v;
-							  object* w;
+static struct py_object* float_sub(v, w)struct py_float* v;
+							  struct py_object* w;
 {
-	if(!is_floatobject(w)) {
-		err_badarg();
+	if(!py_is_float(w)) {
+		py_error_set_badarg();
 		return NULL;
 	}
-	return newfloatobject(v->ob_fval - ((floatobject*) w)->ob_fval);
+	return py_float_new(v->value - ((struct py_float*) w)->value);
 }
 
-static object* float_mul(v, w)floatobject* v;
-							  object* w;
+static struct py_object* float_mul(v, w)struct py_float* v;
+							  struct py_object* w;
 {
-	if(!is_floatobject(w)) {
-		err_badarg();
+	if(!py_is_float(w)) {
+		py_error_set_badarg();
 		return NULL;
 	}
-	return newfloatobject(v->ob_fval * ((floatobject*) w)->ob_fval);
+	return py_float_new(v->value * ((struct py_float*) w)->value);
 }
 
-static object* float_div(v, w)floatobject* v;
-							  object* w;
+static struct py_object* float_div(v, w)struct py_float* v;
+							  struct py_object* w;
 {
-	if(!is_floatobject(w)) {
-		err_badarg();
+	if(!py_is_float(w)) {
+		py_error_set_badarg();
 		return NULL;
 	}
-	if(((floatobject*) w)->ob_fval == 0) {
-		err_setstr(ZeroDivisionError, "float division by zero");
+	if(((struct py_float*) w)->value == 0) {
+		py_error_set_string(PY_ZERO_DIVISION_ERROR, "float division by zero");
 		return NULL;
 	}
-	return newfloatobject(v->ob_fval / ((floatobject*) w)->ob_fval);
+	return py_float_new(v->value / ((struct py_float*) w)->value);
 }
 
-static object* float_rem(v, w)floatobject* v;
-							  object* w;
+static struct py_object* float_rem(v, w)struct py_float* v;
+							  struct py_object* w;
 {
 	double wx;
-	if(!is_floatobject(w)) {
-		err_badarg();
+	if(!py_is_float(w)) {
+		py_error_set_badarg();
 		return NULL;
 	}
-	wx = ((floatobject*) w)->ob_fval;
+	wx = ((struct py_float*) w)->value;
 	if(wx == 0.0) {
-		err_setstr(ZeroDivisionError, "float division by zero");
+		py_error_set_string(PY_ZERO_DIVISION_ERROR, "float division by zero");
 		return NULL;
 	}
-	return newfloatobject(fmod(v->ob_fval, wx));
+	return py_float_new(fmod(v->value, wx));
 }
 
-static object* float_pow(v, w)floatobject* v;
-							  object* w;
+static struct py_object* float_pow(v, w)struct py_float* v;
+							  struct py_object* w;
 {
 	double iv, iw, ix;
-	if(!is_floatobject(w)) {
-		err_badarg();
+	if(!py_is_float(w)) {
+		py_error_set_badarg();
 		return NULL;
 	}
-	iv = v->ob_fval;
-	iw = ((floatobject*) w)->ob_fval;
+	iv = v->value;
+	iw = ((struct py_float*) w)->value;
 	if(iw == 0.0) {
-		return newfloatobject(1.0);
+		return py_float_new(1.0);
 	} /* x**0 is always 1, even 0**0 */
 	errno = 0;
 	ix = pow(iv, iw);
 	if(errno != 0) {
 		/* XXX could it be another type of error? */
-		err_errno(OverflowError);
+		py_error_set_errno(PY_OVERFLOW_ERROR);
 		return NULL;
 	}
-	return newfloatobject(ix);
+	return py_float_new(ix);
 }
 
-static object* float_neg(v)floatobject* v;
+static struct py_object* float_neg(v)struct py_float* v;
 {
-	return newfloatobject(-v->ob_fval);
+	return py_float_new(-v->value);
 }
 
-static object* float_pos(v)floatobject* v;
+static struct py_object* float_pos(v)struct py_float* v;
 {
-	return newfloatobject(v->ob_fval);
+	return py_float_new(v->value);
 }
 
-static number_methods float_as_number = {
+static struct py_numbermethods float_as_number = {
 		float_add,      /*tp_add*/
-		float_sub,      /*tp_subtract*/
-		float_mul,      /*tp_multiply*/
+		float_sub,      /*tp_sub*/
+		float_mul,      /*tp_mul*/
 		float_div,      /*tp_divide*/
 		float_rem,      /*tp_remainder*/
 		float_pow,      /*tp_power*/
@@ -218,21 +198,21 @@ static number_methods float_as_number = {
 		float_pos,      /*tp_plus*/
 };
 
-typeobject Floattype = {
-		OB_HEAD_INIT(&Typetype) 0, "float", sizeof(floatobject), 0,
-		pyobject_free,           /*tp_dealloc*/
-		float_print,            /*tp_print*/
-		0,                      /*tp_getattr*/
-		0,                      /*tp_setattr*/
-		float_compare,          /*tp_compare*/
-		float_repr,             /*tp_repr*/
-		&float_as_number,   /*tp_as_number*/
-		0,                      /*tp_as_sequence*/
-		0,                      /*tp_as_mapping*/
+struct py_type py_float_type = {
+		PY_OB_SEQ_INIT(&py_type_type) 0, "float", sizeof(struct py_float), 0,
+		py_object_delete,           /*dealloc*/
+		float_print,            /*print*/
+		0,                      /*get_attr*/
+		0,                      /*set_attr*/
+		float_compare,          /*cmp*/
+		float_repr,             /*repr*/
+		&float_as_number,   /*numbermethods*/
+		0,                      /*sequencemethods*/
+		0,                      /*mappingmethods*/
 };
 
 /*
-XXX This is not enough.  Need:
+XXX This is not enough. Need:
 - automatic casts for mixed arithmetic (3.1 * 4)
 - mixed comparisons (!)
 - look at other uses of ints that could be extended to floats

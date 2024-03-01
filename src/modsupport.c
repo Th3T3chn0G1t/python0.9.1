@@ -1,51 +1,39 @@
-/***********************************************************
-Copyright 1991 by Stichting Mathematisch Centrum, Amsterdam, The
-Netherlands.
-
-                        All Rights Reserved
-
-Permission to use, copy, modify, and distribute this software and its
-documentation for any purpose and without fee is hereby granted,
-provided that the above copyright notice appear in all copies and that
-both that copyright notice and this permission notice appear in
-supporting documentation, and that the names of Stichting Mathematisch
-Centrum or CWI not be used in advertising or publicity pertaining to
-distribution of the software without specific, written prior permission.
-
-STICHTING MATHEMATISCH CENTRUM DISCLAIMS ALL WARRANTIES WITH REGARD TO
-THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
-FITNESS, IN NO EVENT SHALL STICHTING MATHEMATISCH CENTRUM BE LIABLE
-FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
-OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-
-******************************************************************/
+/*
+ * Copyright 1991 by Stichting Mathematisch Centrum
+ * See `LICENCE' for more information.
+ */
 
 /* Module support implementation */
 
-#include <python/allobjects.h>
 #include <python/modsupport.h>
+#include <python/errors.h>
 #include <python/import.h>
 
-object* initmodule(name, methods)char* name;
-								 struct methodlist* methods;
+#include <python/moduleobject.h>
+#include <python/dictobject.h>
+#include <python/tupleobject.h>
+#include <python/stringobject.h>
+#include <python/intobject.h>
+#include <python/floatobject.h>
+
+struct py_object* py_module_init(name, methods)char* name;
+								 struct py_methodlist* methods;
 {
-	object* m, * d, * v;
-	struct methodlist* ml;
+	struct py_object* m, * d, * v;
+	struct py_methodlist* ml;
 	char namebuf[256];
-	if((m = add_module(name)) == NULL) {
+	if((m = py_add_module(name)) == NULL) {
 		fprintf(stderr, "initializing module: %s\n", name);
-		fatal("can't create a module");
+		py_fatal("can't create a module");
 	}
-	d = getmoduledict(m);
-	for(ml = methods; ml->ml_name != NULL; ml++) {
-		sprintf(namebuf, "%s.%s", name, ml->ml_name);
-		v = newmethodobject(
-				strdup(namebuf), ml->ml_meth, (object*) NULL, 1);
-		if(v == NULL || dictinsert(d, ml->ml_name, v) != 0) {
+	d = py_module_get_dict(m);
+	for(ml = methods; ml->name != NULL; ml++) {
+		sprintf(namebuf, "%s.%s", name, ml->name);
+		v = py_method_new(
+				strdup(namebuf), ml->method, (struct py_object*) NULL, 1);
+		if(v == NULL || py_dict_insert(d, ml->name, v) != 0) {
 			fprintf(stderr, "initializing module: %s\n", name);
-			fatal("can't initialize module");
+			py_fatal("can't initialize module");
 		}
 		PY_DECREF(v);
 	}
@@ -53,212 +41,67 @@ object* initmodule(name, methods)char* name;
 }
 
 /* Argument list handling tools.
-   All return 1 for success, or call err_set*() and return 0 for failure */
+   All return 1 for success, or call py_error_set*() and return 0 for failure */
 
-int getnoarg(object* v) {
-	if(v != NULL) return err_badarg();
+int py_arg_none(struct py_object* v) {
+	if(v != NULL) return py_error_set_badarg();
 
 	return 1;
 }
 
-int getintarg(object* v, int* a) {
-	if(v == NULL || !is_intobject(v)) {
-		return err_badarg();
+int py_arg_int(struct py_object* v, int* a) {
+	if(v == NULL || !py_is_int(v)) {
+		return py_error_set_badarg();
 	}
-	*a = getintvalue(v);
+	*a = py_int_get(v);
 	return 1;
 }
 
-int getintintarg(object* v, int* a, int* b) {
-	if(v == NULL || !is_tupleobject(v) || gettuplesize(v) != 2) {
-		return err_badarg();
+int py_arg_int_int(struct py_object* v, int* a, int* b) {
+	if(v == NULL || !py_is_tuple(v) || py_tuple_size(v) != 2) {
+		return py_error_set_badarg();
 	}
-	return getintarg(gettupleitem(v, 0), a) && getintarg(gettupleitem(v, 1), b);
+	return py_arg_int(py_tuple_get(v, 0), a) && py_arg_int(py_tuple_get(v, 1), b);
 }
 
-int getlongarg(object* v, long* a) {
-	if(v == NULL || !is_intobject(v)) {
-		return err_badarg();
+int py_arg_long(struct py_object* v, long* a) {
+	if(v == NULL || !py_is_int(v)) {
+		return py_error_set_badarg();
 	}
-	*a = getintvalue(v);
+	*a = py_int_get(v);
 	return 1;
 }
 
-int getlonglongargs(object* v, long* a, long* b) {
-	if(v == NULL || !is_tupleobject(v) || gettuplesize(v) != 2) {
-		return err_badarg();
+int py_arg_long_long(struct py_object* v, long* a, long* b) {
+	if(v == NULL || !py_is_tuple(v) || py_tuple_size(v) != 2) {
+		return py_error_set_badarg();
 	}
-	return getlongarg(gettupleitem(v, 0), a) &&
-		   getlongarg(gettupleitem(v, 1), b);
+	return py_arg_long(py_tuple_get(v, 0), a) &&
+		   py_arg_long(py_tuple_get(v, 1), b);
 }
 
-int getlonglongobjectargs(object* v, long* a, long* b, object** c) {
-	if(v == NULL || !is_tupleobject(v) || gettuplesize(v) != 3) {
-		return err_badarg();
-	}
-	if(getlongarg(gettupleitem(v, 0), a) && getlongarg(gettupleitem(v, 1), b)) {
-		*c = gettupleitem(v, 2);
-		return 1;
-	}
-	else {
-		return err_badarg();
-	}
-}
-
-int getstrarg(object* v, object** a) {
-	if(v == NULL || !is_stringobject(v)) {
-		return err_badarg();
+int py_arg_str(struct py_object* v, struct py_object** a) {
+	if(v == NULL || !py_is_string(v)) {
+		return py_error_set_badarg();
 	}
 	*a = v;
 	return 1;
 }
 
-int getstrstrarg(object* v, object** a, object** b) {
-	if(v == NULL || !is_tupleobject(v) || gettuplesize(v) != 2) {
-		return err_badarg();
+int py_arg_str_str(struct py_object* v, struct py_object** a, struct py_object** b) {
+	if(v == NULL || !py_is_tuple(v) || py_tuple_size(v) != 2) {
+		return py_error_set_badarg();
 	}
-	return getstrarg(gettupleitem(v, 0), a) && getstrarg(gettupleitem(v, 1), b);
+	return py_arg_str(py_tuple_get(v, 0), a) && py_arg_str(py_tuple_get(v, 1), b);
 }
 
-int getstrstrintarg(object* v, object** a, object** b, int* c) {
-	if(v == NULL || !is_tupleobject(v) || gettuplesize(v) != 3) {
-		return err_badarg();
+int py_arg_str_int(struct py_object* v, struct py_object** a, int* b) {
+	if(v == NULL || !py_is_tuple(v) || py_tuple_size(v) != 2) {
+		return py_error_set_badarg();
 	}
-	return getstrarg(gettupleitem(v, 0), a) &&
-		   getstrarg(gettupleitem(v, 1), b) && getintarg(gettupleitem(v, 2), c);
+	return py_arg_str(py_tuple_get(v, 0), a) && py_arg_int(py_tuple_get(v, 1), b);
 }
 
-int getstrintarg(object* v, object** a, int* b) {
-	if(v == NULL || !is_tupleobject(v) || gettuplesize(v) != 2) {
-		return err_badarg();
-	}
-	return getstrarg(gettupleitem(v, 0), a) && getintarg(gettupleitem(v, 1), b);
-}
-
-int getintstrarg(object* v, int* a, object** b) {
-	if(v == NULL || !is_tupleobject(v) || gettuplesize(v) != 2) {
-		return err_badarg();
-	}
-	return getintarg(gettupleitem(v, 0), a) && getstrarg(gettupleitem(v, 1), b);
-}
-
-int getpointarg(object* v, int* a /* [2] */) {
-	return getintintarg(v, a, a + 1);
-}
-
-int get3pointarg(object* v, int* a) {
-	if(v == NULL || !is_tupleobject(v) || gettuplesize(v) != 3) {
-		return err_badarg();
-	}
-	return getpointarg(gettupleitem(v, 0), a) &&
-		   getpointarg(gettupleitem(v, 1), a + 2) &&
-		   getpointarg(gettupleitem(v, 2), a + 4);
-}
-
-int getrectarg(object* v, int* a) {
-	if(v == NULL || !is_tupleobject(v) || gettuplesize(v) != 2) {
-		return err_badarg();
-	}
-	return getpointarg(gettupleitem(v, 0), a) &&
-		   getpointarg(gettupleitem(v, 1), a + 2);
-}
-
-int getrectintarg(object* v, int* a /* [4+1] */) {
-	if(v == NULL || !is_tupleobject(v) || gettuplesize(v) != 2) {
-		return err_badarg();
-	}
-	return getrectarg(gettupleitem(v, 0), a) &&
-		   getintarg(gettupleitem(v, 1), a + 4);
-}
-
-int getpointintarg(object* v, int* a /* [2+1] */) {
-	if(v == NULL || !is_tupleobject(v) || gettuplesize(v) != 2) {
-		return err_badarg();
-	}
-	return getpointarg(gettupleitem(v, 0), a) &&
-		   getintarg(gettupleitem(v, 1), a + 2);
-}
-
-int getpointstrarg(object* v, int* a /* [2] */, object** b) {
-	if(v == NULL || !is_tupleobject(v) || gettuplesize(v) != 2) {
-		return err_badarg();
-	}
-	return getpointarg(gettupleitem(v, 0), a) &&
-		   getstrarg(gettupleitem(v, 1), b);
-}
-
-int getstrintintarg(object* v, object* a, int* b, int* c) {
-	if(v == NULL || !is_tupleobject(v) || gettuplesize(v) != 3) {
-		return err_badarg();
-	}
-	return getstrarg(gettupleitem(v, 0), &a) &&
-		   getintarg(gettupleitem(v, 1), b) && getintarg(gettupleitem(v, 2), c);
-}
-
-int getrectpointarg(object* v, int* a /* [4+2] */) {
-	if(v == NULL || !is_tupleobject(v) || gettuplesize(v) != 2) {
-		return err_badarg();
-	}
-	return getrectarg(gettupleitem(v, 0), a) &&
-		   getpointarg(gettupleitem(v, 1), a + 4);
-}
-
-int getlongtuplearg(object* args, long* a /* [n] */, int n) {
-	int i;
-	if(!is_tupleobject(args) || gettuplesize(args) != n) {
-		return err_badarg();
-	}
-	for(i = 0; i < n; i++) {
-		object* v = gettupleitem(args, i);
-		if(!is_intobject(v)) {
-			return err_badarg();
-		}
-		a[i] = getintvalue(v);
-	}
-	return 1;
-}
-
-int getshorttuplearg(object* args, short* a /* [n] */, int n) {
-	int i;
-	if(!is_tupleobject(args) || gettuplesize(args) != n) {
-		return err_badarg();
-	}
-	for(i = 0; i < n; i++) {
-		object* v = gettupleitem(args, i);
-		if(!is_intobject(v)) {
-			return err_badarg();
-		}
-		a[i] = getintvalue(v);
-	}
-	return 1;
-}
-
-int getlonglistarg(object* args, long* a /* [n] */, int n) {
-	int i;
-	if(!is_listobject(args) || getlistsize(args) != n) {
-		return err_badarg();
-	}
-	for(i = 0; i < n; i++) {
-		object* v = getlistitem(args, i);
-		if(!is_intobject(v)) {
-			return err_badarg();
-		}
-		a[i] = getintvalue(v);
-	}
-	return 1;
-}
-
-int getshortlistarg(object* args, short* a /* [n] */, int n) {
-	int i;
-	if(!is_listobject(args) || getlistsize(args) != n) {
-		return err_badarg();
-	}
-	for(i = 0; i < n; i++) {
-		object* v = getlistitem(args, i);
-		if(!is_intobject(v)) {
-			return err_badarg();
-		}
-		a[i] = getintvalue(v);
-	}
-	return 1;
+int getpointarg(struct py_object* v, int* a /* [2] */) {
+	return py_arg_int_int(v, a, a + 1);
 }

@@ -1,74 +1,52 @@
-/***********************************************************
-Copyright 1991 by Stichting Mathematisch Centrum, Amsterdam, The
-Netherlands.
-
-                        All Rights Reserved
-
-Permission to use, copy, modify, and distribute this software and its
-documentation for any purpose and without fee is hereby granted,
-provided that the above copyright notice appear in all copies and that
-both that copyright notice and this permission notice appear in
-supporting documentation, and that the names of Stichting Mathematisch
-Centrum or CWI not be used in advertising or publicity pertaining to
-distribution of the software without specific, written prior permission.
-
-STICHTING MATHEMATISCH CENTRUM DISCLAIMS ALL WARRANTIES WITH REGARD TO
-THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
-FITNESS, IN NO EVENT SHALL STICHTING MATHEMATISCH CENTRUM BE LIABLE
-FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
-OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-
-******************************************************************/
+/*
+ * Copyright 1991 by Stichting Mathematisch Centrum
+ * See `LICENCE' for more information.
+ */
 
 /* Token types */
 
 #ifndef PY_TOKEN_H
 #define PY_TOKEN_H
 
-#define ENDMARKER      0
-#define NAME           1
-#define NUMBER         2
-#define STRING         3
-#define NEWLINE                4
-#define INDENT         5
-#define DEDENT         6
-#define LPAR           7
-#define RPAR           8
-#define LSQB           9
-#define RSQB           10
-#define COLON          11
-#define COMMA          12
-#define SEMI           13
-#define PLUS           14
-#define MINUS          15
-#define STAR           16
-#define SLASH          17
-#define VBAR           18
-#define AMPER          19
-#define LESS           20
-#define GREATER                21
-#define EQUAL          22
-#define DOT            23
-#define PERCENT                24
-#define BACKQUOTE      25
-#define LBRACE         26
-#define RBRACE         27
-#define OP             28
-#define ERRORTOKEN     29
-#define N_TOKENS       30
+/* TODO: Use enum type for this and all uses. */
+#define PY_ENDMARKER (0)
+#define PY_NAME (1)
+#define PY_NUMBER (2)
+#define PY_STRING (3)
+#define PY_NEWLINE (4)
+#define PY_INDENT (5)
+#define PY_DEDENT (6)
+#define PY_LPAR (7)
+#define PY_RPAR (8)
+#define PY_LSQB (9)
+#define PY_RSQB (10)
+#define PY_COLON (11)
+#define PY_COMMA (12)
+#define PY_SEMI (13)
+#define PY_PLUS (14)
+#define PY_MINUS (15)
+#define PY_STAR (16)
+#define PY_SLASH (17)
+#define PY_VBAR (18)
+#define PY_AMPER (19)
+#define PY_LESS (20)
+#define PY_GREATER (21)
+#define PY_EQUAL (22)
+#define PY_DOT (23)
+#define PY_PERCENT (24)
+#define PY_BACKQUOTE (25)
+#define PY_LBRACE (26)
+#define PY_RBRACE (27)
+#define PY_OP (28)
+#define PY_ERRORTOKEN (29)
+#define PY_N_TOKENS (30)
 
 /* Special definitions for cooperation with parser */
+#define PY_NONTERMINAL (256)
 
-#define NT_OFFSET              256
+/* TODO: Python global state. */
+extern char* py_token_names[]; /* Token names */
 
-#define ISTERMINAL(x)          ((x) < NT_OFFSET)
-#define ISNONTERMINAL(x)       ((x) >= NT_OFFSET)
-#define ISEOF(x)               ((x) == ENDMARKER)
-
-
-extern char* tok_name[]; /* Token names */
-int tok_1char(int);
+int py_token_char(int);
 
 #endif
