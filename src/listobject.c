@@ -56,7 +56,7 @@ int py_list_size(op)struct py_object* op;
 }
 
 struct py_object* py_list_get(op, i)struct py_object* op;
-						  int i;
+									int i;
 {
 	if(!py_is_list(op)) {
 		py_error_set_badcall();
@@ -83,7 +83,8 @@ int py_list_set(op, i, newitem)struct py_object* op;
 	if(i < 0 || i >= (int) ((struct py_list*) op)->size) {
 		if(newitem != NULL)
 			PY_DECREF(newitem);
-		py_error_set_string(PY_INDEX_ERROR, "list assignment index out of range");
+		py_error_set_string(
+				PY_INDEX_ERROR, "list assignment index out of range");
 		return -1;
 	}
 	olditem = ((struct py_list*) op)->item[i];
@@ -128,8 +129,8 @@ static int ins1(self, where, v)struct py_list* self;
 }
 
 int py_list_insert(op, where, newitem)struct py_object* op;
-								   int where;
-								   struct py_object* newitem;
+									  int where;
+									  struct py_object* newitem;
 {
 	if(!py_is_list(op)) {
 		py_error_set_badcall();
@@ -219,7 +220,7 @@ static int list_length(a)struct py_list* a;
 }
 
 static struct py_object* list_item(a, i)struct py_list* a;
-							  int i;
+										int i;
 {
 	if(i < 0 || i >= (int) a->size) {
 		py_error_set_string(PY_INDEX_ERROR, "list index out of range");
@@ -230,7 +231,7 @@ static struct py_object* list_item(a, i)struct py_list* a;
 }
 
 static struct py_object* list_slice(a, ilow, ihigh)struct py_list* a;
-										 int ilow, ihigh;
+												   int ilow, ihigh;
 {
 	struct py_list* np;
 	int i;
@@ -262,7 +263,7 @@ static struct py_object* list_slice(a, ilow, ihigh)struct py_list* a;
 }
 
 static struct py_object* list_concat(a, bb)struct py_list* a;
-								 struct py_object* bb;
+										   struct py_object* bb;
 {
 	int size;
 	int i;
@@ -292,7 +293,8 @@ static struct py_object* list_concat(a, bb)struct py_list* a;
 }
 
 /* Added by Andrew Dalke, 27 March 2009 to handle the needed forward declaration for gcc*/
-static int list_ass_slice(struct py_object* a, int ilow, int ihigh, struct py_object* v);
+static int
+list_ass_slice(struct py_object* a, int ilow, int ihigh, struct py_object* v);
 
 
 static int list_ass_item(a, i, v)struct py_list* a;
@@ -300,7 +302,8 @@ static int list_ass_item(a, i, v)struct py_list* a;
 								 struct py_object* v;
 {
 	if(i < 0 || i >= (int) a->size) {
-		py_error_set_string(PY_INDEX_ERROR, "list assignment index out of range");
+		py_error_set_string(
+				PY_INDEX_ERROR, "list assignment index out of range");
 		return -1;
 	}
 	if(v == NULL) {
@@ -313,8 +316,8 @@ static int list_ass_item(a, i, v)struct py_list* a;
 }
 
 static int list_ass_slice(aa, ilow, ihigh, v)struct py_object* aa;
-											int ilow, ihigh;
-											struct py_object* v;
+											 int ilow, ihigh;
+											 struct py_object* v;
 {
 	struct py_object** item;
 	struct py_list* a;
@@ -389,8 +392,8 @@ static int list_ass_slice(aa, ilow, ihigh, v)struct py_object* aa;
 }
 
 static struct py_object* ins(self, where, v)struct py_list* self;
-								  int where;
-								  struct py_object* v;
+											int where;
+											struct py_object* v;
 {
 	if(ins1(self, where, v) != 0) {
 		return NULL;
@@ -400,7 +403,7 @@ static struct py_object* ins(self, where, v)struct py_list* self;
 }
 
 static struct py_object* listinsert(self, args)struct py_list* self;
-									 struct py_object* args;
+											   struct py_object* args;
 {
 	int i;
 	if(args == NULL || !py_is_tuple(args) || py_tuple_size(args) != 2) {
@@ -414,7 +417,7 @@ static struct py_object* listinsert(self, args)struct py_list* self;
 }
 
 static struct py_object* listappend(self, args)struct py_list* self;
-									 struct py_object* args;
+											   struct py_object* args;
 {
 	return ins(self, (int) self->size, args);
 }
@@ -425,7 +428,7 @@ static int cmp(v, w)char* v, * w;
 }
 
 static struct py_object* listsort(self, args)struct py_list* self;
-								   struct py_object* args;
+											 struct py_object* args;
 {
 	if(args != NULL) {
 		py_error_set_badarg();
@@ -466,7 +469,7 @@ static struct py_methodlist list_methods[] = {
 };
 
 static struct py_object* list_getattr(f, name)struct py_list* f;
-									char* name;
+											  char* name;
 {
 	return py_methodlist_find(list_methods, (struct py_object*) f, name);
 }

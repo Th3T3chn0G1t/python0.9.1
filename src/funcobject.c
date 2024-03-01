@@ -19,7 +19,7 @@ typedef struct {
 } funcobject;
 
 struct py_object* py_func_new(code, globals)struct py_object* code;
-									struct py_object* globals;
+											struct py_object* globals;
 {
 	funcobject* op = py_object_new(&py_func_type);
 	if(op != NULL) {
@@ -54,13 +54,13 @@ struct py_object* py_func_get_globals(op)struct py_object* op;
 #define OFF(x) offsetof(funcobject, x)
 
 static struct py_memberlist func_memberlist[] = {
-		{ "func_code",    PY_TYPE_OBJECT, OFF(func_code), PY_READWRITE },
+		{ "func_code",    PY_TYPE_OBJECT, OFF(func_code),    PY_READWRITE },
 		{ "func_globals", PY_TYPE_OBJECT, OFF(func_globals), PY_READWRITE },
-		{ NULL, 0, 0, 0 }  /* Sentinel */
+		{ NULL,           0, 0,                              0 }  /* Sentinel */
 };
 
 static struct py_object* func_getattr(op, name)funcobject* op;
-									 char* name;
+											   char* name;
 {
 	return py_memberlist_get((char*) op, func_memberlist, name);
 }
@@ -80,5 +80,4 @@ struct py_type py_func_type = {
 		0,              /*set_attr*/
 		0,              /*cmp*/
 		0,              /*repr*/
-		0, 0, 0
-};
+		0, 0, 0 };

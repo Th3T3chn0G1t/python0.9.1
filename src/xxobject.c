@@ -46,7 +46,7 @@ static void xx_dealloc(xp)xxobject* xp;
 }
 
 static struct py_object* xx_demo(self, args)xxobject* self;
-								  struct py_object* args;
+											struct py_object* args;
 {
 	if(!py_arg_none(args)) {
 		return NULL;
@@ -60,7 +60,7 @@ static struct py_methodlist xx_methods[] = {
 };
 
 static struct py_object* xx_getattr(xp, name)xxobject* xp;
-								   char* name;
+											 char* name;
 {
 	if(xp->x_attr != NULL) {
 		struct py_object* v = py_dict_lookup(xp->x_attr, name);

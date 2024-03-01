@@ -14,7 +14,7 @@ static void list1node(FILE*, struct py_node*);
 static int level, atbol;
 
 void py_tree_list(fp, n)FILE* fp;
-					struct py_node* n;
+						struct py_node* n;
 {
 	level = 0;
 	atbol = 1;

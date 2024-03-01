@@ -37,7 +37,8 @@ struct py_object* py_name_error;
 struct py_object* py_system_error;
 struct py_object* py_interrupt_error;
 
-static struct py_object* builtin_abs(struct py_object* self, struct py_object* v) {
+static struct py_object*
+builtin_abs(struct py_object* self, struct py_object* v) {
 	(void) self;
 
 	/* XXX This should be a method in the as_number struct in the type */
@@ -61,7 +62,8 @@ static struct py_object* builtin_abs(struct py_object* self, struct py_object* v
 	return NULL;
 }
 
-static struct py_object* builtin_chr(struct py_object* self, struct py_object* v) {
+static struct py_object*
+builtin_chr(struct py_object* self, struct py_object* v) {
 	long x;
 	char s[1];
 
@@ -83,15 +85,17 @@ static struct py_object* builtin_chr(struct py_object* self, struct py_object* v
 	return py_string_new_size(s, 1);
 }
 
-static struct py_object* builtin_dir(struct py_object* self, struct py_object* v) {
+static struct py_object*
+builtin_dir(struct py_object* self, struct py_object* v) {
 	struct py_object* d;
 
 	(void) self;
 
-	if(v == NULL) d = py_get_locals();
+	if(v == NULL) { d = py_get_locals(); }
 	else {
 		if(!py_is_module(v)) {
-			py_error_set_string(py_type_error, "dir() argument, must be module or absent");
+			py_error_set_string(
+					py_type_error, "dir() argument, must be module or absent");
 			return NULL;
 		}
 
@@ -107,7 +111,8 @@ static struct py_object* builtin_dir(struct py_object* self, struct py_object* v
 	return v;
 }
 
-static struct py_object* builtin_divmod(struct py_object* self, struct py_object* v) {
+static struct py_object*
+builtin_divmod(struct py_object* self, struct py_object* v) {
 	struct py_object* x;
 	struct py_object* y;
 	long xi, yi, xdivy, xmody;
@@ -162,7 +167,8 @@ static struct py_object* builtin_divmod(struct py_object* self, struct py_object
 	return v;
 }
 
-static struct py_object* builtin_float(struct py_object* self, struct py_object* v) {
+static struct py_object*
+builtin_float(struct py_object* self, struct py_object* v) {
 	(void) self;
 
 	if(v == NULL) {
@@ -181,7 +187,8 @@ static struct py_object* builtin_float(struct py_object* self, struct py_object*
 	return NULL;
 }
 
-static struct py_object* builtin_int(struct py_object* self, struct py_object* v) {
+static struct py_object*
+builtin_int(struct py_object* self, struct py_object* v) {
 	(void) self;
 
 	if(v == NULL) {
@@ -200,9 +207,10 @@ static struct py_object* builtin_int(struct py_object* self, struct py_object* v
 	return NULL;
 }
 
-static struct py_object* builtin_len(struct py_object* self, struct py_object* v) {
+static struct py_object*
+builtin_len(struct py_object* self, struct py_object* v) {
 	long len;
-	struct py_type * tp;
+	struct py_type* tp;
 
 	(void) self;
 
@@ -249,7 +257,8 @@ static struct py_object* min_max(struct py_object* v, int sign) {
 	n = (*sq->len)(v);
 
 	if(n == 0) {
-		py_error_set_string(py_runtime_error, "min() or max() of empty sequence");
+		py_error_set_string(
+				py_runtime_error, "min() or max() of empty sequence");
 		return NULL;
 	}
 
@@ -269,19 +278,22 @@ static struct py_object* min_max(struct py_object* v, int sign) {
 	return w;
 }
 
-static struct py_object* builtin_min(struct py_object* self, struct py_object* v) {
+static struct py_object*
+builtin_min(struct py_object* self, struct py_object* v) {
 	(void) self;
 
 	return min_max(v, -1);
 }
 
-static struct py_object* builtin_max(struct py_object* self, struct py_object* v) {
+static struct py_object*
+builtin_max(struct py_object* self, struct py_object* v) {
 	(void) self;
 
 	return min_max(v, 1);
 }
 
-static struct py_object* builtin_open(struct py_object* self, struct py_object* v) {
+static struct py_object*
+builtin_open(struct py_object* self, struct py_object* v) {
 	struct py_object* name;
 	struct py_object* mode;
 
@@ -291,7 +303,8 @@ static struct py_object* builtin_open(struct py_object* self, struct py_object* 
 	   !py_is_string(name = py_tuple_get(v, 0)) ||
 	   !py_is_string(mode = py_tuple_get(v, 1))) {
 
-		py_error_set_string(py_type_error, "open() requires 2 string arguments");
+		py_error_set_string(
+				py_type_error, "open() requires 2 string arguments");
 		return NULL;
 	}
 
@@ -299,7 +312,8 @@ static struct py_object* builtin_open(struct py_object* self, struct py_object* 
 	return v;
 }
 
-static struct py_object* builtin_ord(struct py_object* self, struct py_object* v) {
+static struct py_object*
+builtin_ord(struct py_object* self, struct py_object* v) {
 	(void) self;
 
 	if(v == NULL || !py_is_string(v)) {
@@ -315,7 +329,8 @@ static struct py_object* builtin_ord(struct py_object* self, struct py_object* v
 	return py_int_new((long) (py_string_get_value(v)[0] & 0xff));
 }
 
-static struct py_object* builtin_range(struct py_object* self, struct py_object* v) {
+static struct py_object*
+builtin_range(struct py_object* self, struct py_object* v) {
 	static char* errmsg = "range() requires 1-3 int arguments";
 	int i, n;
 	long ilow, ihigh, istep;
@@ -387,7 +402,8 @@ static struct py_object* builtin_range(struct py_object* self, struct py_object*
 	return v;
 }
 
-static struct py_object* builtin_raw_input(struct py_object* self, struct py_object* v) {
+static struct py_object*
+builtin_raw_input(struct py_object* self, struct py_object* v) {
 	FILE* in = py_system_get_file("stdin", stdin);
 	FILE* out = py_system_get_file("stdout", stdout);
 	int err;
@@ -400,7 +416,8 @@ static struct py_object* builtin_raw_input(struct py_object* self, struct py_obj
 	v = py_string_new_size((char*) NULL, n);
 
 	if(v != NULL) {
-		if((err = py_fgets_intr(py_string_get_value(v), n + 1, in)) != PY_RESULT_OK) {
+		if((err = py_fgets_intr(py_string_get_value(v), n + 1, in)) !=
+		   PY_RESULT_OK) {
 			py_error_set_input(err);
 			PY_DECREF(v);
 			return NULL;
@@ -417,13 +434,15 @@ static struct py_object* builtin_raw_input(struct py_object* self, struct py_obj
 	return v;
 }
 
-static struct py_object* builtin_reload(struct py_object* self, struct py_object* v) {
+static struct py_object*
+builtin_reload(struct py_object* self, struct py_object* v) {
 	(void) self;
 
 	return py_reload_module(v);
 }
 
-static struct py_object* builtin_type(struct py_object* self, struct py_object* v) {
+static struct py_object*
+builtin_type(struct py_object* self, struct py_object* v) {
 	(void) self;
 
 	if(v == NULL) {

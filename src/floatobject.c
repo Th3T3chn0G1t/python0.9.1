@@ -95,7 +95,7 @@ static int float_compare(v, w)struct py_float* v, * w;
 }
 
 static struct py_object* float_add(v, w)struct py_float* v;
-							  struct py_object* w;
+										struct py_object* w;
 {
 	if(!py_is_float(w)) {
 		py_error_set_badarg();
@@ -105,7 +105,7 @@ static struct py_object* float_add(v, w)struct py_float* v;
 }
 
 static struct py_object* float_sub(v, w)struct py_float* v;
-							  struct py_object* w;
+										struct py_object* w;
 {
 	if(!py_is_float(w)) {
 		py_error_set_badarg();
@@ -115,7 +115,7 @@ static struct py_object* float_sub(v, w)struct py_float* v;
 }
 
 static struct py_object* float_mul(v, w)struct py_float* v;
-							  struct py_object* w;
+										struct py_object* w;
 {
 	if(!py_is_float(w)) {
 		py_error_set_badarg();
@@ -125,7 +125,7 @@ static struct py_object* float_mul(v, w)struct py_float* v;
 }
 
 static struct py_object* float_div(v, w)struct py_float* v;
-							  struct py_object* w;
+										struct py_object* w;
 {
 	if(!py_is_float(w)) {
 		py_error_set_badarg();
@@ -139,7 +139,7 @@ static struct py_object* float_div(v, w)struct py_float* v;
 }
 
 static struct py_object* float_rem(v, w)struct py_float* v;
-							  struct py_object* w;
+										struct py_object* w;
 {
 	double wx;
 	if(!py_is_float(w)) {
@@ -155,7 +155,7 @@ static struct py_object* float_rem(v, w)struct py_float* v;
 }
 
 static struct py_object* float_pow(v, w)struct py_float* v;
-							  struct py_object* w;
+										struct py_object* w;
 {
 	double iv, iw, ix;
 	if(!py_is_float(w)) {

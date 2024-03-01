@@ -114,8 +114,8 @@ struct py_type py_method_type = {
    Usually called from an object's py_object_get_attr method. */
 
 struct py_object* py_methodlist_find(ml, op, name)struct py_methodlist* ml;
-								struct py_object* op;
-								const char* name;
+												  struct py_object* op;
+												  const char* name;
 {
 	for(; ml->name != NULL; ml++) {
 		if(strcmp(name, ml->name) == 0) {

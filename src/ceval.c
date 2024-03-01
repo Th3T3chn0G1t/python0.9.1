@@ -106,7 +106,7 @@ static struct py_object* sub(struct py_object* v, struct py_object* w) {
 }
 
 static struct py_object* mul(struct py_object* v, struct py_object* w) {
-	struct py_type * tp;
+	struct py_type* tp;
 
 	if(py_is_int(v) && w->type->sequencemethods != NULL) {
 		/* int*sequence -- swap v and w */
@@ -121,7 +121,8 @@ static struct py_object* mul(struct py_object* v, struct py_object* w) {
 	if(tp->numbermethods != NULL) return (*tp->numbermethods->mul)(v, w);
 	if(tp->sequencemethods != NULL) {
 		if(!py_is_int(w)) {
-			py_error_set_string(py_type_error, "can't mul sequence with non-int");
+			py_error_set_string(
+					py_type_error, "can't mul sequence with non-int");
 			return NULL;
 		}
 
@@ -181,7 +182,8 @@ static struct py_object* not(struct py_object* v) {
 	return w;
 }
 
-static struct py_object* call_builtin(struct py_object* func, struct py_object* arg) {
+static struct py_object*
+call_builtin(struct py_object* func, struct py_object* arg) {
 	if(py_is_method(func)) {
 		py_method_t meth = py_method_get(func);
 		struct py_object* self = py_method_get_self(func);
@@ -191,7 +193,8 @@ static struct py_object* call_builtin(struct py_object* func, struct py_object* 
 
 	if(py_is_class(func)) {
 		if(arg != NULL) {
-			py_error_set_string(py_type_error, "classobject() allows no arguments");
+			py_error_set_string(
+					py_type_error, "classobject() allows no arguments");
 			return NULL;
 		}
 
@@ -202,7 +205,8 @@ static struct py_object* call_builtin(struct py_object* func, struct py_object* 
 	return NULL;
 }
 
-struct py_object* py_call_function(struct py_object* func, struct py_object* arg) {
+struct py_object*
+py_call_function(struct py_object* func, struct py_object* arg) {
 	struct py_object* newarg = NULL;
 	struct py_object* newlocals;
 	struct py_object* newglobals;
@@ -261,8 +265,9 @@ struct py_object* py_call_function(struct py_object* func, struct py_object* arg
 	return v;
 }
 
-static struct py_object* apply_subscript(struct py_object* v, struct py_object* w) {
-	struct py_type * tp = v->type;
+static struct py_object*
+apply_subscript(struct py_object* v, struct py_object* w) {
+	struct py_type* tp = v->type;
 
 	if(tp->sequencemethods == NULL && tp->mappingmethods == NULL) {
 		py_error_set_string(py_type_error, "unsubscriptable object");
@@ -284,7 +289,8 @@ static struct py_object* apply_subscript(struct py_object* v, struct py_object* 
 	return (*tp->mappingmethods->ind)(v, w);
 }
 
-static struct py_object* loop_subscript(struct py_object* v, struct py_object* w) {
+static struct py_object*
+loop_subscript(struct py_object* v, struct py_object* w) {
 	struct py_sequencemethods* sq = v->type->sequencemethods;
 	int i, n;
 
@@ -316,8 +322,9 @@ static int slice_index(struct py_object* v, int isize, int* pi) {
 }
 
 /* return u[v:w] */
-static struct py_object* apply_slice(struct py_object* u, struct py_object* v, struct py_object* w) {
-	struct py_type * tp = u->type;
+static struct py_object*
+apply_slice(struct py_object* u, struct py_object* v, struct py_object* w) {
+	struct py_type* tp = u->type;
 	int ilow, ihigh, isize;
 
 	if(tp->sequencemethods == NULL) {
@@ -335,8 +342,9 @@ static struct py_object* apply_slice(struct py_object* u, struct py_object* v, s
 }
 
 /* w[key] = v */
-static int assign_subscript(struct py_object* w, struct py_object* key, struct py_object* v) {
-	struct py_type * tp = w->type;
+static int assign_subscript(
+		struct py_object* w, struct py_object* key, struct py_object* v) {
+	struct py_type* tp = w->type;
 	struct py_sequencemethods* sq;
 	struct py_mappingmethods* mp;
 	int (* func)();
@@ -346,7 +354,8 @@ static int assign_subscript(struct py_object* w, struct py_object* key, struct p
 
 	if(sq != NULL && (func = sq->assign_item) != NULL) {
 		if(!py_is_int(key)) {
-			py_error_set_string(py_type_error, "sequence subscript must be integer");
+			py_error_set_string(
+					py_type_error, "sequence subscript must be integer");
 			return -1;
 		}
 
@@ -356,13 +365,16 @@ static int assign_subscript(struct py_object* w, struct py_object* key, struct p
 		return (*func)(w, key, v);
 	}
 	else {
-		py_error_set_string(py_type_error, "can't assign to this subscripted object");
+		py_error_set_string(
+				py_type_error, "can't assign to this subscripted object");
 		return -1;
 	}
 }
 
 /* u[v:w] = x */
-static int assign_slice(struct py_object* u, struct py_object* v, struct py_object* w, struct py_object* x) {
+static int assign_slice(
+		struct py_object* u, struct py_object* v, struct py_object* w,
+		struct py_object* x) {
 	struct py_sequencemethods* sq = u->type->sequencemethods;
 	int ilow, ihigh, isize;
 
@@ -413,7 +425,8 @@ static int cmp_member(struct py_object* v, struct py_object* w) {
 
 		if(!py_is_string(v) || py_string_size(v) != 1) {
 			py_error_set_string(
-					py_type_error, "string member test needs char left operand");
+					py_type_error,
+					"string member test needs char left operand");
 			return -1;
 		}
 
@@ -432,7 +445,8 @@ static int cmp_member(struct py_object* v, struct py_object* w) {
 
 	if(sq == NULL) {
 		py_error_set_string(
-				py_type_error, "'in' or 'not in' needs sequence right argument");
+				py_type_error,
+				"'in' or 'not in' needs sequence right argument");
 		return -1;
 	}
 
@@ -449,7 +463,8 @@ static int cmp_member(struct py_object* v, struct py_object* w) {
 	return 0;
 }
 
-static struct py_object* cmp_outcome(enum py_cmp_op op, struct py_object* v, struct py_object* w) {
+static struct py_object*
+cmp_outcome(enum py_cmp_op op, struct py_object* v, struct py_object* w) {
 	int cmp;
 	int res = 0;
 
@@ -511,7 +526,8 @@ static struct py_object* cmp_outcome(enum py_cmp_op op, struct py_object* v, str
 	return v;
 }
 
-static int import_from(struct py_object* locals, struct py_object* v, char* name) {
+static int
+import_from(struct py_object* locals, struct py_object* v, char* name) {
 	struct py_object* w;
 	struct py_object* x;
 
@@ -558,7 +574,8 @@ static struct py_object* build_class(struct py_object* v, struct py_object* w) {
 			struct py_object* x = py_tuple_get(v, i);
 
 			if(!py_is_class(x)) {
-				py_error_set_string(py_type_error, "base is not a class object");
+				py_error_set_string(
+						py_type_error, "base is not a class object");
 				return NULL;
 			}
 		}
@@ -591,7 +608,8 @@ char* getname(struct py_frame* f, int i) {
 /* Interpreter main loop */
 
 struct py_object* py_code_eval(
-		struct py_code* co, struct py_object* globals, struct py_object* locals, struct py_object* arg) {
+		struct py_code* co, struct py_object* globals, struct py_object* locals,
+		struct py_object* arg) {
 
 	unsigned char* next_instr;
 	int opcode; /* Current opcode */
@@ -1051,7 +1069,8 @@ struct py_object* py_code_eval(
 				v = POP();
 				w = POP();
 				if(!py_is_string(w)) {
-					py_error_set_string(py_type_error, "exceptions must be strings");
+					py_error_set_string(
+							py_type_error, "exceptions must be strings");
 				}
 				else { py_error_set_value(w, v); }
 
@@ -1079,7 +1098,8 @@ struct py_object* py_code_eval(
 
 			case PY_OP_REQUIRE_ARGS: {
 				if(EMPTY()) {
-					py_error_set_string(py_type_error, "function expects argument(s)");
+					py_error_set_string(
+							py_type_error, "function expects argument(s)");
 					why = WHY_EXCEPTION;
 				}
 
@@ -1088,7 +1108,8 @@ struct py_object* py_code_eval(
 
 			case PY_OP_REFUSE_ARGS: {
 				if(!EMPTY()) {
-					py_error_set_string(py_type_error, "function expects no argument(s)");
+					py_error_set_string(
+							py_type_error, "function expects no argument(s)");
 					why = WHY_EXCEPTION;
 				}
 
@@ -1132,7 +1153,8 @@ struct py_object* py_code_eval(
 					why = WHY_RERAISE;
 				}
 				else if(v != PY_NONE) {
-					py_error_set_string(py_system_error, "'finally' pops bad exception");
+					py_error_set_string(
+							py_system_error, "'finally' pops bad exception");
 					why = WHY_EXCEPTION;
 				}
 
@@ -1178,7 +1200,8 @@ struct py_object* py_code_eval(
 					why = WHY_EXCEPTION;
 				}
 				else if(py_tuple_size(v) != oparg) {
-					py_error_set_string(py_runtime_error, "unpack tuple of wrong size");
+					py_error_set_string(
+							py_runtime_error, "unpack tuple of wrong size");
 					why = WHY_EXCEPTION;
 				}
 				else {
@@ -1401,7 +1424,8 @@ struct py_object* py_code_eval(
 			default:
 				fprintf(
 						stderr, "XXX lineno: %d, opcode: %d\n", lineno, opcode);
-				py_error_set_string(py_system_error, "py_code_eval: unknown opcode");
+				py_error_set_string(
+						py_system_error, "py_code_eval: unknown opcode");
 				why = WHY_EXCEPTION;
 				break;
 		} /* switch */

@@ -47,7 +47,7 @@ void py_system_done(void) {
 }
 
 FILE* py_system_get_file(name, def)char* name;
-						   FILE* def;
+								   FILE* def;
 {
 	FILE* fp = NULL;
 	struct py_object* v = py_system_get(name);
@@ -61,7 +61,7 @@ FILE* py_system_get_file(name, def)char* name;
 }
 
 int py_system_set(name, v)char* name;
-				   struct py_object* v;
+						  struct py_object* v;
 {
 	if(v == NULL) {
 		return py_dict_remove(sysdict, name);
@@ -71,7 +71,8 @@ int py_system_set(name, v)char* name;
 	}
 }
 
-static struct py_object* sys_exit(struct py_object* self, struct py_object* args) {
+static struct py_object*
+sys_exit(struct py_object* self, struct py_object* args) {
 	int sts;
 
 	(void) self;
@@ -112,7 +113,7 @@ void py_system_init() {
 }
 
 static struct py_object* makepathobject(path, delim)char* path;
-										  int delim;
+													int delim;
 {
 	int i, n;
 	char* p;
@@ -159,7 +160,7 @@ void py_system_set_path(const char* path) {
 }
 
 static struct py_object* makeargvobject(argc, argv)int argc;
-										 char** argv;
+												   char** argv;
 {
 	struct py_object* av;
 	if(argc < 0 || argv == NULL) {

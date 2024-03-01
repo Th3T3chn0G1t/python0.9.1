@@ -8,13 +8,16 @@
 #include <python/grammar.h>
 
 /* Forward */
-static void printarcs (int, struct py_dfa *, FILE *);
-static void printstates(struct py_grammar*, FILE *);
-static void printdfas(struct py_grammar*, FILE *);
-static void printlabels(struct py_grammar*, FILE *);
+static void printarcs(int, struct py_dfa*, FILE*);
+
+static void printstates(struct py_grammar*, FILE*);
+
+static void printdfas(struct py_grammar*, FILE*);
+
+static void printlabels(struct py_grammar*, FILE*);
 
 void py_grammar_print(g, fp)struct py_grammar* g;
-						FILE* fp;
+							FILE* fp;
 {
 	fprintf(fp, "#include <python/grammar.h>\n");
 	printdfas(g, fp);
@@ -29,7 +32,7 @@ void py_grammar_print(g, fp)struct py_grammar* g;
 }
 
 void py_grammar_print_nonterminals(g, fp)struct py_grammar* g;
-							 FILE* fp;
+										 FILE* fp;
 {
 	struct py_dfa* d;
 	int i;
@@ -51,7 +54,8 @@ static void printarcs(i, d, fp)int i;
 	s = d->states;
 	for(j = 0; j < d->count; j++, s++) {
 		fprintf(
-				fp, "static struct py_arc arcs_%d_%d[%d] = {\n", i, j, s->count);
+				fp, "static struct py_arc arcs_%d_%d[%d] = {\n", i, j,
+				s->count);
 		a = s->arcs;
 		for(k = 0; k < s->count; k++, a++) {
 			fprintf(fp, "\t{%d, %d},\n", a->label, a->arrow);

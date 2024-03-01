@@ -20,11 +20,18 @@ struct py_node {
 };
 
 struct py_node* py_tree_new(int);
+
 void py_tree_delete(struct py_node* n);
+
 struct py_node* py_tree_add(struct py_node*, int, char*, int);
+
 void py_tree_list(FILE*, struct py_node*);
-struct py_object* py_tree_eval(struct py_node*, char*, struct py_object*, struct py_object*);
-struct py_object* py_tree_run(struct py_node*, char*, struct py_object*, struct py_object*);
+
+struct py_object*
+py_tree_eval(struct py_node*, char*, struct py_object*, struct py_object*);
+
+struct py_object*
+py_tree_run(struct py_node*, char*, struct py_object*, struct py_object*);
 
 /* Assert that the type of node is what we expect */
 /* TODO: Handle this better. */
@@ -33,7 +40,7 @@ struct py_object* py_tree_run(struct py_node*, char*, struct py_object*, struct 
 #else
 # define PY_REQ(n, t) \
     do { \
-		if((n)->type != (t)) { \
+        if((n)->type != (t)) { \
             fprintf( \
                 stderr, "FATAL: node type %d, required %d\n", (n)->type, t); \
             abort(); \

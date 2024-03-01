@@ -10,8 +10,11 @@
 #include <dirent.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+
 #ifndef _MSC_VER
+
 # include <sys/time.h>
+
 #endif
 
 #include <python/std.h>
@@ -73,7 +76,7 @@ static struct py_object* posix_error() {
 /* POSIX generic methods */
 
 static struct py_object* posix_1str(args, func)struct py_object* args;
-									 int (* func)(const char*);
+											   int (* func)(const char*);
 {
 	struct py_object* path1;
 	if(!py_arg_str(args, &path1)) {
@@ -90,7 +93,9 @@ static struct py_object* posix_1str(args, func)struct py_object* args;
 }
 
 static struct py_object* posix_2str(args, func)struct py_object* args;
-									 int (* func)(const char*, const char*);
+											   int (* func)(
+													   const char*,
+													   const char*);
 {
 	struct py_object* path1, * path2;
 	if(!py_arg_str_str(args, &path1, &path2)) {
@@ -107,7 +112,7 @@ static struct py_object* posix_2str(args, func)struct py_object* args;
 }
 
 static struct py_object* posix_strint(args, func)struct py_object* args;
-									   int (* func)(const char*, int);
+												 int (* func)(const char*, int);
 {
 	struct py_object* path1;
 	int i;
@@ -124,11 +129,11 @@ static struct py_object* posix_strint(args, func)struct py_object* args;
 	return PY_NONE;
 }
 
-static struct py_object* posix_do_stat(self, args, statfunc)struct py_object* self;
-												  struct py_object* args;
-												  int (* statfunc)(
-														  const char*,
-														  struct stat*);
+static struct py_object* posix_do_stat(self, args, statfunc)
+		struct py_object* self;
+		struct py_object* args;
+		int (* statfunc)(
+				const char*, struct stat*);
 {
 	struct stat st;
 	struct py_object* path;
@@ -177,7 +182,7 @@ static struct py_object* posix_do_stat(self, args, statfunc)struct py_object* se
 /* POSIX methods */
 
 static struct py_object* posix_chdir(self, args)struct py_object* self;
-									  struct py_object* args;
+												struct py_object* args;
 {
 	int chdir(const char*);
 
@@ -187,7 +192,7 @@ static struct py_object* posix_chdir(self, args)struct py_object* self;
 }
 
 static struct py_object* posix_chmod(self, args)struct py_object* self;
-									  struct py_object* args;
+												struct py_object* args;
 {
 #ifdef _WIN32
 	int chmod(const char*, int);
@@ -200,7 +205,7 @@ static struct py_object* posix_chmod(self, args)struct py_object* self;
 }
 
 static struct py_object* posix_getcwd(self, args)struct py_object* self;
-									   struct py_object* args;
+												 struct py_object* args;
 {
 	char buf[1026];
 	char* getcwd(char*, int);
@@ -231,7 +236,7 @@ posix_link(self, args)
 
 #ifndef _MSC_VER
 static struct py_object* posix_listdir(self, args)struct py_object* self;
-										struct py_object* args;
+												  struct py_object* args;
 {
 	struct py_object* name, * d, * v;
 	DIR* dirp;
@@ -279,7 +284,7 @@ static int winmkdir(const char* path, int mode) {
 #endif
 
 static struct py_object* posix_mkdir(self, args)struct py_object* self;
-									  struct py_object* args;
+												struct py_object* args;
 {
 #ifndef _WIN32
 	int mkdir (const char* mode_t);
@@ -295,7 +300,7 @@ static struct py_object* posix_mkdir(self, args)struct py_object* self;
 }
 
 static struct py_object* posix_rename(self, args)struct py_object* self;
-									   struct py_object* args;
+												 struct py_object* args;
 {
 	int rename(const char*, const char*);
 
@@ -305,7 +310,7 @@ static struct py_object* posix_rename(self, args)struct py_object* self;
 }
 
 static struct py_object* posix_rmdir(self, args)struct py_object* self;
-									  struct py_object* args;
+												struct py_object* args;
 {
 	int rmdir(const char*);
 
@@ -315,7 +320,7 @@ static struct py_object* posix_rmdir(self, args)struct py_object* self;
 }
 
 static struct py_object* posix_stat(self, args)struct py_object* self;
-									 struct py_object* args;
+											   struct py_object* args;
 {
 	int stat(const char*, struct stat*);
 
@@ -325,7 +330,7 @@ static struct py_object* posix_stat(self, args)struct py_object* self;
 }
 
 static struct py_object* posix_system(self, args)struct py_object* self;
-									   struct py_object* args;
+												 struct py_object* args;
 {
 	struct py_object* command;
 	int sts;
@@ -340,7 +345,7 @@ static struct py_object* posix_system(self, args)struct py_object* self;
 }
 
 static struct py_object* posix_umask(self, args)struct py_object* self;
-									  struct py_object* args;
+												struct py_object* args;
 {
 	int i;
 
@@ -357,7 +362,7 @@ static struct py_object* posix_umask(self, args)struct py_object* self;
 }
 
 static struct py_object* posix_unlink(self, args)struct py_object* self;
-									   struct py_object* args;
+												 struct py_object* args;
 {
 	int unlink(const char*);
 

@@ -15,11 +15,15 @@
 /* TODO: Python global state. */
 extern struct py_frame* py_frame_current;
 
-struct py_object* py_code_eval(struct py_code*, struct py_object*, struct py_object*, struct py_object*);
+struct py_object* py_code_eval(
+		struct py_code*, struct py_object*, struct py_object*,
+		struct py_object*);
 
 struct py_object* py_get_globals(void);
+
 struct py_object* py_get_locals(void);
 
-struct py_object* py_call_function(struct py_object* func, struct py_object* arg);
+struct py_object*
+py_call_function(struct py_object* func, struct py_object* arg);
 
 #endif

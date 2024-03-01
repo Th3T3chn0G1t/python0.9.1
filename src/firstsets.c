@@ -12,7 +12,7 @@
 extern int debugging;
 
 /* Forward */
-static void calcfirstset(struct py_grammar*, struct py_dfa *);
+static void calcfirstset(struct py_grammar*, struct py_dfa*);
 
 void py_grammar_add_firsts(g)struct py_grammar* g;
 {

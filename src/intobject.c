@@ -116,7 +116,7 @@ static int int_compare(v, w)struct py_int* v, * w;
 }
 
 static struct py_object* int_add(v, w)struct py_int* v;
-							struct py_object* w;
+									  struct py_object* w;
 {
 	long a, b, x;
 	if(!py_is_int(w)) {
@@ -133,7 +133,7 @@ static struct py_object* int_add(v, w)struct py_int* v;
 }
 
 static struct py_object* int_sub(v, w)struct py_int* v;
-							struct py_object* w;
+									  struct py_object* w;
 {
 	long a, b, x;
 	if(!py_is_int(w)) {
@@ -150,7 +150,7 @@ static struct py_object* int_sub(v, w)struct py_int* v;
 }
 
 static struct py_object* int_mul(v, w)struct py_int* v;
-							struct py_object* w;
+									  struct py_object* w;
 {
 	long a, b;
 	/* double x; */
@@ -170,7 +170,7 @@ static struct py_object* int_mul(v, w)struct py_int* v;
 }
 
 static struct py_object* int_div(v, w)struct py_int* v;
-							struct py_object* w;
+									  struct py_object* w;
 {
 	if(!py_is_int(w)) {
 		py_error_set_badarg();
@@ -183,7 +183,7 @@ static struct py_object* int_div(v, w)struct py_int* v;
 }
 
 static struct py_object* int_rem(v, w)struct py_int* v;
-							struct py_object* w;
+									  struct py_object* w;
 {
 	if(!py_is_int(w)) {
 		py_error_set_badarg();
@@ -196,7 +196,7 @@ static struct py_object* int_rem(v, w)struct py_int* v;
 }
 
 static struct py_object* int_pow(v, w)struct py_int* v;
-							struct py_object* w;
+									  struct py_object* w;
 {
 	long iv, iw, ix;
 	int neg;

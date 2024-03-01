@@ -14,13 +14,15 @@
 
 /* Standard modules */
 void inittime();
+
 void initmath();
+
 void initposix();
 
 struct py_initmod py_init_table[] = {
-	/* Standard modules */
-	{ "time", inittime },
-	{ "math", initmath },
-	{ "posix", initposix },
-	{ 0, 0 }              /* Sentinel */
+		/* Standard modules */
+		{ "time",  inittime },
+		{ "math",  initmath },
+		{ "posix", initposix },
+		{ 0,       0 }              /* Sentinel */
 };

@@ -153,7 +153,8 @@ Internal routine to insert a new item into the table.
 Used both by the internal resize routine and by the public insert routine.
 Eats a reference to key and one to value.
 */
-static void insertdict(dictobject* dp, struct py_string* key, struct py_object* value) {
+static void
+insertdict(dictobject* dp, struct py_string* key, struct py_object* value) {
 	dictentry* ep;
 	ep = lookdict(dp, GETSTRINGVALUE(key));
 	if(ep->de_value != NULL) {
@@ -272,8 +273,8 @@ static int dict2insert(op, key, value)struct py_object* op;
 }
 
 int py_dict_insert(op, key, value)struct py_object* op;
-							  const char* key;
-							  struct py_object* value;
+								  const char* key;
+								  struct py_object* value;
 {
 	struct py_object* keyobj;
 	int err;
@@ -288,7 +289,7 @@ int py_dict_insert(op, key, value)struct py_object* op;
 }
 
 int py_dict_remove(op, key)struct py_object* op;
-					   const char* key;
+						   const char* key;
 {
 	dictobject* dp;
 	dictentry* ep;
@@ -331,7 +332,7 @@ int py_dict_size(op)struct py_object* op;
 }
 
 static struct py_object* getdict2key(op, i)struct py_object* op;
-								 int i;
+										   int i;
 {
 	/* XXX This can't return errors since its callers assume
 	   that NULL means there was no key at that point */
@@ -353,7 +354,7 @@ static struct py_object* getdict2key(op, i)struct py_object* op;
 }
 
 char* py_dict_get_key(op, i)struct py_object* op;
-					   int i;
+							int i;
 {
 	struct py_object* keyobj = getdict2key(op, i);
 	if(keyobj == NULL) {
@@ -389,7 +390,8 @@ static void dict_print(dp, fp, flags)dictobject* dp;
 	dictentry* ep;
 	fprintf(fp, "{");
 	any = 0;
-	for(i = 0, ep = dp->di_table; i < dp->di_size && !py_stop_print; i++, ep++) {
+	for(i = 0, ep = dp->di_table; i < dp->di_size && !py_stop_print;
+			i++, ep++) {
 		if(ep->de_value != NULL) {
 			if(any++ > 0) {
 				fprintf(fp, "; ");
@@ -422,7 +424,8 @@ static struct py_object* dict_repr(dp)dictobject* dp;
 	semi = py_string_new("; ");
 	colon = py_string_new(": ");
 	any = 0;
-	for(i = 0, ep = dp->di_table; i < dp->di_size && !py_stop_print; i++, ep++) {
+	for(i = 0, ep = dp->di_table; i < dp->di_size && !py_stop_print;
+			i++, ep++) {
 		if(ep->de_value != NULL) {
 			if(any++) {
 				py_string_join(&v, semi);
@@ -446,7 +449,7 @@ static int dict_length(dp)dictobject* dp;
 }
 
 static struct py_object* dict_subscript(dp, v)dictobject* dp;
-									struct py_object* v;
+											  struct py_object* v;
 {
 	if(!py_is_string(v)) {
 		py_error_set_badarg();
@@ -479,7 +482,7 @@ static struct py_mappingmethods dict_as_mapping = {
 };
 
 static struct py_object* dict_keys(dp, args)dictobject* dp;
-								  struct py_object* args;
+											struct py_object* args;
 {
 	struct py_object* v;
 	int i, j;
@@ -511,14 +514,15 @@ struct py_object* py_dict_get_keys(dp)struct py_object* dp;
 }
 
 static struct py_object* dict_has_key(dp, args)dictobject* dp;
-									 struct py_object* args;
+											   struct py_object* args;
 {
 	struct py_object* key;
 	long ok;
 	if(!py_arg_str(args, &key)) {
 		return NULL;
 	}
-	ok = lookdict(dp, GETSTRINGVALUE((struct py_string*) key))->de_value != NULL;
+	ok = lookdict(dp, GETSTRINGVALUE((struct py_string*) key))->de_value !=
+		 NULL;
 	return py_int_new(ok);
 }
 
@@ -529,7 +533,7 @@ static struct py_methodlist dict_methods[] = {
 };
 
 static struct py_object* dict_getattr(dp, name)dictobject* dp;
-									 char* name;
+											   char* name;
 {
 	return py_methodlist_find(dict_methods, (struct py_object*) dp, name);
 }

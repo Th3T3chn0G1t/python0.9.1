@@ -29,8 +29,8 @@ struct py_grammar* py_grammar_new(start)int start;
 }
 
 struct py_dfa* py_grammar_add_dfa(g, type, name)struct py_grammar* g;
-						  int type;
-						  char* name;
+												int type;
+												char* name;
 {
 	struct py_dfa* d;
 
@@ -82,15 +82,14 @@ void py_dfa_add_arc(struct py_dfa* d, int from, int to, int lbl) {
 }
 
 int py_labellist_add(ll, type, str)struct py_labellist* ll;
-						   int type;
-						   char* str;
+								   int type;
+								   char* str;
 {
 	int i;
 	struct py_label* lb;
 
 	for(i = 0; i < ll->count; i++) {
-		if(ll->label[i].type == type &&
-		   strcmp(ll->label[i].str, str) == 0) {
+		if(ll->label[i].type == type && strcmp(ll->label[i].str, str) == 0) {
 			return i;
 		}
 	}
@@ -107,8 +106,8 @@ int py_labellist_add(ll, type, str)struct py_labellist* ll;
 /* Same, but rather dies than adds */
 
 int py_labellist_find(ll, type, str)struct py_labellist* ll;
-							int type;
-							char* str;
+									int type;
+									char* str;
 {
 	int i;
 
@@ -123,7 +122,7 @@ int py_labellist_find(ll, type, str)struct py_labellist* ll;
 }
 
 /* Forward */
-static void translabel(struct py_grammar*, struct py_label *);
+static void translabel(struct py_grammar*, struct py_label*);
 
 void py_grammar_translate(g)struct py_grammar* g;
 {

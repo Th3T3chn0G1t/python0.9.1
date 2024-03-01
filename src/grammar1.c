@@ -13,7 +13,7 @@
 /* Return the DFA for the given type */
 
 struct py_dfa* py_grammar_find_dfa(g, type)struct py_grammar* g;
-					 int type;
+										   int type;
 {
 	int i;
 	struct py_dfa* d;

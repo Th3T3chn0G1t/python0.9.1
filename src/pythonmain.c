@@ -12,7 +12,7 @@
 #include <python/ceval.h>
 
 struct py_object* py_tree_run(n, filename, globals, locals)struct py_node* n;
-											  char* filename;
+														   char* filename;
 		/*dict*/struct py_object* globals, * locals;
 {
 	if(globals == NULL) {
@@ -30,9 +30,9 @@ struct py_object* py_tree_run(n, filename, globals, locals)struct py_node* n;
 }
 
 struct py_object* py_tree_eval(n, filename, globals, locals)struct py_node* n;
-											   char* filename;
-											   struct py_object* globals;
-											   struct py_object* locals;
+															char* filename;
+															struct py_object* globals;
+															struct py_object* locals;
 {
 	struct py_code* co;
 	struct py_object* v;
@@ -70,6 +70,7 @@ void finaloutput(void) {
 /* Ask a yes/no question */
 
 int askyesno(char* prompt);
+
 int askyesno(char* prompt) {
 	char buf[256];
 

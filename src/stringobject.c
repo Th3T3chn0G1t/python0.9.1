@@ -10,9 +10,10 @@
 #include <python/errors.h>
 
 struct py_object* py_string_new_size(str, size)char* str;
-									   int size;
+											   int size;
 {
-	struct py_string* op = malloc(sizeof(struct py_string) + size * sizeof(char));
+	struct py_string* op = malloc(
+			sizeof(struct py_string) + size * sizeof(char));
 	if(op == NULL) {
 		return py_error_set_nomem();
 	}
@@ -28,7 +29,8 @@ struct py_object* py_string_new_size(str, size)char* str;
 
 struct py_object* py_string_new(const char* str) {
 	unsigned int size = strlen(str);
-	struct py_string* op = malloc(sizeof(struct py_string) + size * sizeof(char));
+	struct py_string* op = malloc(
+			sizeof(struct py_string) + size * sizeof(char));
 	if(op == NULL) {
 		return py_error_set_nomem();
 	}
@@ -130,7 +132,7 @@ static int stringlength(a)struct py_string* a;
 }
 
 static struct py_object* stringconcat(a, bb)struct py_string* a;
-								  struct py_object* bb;
+											struct py_object* bb;
 {
 	unsigned int size;
 	struct py_string* op;
@@ -164,7 +166,7 @@ static struct py_object* stringconcat(a, bb)struct py_string* a;
 }
 
 static struct py_object* stringrepeat(a, n)struct py_string* a;
-								 int n;
+										   int n;
 {
 	int i;
 	unsigned int size;
@@ -194,7 +196,7 @@ static struct py_object* stringrepeat(a, n)struct py_string* a;
 /* String slice a[i:j] consists of characters a[i] ... a[j-1] */
 
 static struct py_object* stringslice(a, i, j)struct py_string* a;
-								   int i, j; /* May be negative! */
+											 int i, j; /* May be negative! */
 {
 	if(i < 0) {
 		i = 0;
@@ -216,7 +218,7 @@ static struct py_object* stringslice(a, i, j)struct py_string* a;
 }
 
 static struct py_object* stringitem(a, i)struct py_string* a;
-							   int i;
+										 int i;
 {
 	if(i < 0 || i >= (int) a->size) {
 		py_error_set_string(PY_INDEX_ERROR, "string index out of range");
@@ -247,8 +249,8 @@ static struct py_sequencemethods string_as_sequence = {
 };
 
 struct py_type py_string_type = {
-		PY_OB_SEQ_INIT(&py_type_type) 0, "string", sizeof(struct py_string), sizeof(char),
-		py_object_delete,  /*dealloc*/
+		PY_OB_SEQ_INIT(&py_type_type) 0, "string", sizeof(struct py_string),
+		sizeof(char), py_object_delete,  /*dealloc*/
 		stringprint,    /*print*/
 		0,              /*get_attr*/
 		0,              /*set_attr*/
@@ -260,7 +262,7 @@ struct py_type py_string_type = {
 };
 
 void py_string_join(pv, w)struct py_object** pv;
-					  struct py_object* w;
+						  struct py_object* w;
 {
 	struct py_object* v;
 	if(*pv == NULL || w == NULL || !py_is_string(*pv)) {
@@ -279,7 +281,7 @@ void py_string_join(pv, w)struct py_object** pv;
    already be known to some other part of the code... */
 
 int py_string_resize(pv, newsize)struct py_object** pv;
-							 int newsize;
+								 int newsize;
 {
 	struct py_object* v;
 	struct py_string* sv;

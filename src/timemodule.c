@@ -6,7 +6,9 @@
 /* Time module */
 
 #ifdef _WIN32
+
 # include <windows.h>
+
 #endif
 
 #include <python/std.h>
@@ -24,7 +26,8 @@
 
 /* Time methods */
 
-static struct py_object* time_time(struct py_object* self, struct py_object* args) {
+static struct py_object*
+time_time(struct py_object* self, struct py_object* args) {
 	long secs;
 
 	(void) self;
@@ -44,9 +47,10 @@ static void sleep_catcher(int sig) {
 	longjmp(sleep_intr, 1);
 }
 
-static struct py_object* time_sleep(struct py_object* self, struct py_object* args) {
+static struct py_object*
+time_sleep(struct py_object* self, struct py_object* args) {
 	int secs;
-	void (*sigsave)(int);
+	void (* sigsave)(int);
 
 	(void) self;
 
@@ -77,7 +81,8 @@ static struct py_object* time_sleep(struct py_object* self, struct py_object* ar
 }
 
 static struct py_methodlist time_methods[] = {
-		{ "sleep", time_sleep }, { "time", time_time },
+		{ "sleep", time_sleep },
+		{ "time",  time_time },
 		{ NULL, NULL }           /* sentinel */
 };
 

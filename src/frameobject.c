@@ -17,15 +17,15 @@
 #define OFF(x) offsetof(struct py_frame, x)
 
 static struct py_memberlist frame_memberlist[] = {
-		{ "back",    PY_TYPE_OBJECT, OFF(back), PY_READWRITE },
-		{ "code",    PY_TYPE_OBJECT, OFF(code), PY_READWRITE },
+		{ "back",    PY_TYPE_OBJECT, OFF(back),    PY_READWRITE },
+		{ "code",    PY_TYPE_OBJECT, OFF(code),    PY_READWRITE },
 		{ "globals", PY_TYPE_OBJECT, OFF(globals), PY_READWRITE },
-		{ "locals",  PY_TYPE_OBJECT, OFF(locals), PY_READWRITE },
-		{ NULL, 0, 0, 0 }  /* Sentinel */
+		{ "locals",  PY_TYPE_OBJECT, OFF(locals),  PY_READWRITE },
+		{ NULL,      0, 0,                         0 }  /* Sentinel */
 };
 
 static struct py_object* frame_getattr(f, name)struct py_frame* f;
-									 char* name;
+											   char* name;
 {
 	return py_memberlist_get((char*) f, frame_memberlist, name);
 }
@@ -97,9 +97,9 @@ struct py_frame* py_frame_new(back, code, globals, locals, nvalues, nblocks)
 /* Block management */
 
 void py_block_setup(f, type, handler, level)struct py_frame* f;
-										 int type;
-										 int handler;
-										 int level;
+											int type;
+											int handler;
+											int level;
 {
 	struct py_block* b;
 	if(f->iblock >= f->nblocks) {

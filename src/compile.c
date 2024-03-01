@@ -27,15 +27,15 @@
 #define OFF(x) offsetof(struct py_code, x)
 
 static struct py_memberlist code_memberlist[] = {
-		{ "code",     PY_TYPE_OBJECT, OFF(code), PY_READWRITE },
-		{ "consts",   PY_TYPE_OBJECT, OFF(consts), PY_READWRITE },
-		{ "names",    PY_TYPE_OBJECT, OFF(names), PY_READWRITE },
+		{ "code",     PY_TYPE_OBJECT, OFF(code),     PY_READWRITE },
+		{ "consts",   PY_TYPE_OBJECT, OFF(consts),   PY_READWRITE },
+		{ "names",    PY_TYPE_OBJECT, OFF(names),    PY_READWRITE },
 		{ "filename", PY_TYPE_OBJECT, OFF(filename), PY_READWRITE },
-		{ NULL, 0, 0, 0 }  /* Sentinel */
+		{ NULL,       0, 0,                          0 }  /* Sentinel */
 };
 
 static struct py_object* code_getattr(co, name)struct py_code* co;
-									 char* name;
+											   char* name;
 {
 	return py_memberlist_get((char*) co, code_memberlist, name);
 }
@@ -62,12 +62,14 @@ struct py_type py_code_type = {
 		0,              /*mappingmethods*/
 };
 
-static struct py_code* newcodeobject(struct py_object*, struct py_object*, struct py_object*, char *);
+static struct py_code*
+newcodeobject(struct py_object*, struct py_object*, struct py_object*, char*);
 
-static struct py_code* newcodeobject(code, consts, names, filename)struct py_object* code;
-															   struct py_object* consts;
-															   struct py_object* names;
-															   char* filename;
+static struct py_code* newcodeobject(code, consts, names, filename)
+		struct py_object* code;
+		struct py_object* consts;
+		struct py_object* names;
+		char* filename;
 {
 	struct py_code* co;
 	int i;
@@ -115,19 +117,31 @@ struct compiling {
 };
 
 /* Prototypes */
-static int com_init(struct compiling *, char *);
-static void com_free(struct compiling *);
-static void com_done(struct compiling *);
-static void com_node(struct compiling *, struct py_node *);
-static void com_addbyte(struct compiling *, int);
-static void com_addint(struct compiling *, int);
-static void com_addoparg(struct compiling *, int, int);
-static void com_addfwref(struct compiling *, int, int *);
-static void com_backpatch(struct compiling *, int);
-static int com_add(struct compiling *, struct py_object*, struct py_object*);
-static int com_addconst(struct compiling *, struct py_object*);
-static int com_addname(struct compiling *, struct py_object*);
-static void com_addopname(struct compiling *, int, struct py_node *);
+static int com_init(struct compiling*, char*);
+
+static void com_free(struct compiling*);
+
+static void com_done(struct compiling*);
+
+static void com_node(struct compiling*, struct py_node*);
+
+static void com_addbyte(struct compiling*, int);
+
+static void com_addint(struct compiling*, int);
+
+static void com_addoparg(struct compiling*, int, int);
+
+static void com_addfwref(struct compiling*, int, int*);
+
+static void com_backpatch(struct compiling*, int);
+
+static int com_add(struct compiling*, struct py_object*, struct py_object*);
+
+static int com_addconst(struct compiling*, struct py_object*);
+
+static int com_addname(struct compiling*, struct py_object*);
+
+static void com_addopname(struct compiling*, int, struct py_node*);
 
 static int com_init(c, filename)struct compiling* c;
 								char* filename;
@@ -468,7 +482,8 @@ static void com_atom(c, n)struct compiling* c;
 		case PY_NAME:com_addopname(c, PY_OP_LOAD_NAME, ch);
 			break;
 		default:fprintf(stderr, "node type %d\n", ch->type);
-			py_error_set_string(py_system_error, "com_atom: unexpected node type");
+			py_error_set_string(
+					py_system_error, "com_atom: unexpected node type");
 			c->c_errors++;
 	}
 }
@@ -587,7 +602,8 @@ static void com_term(c, n)struct compiling* c;
 				break;
 			default:
 				py_error_set_string(
-						py_system_error, "com_term: term operator not *, / or %");
+						py_system_error,
+						"com_term: term operator not *, / or %");
 				c->c_errors++;
 				op = 255;
 		}
@@ -806,8 +822,9 @@ static void com_list(c, n)struct compiling* c;
 
 /* Begin of assignment compilation */
 
-static void com_assign_name(struct compiling *, struct py_node*, int);
-static void com_assign(struct compiling *, struct py_node*, int);
+static void com_assign_name(struct compiling*, struct py_node*, int);
+
+static void com_assign(struct compiling*, struct py_node*, int);
 
 static void com_assign_attr(c, n, assigning)struct compiling* c;
 											struct py_node* n;
@@ -1296,7 +1313,8 @@ static void com_try_stmt(c, n)struct compiling* c;
 		com_addbyte(c, PY_OP_POP_BLOCK);
 		com_addfwref(c, PY_OP_JUMP_FORWARD, &end_anchor);
 		com_backpatch(c, except_anchor);
-		for(i = 3; i < n->count && (ch = &n->children[i])->type == except_clause;
+		for(i = 3;
+				i < n->count && (ch = &n->children[i])->type == except_clause;
 				i += 3) {
 			/* except_clause: 'except' [expr [',' expr]] */
 			if(except_anchor == 0) {
@@ -1508,12 +1526,13 @@ static void com_node(c, n)struct compiling* c;
 			break;
 
 		default:fprintf(stderr, "node type %d\n", n->type);
-			py_error_set_string(py_system_error, "com_node: unexpected node type");
+			py_error_set_string(
+					py_system_error, "com_node: unexpected node type");
 			c->c_errors++;
 	}
 }
 
-static void com_fplist(struct compiling *, struct py_node*);
+static void com_fplist(struct compiling*, struct py_node*);
 
 static void com_fpdef(c, n)struct compiling* c;
 						   struct py_node* n;
@@ -1629,13 +1648,14 @@ static void compile_node(c, n)struct compiling* c;
 			break;
 
 		default:fprintf(stderr, "node type %d\n", n->type);
-			py_error_set_string(py_system_error, "compile_node: unexpected node type");
+			py_error_set_string(
+					py_system_error, "compile_node: unexpected node type");
 			c->c_errors++;
 	}
 }
 
 struct py_code* py_compile(n, filename)struct py_node* n;
-								char* filename;
+									   char* filename;
 {
 	struct compiling sc;
 	struct py_code* co;

@@ -31,11 +31,12 @@ static void tok_backup(struct py_tokenizer* tok, int c);
 /* Token names */
 
 char* py_token_names[] = {
-		"PY_ENDMARKER", "PY_NAME", "PY_NUMBER", "PY_STRING", "PY_NEWLINE", "PY_INDENT", "PY_DEDENT",
-		"PY_LPAR", "PY_RPAR", "PY_LSQB", "PY_RSQB", "PY_COLON", "PY_COMMA", "PY_SEMI", "PY_PLUS",
-		"PY_MINUS", "PY_STAR", "PY_SLASH", "PY_VBAR", "PY_AMPER", "PY_LESS", "PY_GREATER", "PY_EQUAL",
-		"PY_DOT", "PY_PERCENT", "PY_BACKQUOTE", "PY_LBRACE", "PY_RBRACE", "PY_OP", "<PY_ERRORTOKEN>",
-		"<PY_N_TOKENS>" };
+		"PY_ENDMARKER", "PY_NAME", "PY_NUMBER", "PY_STRING", "PY_NEWLINE",
+		"PY_INDENT", "PY_DEDENT", "PY_LPAR", "PY_RPAR", "PY_LSQB", "PY_RSQB",
+		"PY_COLON", "PY_COMMA", "PY_SEMI", "PY_PLUS", "PY_MINUS", "PY_STAR",
+		"PY_SLASH", "PY_VBAR", "PY_AMPER", "PY_LESS", "PY_GREATER", "PY_EQUAL",
+		"PY_DOT", "PY_PERCENT", "PY_BACKQUOTE", "PY_LBRACE", "PY_RBRACE",
+		"PY_OP", "<PY_ERRORTOKEN>", "<PY_N_TOKENS>" };
 
 
 /* Create and initialize a new tok_state structure */
@@ -61,7 +62,7 @@ static struct py_tokenizer* tok_new() {
 /* Set up tokenizer for file */
 
 struct py_tokenizer* py_tokenizer_setup_file(fp, ps1, ps2)FILE* fp;
-										  char* ps1, * ps2;
+														  char* ps1, * ps2;
 {
 	struct py_tokenizer* tok = tok_new();
 	if(tok == NULL) {
@@ -420,7 +421,8 @@ void tok_dump(type, start, end)int type;
 							   char* start, * end;
 {
 	printf("%s", py_token_names[type]);
-	if(type == PY_NAME || type == PY_NUMBER || type == PY_STRING || type == PY_OP) {
+	if(type == PY_NAME || type == PY_NUMBER || type == PY_STRING ||
+	   type == PY_OP) {
 		printf("(%.*s)", (int) (end - start), start);
 	}
 }

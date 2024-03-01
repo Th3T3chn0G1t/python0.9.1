@@ -79,7 +79,7 @@ static struct py_object* module_repr(m)moduleobject* m;
 }
 
 static struct py_object* module_getattr(m, name)moduleobject* m;
-									  char* name;
+												char* name;
 {
 	struct py_object* res;
 	if(strcmp(name, "__dict__") == 0) {
@@ -104,7 +104,8 @@ static int module_setattr(m, name, v)moduleobject* m;
 									 struct py_object* v;
 {
 	if(strcmp(name, "__dict__") == 0 || strcmp(name, "__name__") == 0) {
-		py_error_set_string(py_name_error, "can't assign to reserved member name");
+		py_error_set_string(
+				py_name_error, "can't assign to reserved member name");
 		return -1;
 	}
 	if(v == NULL) {
@@ -126,5 +127,4 @@ struct py_type py_module_type = {
 		module_setattr,         /*set_attr*/
 		0,                      /*cmp*/
 		module_repr,            /*repr*/
-		0, 0, 0
-};
+		0, 0, 0 };

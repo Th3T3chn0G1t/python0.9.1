@@ -9,6 +9,7 @@
 #include <python/std.h>
 
 FILE* pyopen_r(const char* path);
+
 void pyclose(FILE* fp);
 
 #ifdef __has_attribute

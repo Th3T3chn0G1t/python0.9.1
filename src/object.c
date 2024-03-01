@@ -35,8 +35,8 @@ int py_stop_print; /* Flag to indicate printing must be stopped */
 static int prlevel;
 
 void py_object_print(op, fp, flags)struct py_object* op;
-							   FILE* fp;
-							   enum py_print_mode flags;
+								   FILE* fp;
+								   enum py_print_mode flags;
 {
 	/* Hacks to make printing a long or recursive object interruptible */
 	/* XXX Interrupts should leave a more permanent error */
@@ -55,8 +55,7 @@ void py_object_print(op, fp, flags)struct py_object* op;
 			}
 			if(op->type->print == NULL) {
 				fprintf(
-						fp, "<%s object at %p>", op->type->name,
-						(void*) op);
+						fp, "<%s object at %p>", op->type->name, (void*) op);
 			}
 			else {
 				(*op->type->print)(op, fp, flags);
@@ -85,8 +84,7 @@ struct py_object* py_object_repr(v)struct py_object* v;
 		else if(v->type->repr == NULL) {
 			char buf[100];
 			sprintf(
-					buf, "<%.80s object at %p>", v->type->name,
-					(void*) v);
+					buf, "<%.80s object at %p>", v->type->name, (void*) v);
 			w = py_string_new(buf);
 		}
 		else {
@@ -106,7 +104,7 @@ struct py_object* py_object_repr(v)struct py_object* v;
 
 int py_object_cmp(v, w)struct py_object* v, * w;
 {
-	struct py_type * tp;
+	struct py_type* tp;
 	if(v == w) {
 		return 0;
 	}
@@ -126,7 +124,7 @@ int py_object_cmp(v, w)struct py_object* v, * w;
 }
 
 struct py_object* py_object_get_attr(v, name)struct py_object* v;
-						char* name;
+											 char* name;
 {
 	if(v->type->get_attr == NULL) {
 		py_error_set_string(py_type_error, "attribute-less object");
@@ -138,15 +136,16 @@ struct py_object* py_object_get_attr(v, name)struct py_object* v;
 }
 
 int py_object_set_attr(v, name, w)struct py_object* v;
-					   char* name;
-					   struct py_object* w;
+								  char* name;
+								  struct py_object* w;
 {
 	if(v->type->set_attr == NULL) {
 		if(v->type->get_attr == NULL) {
 			py_error_set_string(py_type_error, "attribute-less object");
 		}
 		else {
-			py_error_set_string(py_type_error, "object has read-only attributes");
+			py_error_set_string(
+					py_type_error, "object has read-only attributes");
 		}
 		return -1;
 	}

@@ -44,8 +44,8 @@ static int addnfastate(nf)nfa* nf;
 	nfastate* st;
 
 	/* TODO: Leaky realloc. */
-	nf->nf_state =
-		realloc(nf->nf_state, (nf->nf_nstates + 1) * sizeof(nfastate));
+	nf->nf_state = realloc(
+			nf->nf_state, (nf->nf_nstates + 1) * sizeof(nfastate));
 	if(nf->nf_state == NULL) {
 		py_fatal("out of mem");
 	}
@@ -115,7 +115,7 @@ static nfa* addnfa(gr, name)nfagrammar* gr;
 	nfa* nf;
 
 	nf = newnfa(name);
-	gr->gr_nfa = realloc(gr->gr_nfa, (gr->gr_nnfas + 1) * sizeof(nfa *));
+	gr->gr_nfa = realloc(gr->gr_nfa, (gr->gr_nnfas + 1) * sizeof(nfa*));
 	if(gr->gr_nfa == NULL) {
 		py_fatal("out of mem");
 	}
@@ -158,7 +158,8 @@ static nfagrammar* metacompile(n)struct py_node* n;
 	return gr;
 }
 
-void compile_rhs(struct py_labellist* ll, nfa* nf, struct py_node* n, int* pa, int* pb);
+void compile_rhs(
+		struct py_labellist* ll, nfa* nf, struct py_node* n, int* pa, int* pb);
 
 void compile_rule(nfagrammar* gr, struct py_node* n) {
 	nfa* nf;
@@ -177,9 +178,11 @@ void compile_rule(nfagrammar* gr, struct py_node* n) {
 	PY_REQ(n, PY_NEWLINE);
 }
 
-void compile_alt(struct py_labellist* ll, nfa* nf, struct py_node* n, int* pa, int* pb);
+void compile_alt(
+		struct py_labellist* ll, nfa* nf, struct py_node* n, int* pa, int* pb);
 
-void compile_rhs(struct py_labellist* ll, nfa* nf, struct py_node* n, int* pa, int* pb) {
+void compile_rhs(
+		struct py_labellist* ll, nfa* nf, struct py_node* n, int* pa, int* pb) {
 	int i;
 	int a, b;
 
@@ -211,9 +214,11 @@ void compile_rhs(struct py_labellist* ll, nfa* nf, struct py_node* n, int* pa, i
 	}
 }
 
-void compile_item(struct py_labellist* ll, nfa* nf, struct py_node* n, int* pa, int* pb);
+void compile_item(
+		struct py_labellist* ll, nfa* nf, struct py_node* n, int* pa, int* pb);
 
-void compile_alt(struct py_labellist* ll, nfa* nf, struct py_node* n, int* pa, int* pb) {
+void compile_alt(
+		struct py_labellist* ll, nfa* nf, struct py_node* n, int* pa, int* pb) {
 	int i;
 	int a, b;
 
@@ -238,9 +243,11 @@ void compile_alt(struct py_labellist* ll, nfa* nf, struct py_node* n, int* pa, i
 	}
 }
 
-void compile_atom(struct py_labellist* ll, nfa* nf, struct py_node* n, int* pa, int* pb);
+void compile_atom(
+		struct py_labellist* ll, nfa* nf, struct py_node* n, int* pa, int* pb);
 
-void compile_item(struct py_labellist* ll, nfa* nf, struct py_node* n, int* pa, int* pb) {
+void compile_item(
+		struct py_labellist* ll, nfa* nf, struct py_node* n, int* pa, int* pb) {
 	int i;
 	int a, b;
 
@@ -272,11 +279,13 @@ void compile_item(struct py_labellist* ll, nfa* nf, struct py_node* n, int* pa, 
 		if(n->type == PY_STAR) {
 			*pb = *pa;
 		}
-		else PY_REQ(n, PY_PLUS);
+		else
+			PY_REQ(n, PY_PLUS);
 	}
 }
 
-void compile_atom(struct py_labellist* ll, nfa* nf, struct py_node* n, int* pa, int* pb) {
+void compile_atom(
+		struct py_labellist* ll, nfa* nf, struct py_node* n, int* pa, int* pb) {
 	int i;
 
 	PY_REQ(n, PY_ATOM);
@@ -296,7 +305,8 @@ void compile_atom(struct py_labellist* ll, nfa* nf, struct py_node* n, int* pa, 
 		*pb = addnfastate(nf);
 		addnfaarc(nf, *pa, *pb, py_labellist_add(ll, n->type, n->str));
 	}
-	else PY_REQ(n, PY_NAME);
+	else
+		PY_REQ(n, PY_NAME);
 }
 
 static void dumpstate(ll, nf, istate)struct py_labellist* ll;
@@ -341,8 +351,8 @@ static void dumpnfa(ll, nf)struct py_labellist* ll;
 /* PART TWO -- CONSTRUCT DFA -- Algorithm 3.1 from [Aho&Ullman 77] */
 
 static void addclosure(ss, nf, istate)py_bitset_t ss;
-									 nfa* nf;
-									 int istate;
+									  nfa* nf;
+									  int istate;
 {
 	if(py_bitset_add(ss, istate)) {
 		nfastate* st = &nf->nf_state[istate];
@@ -387,8 +397,8 @@ void simplify(int xx_nstates, ss_state* xx_state);
 void convert(struct py_dfa* d, int xx_nstates, ss_state* xx_state);
 
 static void makedfa(gr, nf, d)nfagrammar* gr;
-						 nfa* nf;
-						 struct py_dfa* d;
+							  nfa* nf;
+							  struct py_dfa* d;
 {
 	int nbits = nf->nf_nstates;
 	py_bitset_t ss;
@@ -446,7 +456,7 @@ static void makedfa(gr, nf, d)nfagrammar* gr;
 				/* Add new arc for this state */
 				/* TODO: Leaky realloc. */
 				yy->ss_arc = realloc(
-					yy->ss_arc, (yy->ss_narcs + 1) * sizeof(ss_arc));
+						yy->ss_arc, (yy->ss_narcs + 1) * sizeof(ss_arc));
 				if(yy->ss_arc == NULL) {
 					py_fatal("out of mem");
 				}

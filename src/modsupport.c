@@ -17,7 +17,7 @@
 #include <python/floatobject.h>
 
 struct py_object* py_module_init(name, methods)char* name;
-								 struct py_methodlist* methods;
+											   struct py_methodlist* methods;
 {
 	struct py_object* m, * d, * v;
 	struct py_methodlist* ml;
@@ -61,7 +61,8 @@ int py_arg_int_int(struct py_object* v, int* a, int* b) {
 	if(v == NULL || !py_is_tuple(v) || py_tuple_size(v) != 2) {
 		return py_error_set_badarg();
 	}
-	return py_arg_int(py_tuple_get(v, 0), a) && py_arg_int(py_tuple_get(v, 1), b);
+	return py_arg_int(py_tuple_get(v, 0), a) &&
+		   py_arg_int(py_tuple_get(v, 1), b);
 }
 
 int py_arg_long(struct py_object* v, long* a) {
@@ -88,18 +89,21 @@ int py_arg_str(struct py_object* v, struct py_object** a) {
 	return 1;
 }
 
-int py_arg_str_str(struct py_object* v, struct py_object** a, struct py_object** b) {
+int py_arg_str_str(
+		struct py_object* v, struct py_object** a, struct py_object** b) {
 	if(v == NULL || !py_is_tuple(v) || py_tuple_size(v) != 2) {
 		return py_error_set_badarg();
 	}
-	return py_arg_str(py_tuple_get(v, 0), a) && py_arg_str(py_tuple_get(v, 1), b);
+	return py_arg_str(py_tuple_get(v, 0), a) &&
+		   py_arg_str(py_tuple_get(v, 1), b);
 }
 
 int py_arg_str_int(struct py_object* v, struct py_object** a, int* b) {
 	if(v == NULL || !py_is_tuple(v) || py_tuple_size(v) != 2) {
 		return py_error_set_badarg();
 	}
-	return py_arg_str(py_tuple_get(v, 0), a) && py_arg_int(py_tuple_get(v, 1), b);
+	return py_arg_str(py_tuple_get(v, 0), a) &&
+		   py_arg_int(py_tuple_get(v, 1), b);
 }
 
 int getpointarg(struct py_object* v, int* a /* [2] */) {

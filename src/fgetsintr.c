@@ -24,8 +24,8 @@ static void catcher(int sig) {
 }
 
 int py_fgets_intr(buf, size, fp)char* buf;
-							 int size;
-							 FILE* fp;
+								int size;
+								FILE* fp;
 {
 	int ret;
 	void (* sigsave)();
@@ -44,8 +44,10 @@ int py_fgets_intr(buf, size, fp)char* buf;
 		signal(SIGINT, (void (*)()) catcher);
 	}
 
-	if(py_intrcheck()) ret = PY_RESULT_INTERRUPT;
-	else ret = (fgets(buf, size, fp) == NULL) ? PY_RESULT_EOF : PY_RESULT_OK;
+	if(py_intrcheck()) { ret = PY_RESULT_INTERRUPT; }
+	else {
+		ret = (fgets(buf, size, fp) == NULL) ? PY_RESULT_EOF : PY_RESULT_OK;
+	}
 
 	if(sigsave != (void (*)()) SIG_IGN) {
 		signal(SIGINT, (void (*)()) sigsave);

@@ -38,5 +38,4 @@ struct py_type py_type_type = {
 		0,                      /*set_attr*/
 		0,                      /*cmp*/
 		type_repr,              /*repr*/
-		0, 0, 0
-};
+		0, 0, 0 };

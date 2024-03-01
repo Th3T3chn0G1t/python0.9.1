@@ -53,7 +53,7 @@ static struct py_object* last_exception;
 static struct py_object* last_exc_val;
 
 void py_error_set_value(exception, value)struct py_object* exception;
-								 struct py_object* value;
+										 struct py_object* value;
 {
 	PY_XDECREF(last_exception);
 	PY_XINCREF(exception);
@@ -70,7 +70,7 @@ void py_error_set(exception)struct py_object* exception;
 }
 
 void py_error_set_string(exception, string)struct py_object* exception;
-								  const char* string;
+										   const char* string;
 {
 	struct py_object* value = py_string_new(string);
 	py_error_set_value(exception, value);
@@ -82,7 +82,7 @@ int py_error_occurred() {
 }
 
 void py_error_get(p_exc, p_val)struct py_object** p_exc;
-						  struct py_object** p_val;
+							   struct py_object** p_val;
 {
 	*p_exc = last_exception;
 	last_exception = NULL;
@@ -100,7 +100,8 @@ void py_error_clear() {
 /* Convenience functions to set a type error exception and return 0 */
 
 int py_error_set_badarg() {
-	py_error_set_string(py_type_error, "illegal argument type for built-in operation");
+	py_error_set_string(
+			py_type_error, "illegal argument type for built-in operation");
 	return 0;
 }
 
@@ -132,9 +133,13 @@ void py_error_set_input(err)int err;
 	switch(err) {
 		case PY_RESULT_DONE:
 		case PY_RESULT_OK:break;
-		case PY_RESULT_SYNTAX:py_error_set_string(py_runtime_error, "syntax error");
+		case PY_RESULT_SYNTAX:
+			py_error_set_string(
+					py_runtime_error, "syntax error");
 			break;
-		case PY_RESULT_TOKEN:py_error_set_string(py_runtime_error, "illegal token");
+		case PY_RESULT_TOKEN:
+			py_error_set_string(
+					py_runtime_error, "illegal token");
 			break;
 		case PY_RESULT_INTERRUPT:py_error_set(py_interrupt_error);
 			break;

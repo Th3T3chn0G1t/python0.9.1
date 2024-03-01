@@ -27,9 +27,9 @@ struct py_node* py_tree_new(type)int type;
 #define XXXROUNDUP(n) ((n) == 1 ? 1 : ((n) + XXX - 1) / XXX * XXX)
 
 struct py_node* py_tree_add(n1, type, str, lineno)struct py_node* n1;
-									 int type;
-									 char* str;
-									 int lineno;
+												  int type;
+												  char* str;
+												  int lineno;
 {
 	int nch = n1->count;
 	int nch1 = nch + 1;

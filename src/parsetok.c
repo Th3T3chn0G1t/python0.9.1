@@ -16,16 +16,17 @@
 #include <python/token.h>
 
 /* Forward */
-static int parsetok(struct py_tokenizer*, struct py_grammar*, int, struct py_node**);
+static int
+parsetok(struct py_tokenizer*, struct py_grammar*, int, struct py_node**);
 
 /* Parse input coming from a file. Return error code, print some errors. */
 
 int py_parse_file(fp, filename, g, start, ps1, ps2, n_ret)FILE* fp;
-													  char* filename;
-													  struct py_grammar* g;
-													  int start;
-													  char* ps1, * ps2;
-													  struct py_node** n_ret;
+														  char* filename;
+														  struct py_grammar* g;
+														  int start;
+														  char* ps1, * ps2;
+														  struct py_node** n_ret;
 {
 	struct py_tokenizer* tok = py_tokenizer_setup_file(fp, ps1, ps2);
 	int ret;

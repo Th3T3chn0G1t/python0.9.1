@@ -8,7 +8,8 @@
 
 struct py_initmod {
 	char* name;
-	void (*func)(void);
+
+	void (* func)(void);
 };
 
 /* TODO: Python global state. */

@@ -48,7 +48,7 @@ static void class_dealloc(op)classobject* op;
 }
 
 static struct py_object* class_getattr(op, name)classobject* op;
-									  char* name;
+												char* name;
 {
 	struct py_object* v;
 	v = py_dict_lookup(op->cl_methods, name);
@@ -125,7 +125,7 @@ static void classmember_dealloc(cm)classmemberobject* cm;
 }
 
 static struct py_object* classmember_getattr(cm, name)classmemberobject* cm;
-											char* name;
+													  char* name;
 {
 	struct py_object* v = py_dict_lookup(cm->cm_attr, name);
 	if(v != NULL) {
@@ -159,8 +159,8 @@ static int classmember_setattr(cm, name, v)classmemberobject* cm;
 }
 
 struct py_type py_class_member_type = {
-		PY_OB_SEQ_INIT(&py_type_type) 0, "class member", sizeof(classmemberobject), 0,
-		classmember_dealloc,    /*dealloc*/
+		PY_OB_SEQ_INIT(&py_type_type) 0, "class member",
+		sizeof(classmemberobject), 0, classmember_dealloc,    /*dealloc*/
 		0,                      /*print*/
 		classmember_getattr,    /*get_attr*/
 		classmember_setattr,    /*set_attr*/
@@ -183,7 +183,7 @@ typedef struct {
 } classmethodobject;
 
 struct py_object* py_classmethod_new(func, self)struct py_object* func;
-										struct py_object* self;
+												struct py_object* self;
 {
 	classmethodobject* cm;
 	if(!py_is_func(func)) {
@@ -226,11 +226,11 @@ struct py_object* py_classmethod_get_self(cm)struct py_object* cm;
 static struct py_memberlist classmethod_memberlist[] = {
 		{ "cm_func", PY_TYPE_OBJECT, OFF(cm_func), PY_READWRITE },
 		{ "cm_self", PY_TYPE_OBJECT, OFF(cm_self), PY_READWRITE },
-		{ NULL, 0, 0, 0 }  /* Sentinel */
+		{ NULL,      0, 0,                         0 }  /* Sentinel */
 };
 
 static struct py_object* classmethod_getattr(cm, name)classmethodobject* cm;
-											char* name;
+													  char* name;
 {
 	return py_memberlist_get((char*) cm, classmethod_memberlist, name);
 }
@@ -243,8 +243,8 @@ static void classmethod_dealloc(cm)classmethodobject* cm;
 }
 
 struct py_type py_class_method_type = {
-		PY_OB_SEQ_INIT(&py_type_type) 0, "class method", sizeof(classmethodobject), 0,
-		classmethod_dealloc,    /*dealloc*/
+		PY_OB_SEQ_INIT(&py_type_type) 0, "class method",
+		sizeof(classmethodobject), 0, classmethod_dealloc,    /*dealloc*/
 		0,                      /*print*/
 		classmethod_getattr,    /*get_attr*/
 		0,                      /*set_attr*/

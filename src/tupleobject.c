@@ -45,7 +45,7 @@ int py_tuple_size(op)struct py_object* op;
 }
 
 struct py_object* py_tuple_get(op, i)struct py_object* op;
-						   int i;
+									 int i;
 {
 	if(!py_is_tuple(op)) {
 		py_error_set_badcall();
@@ -72,7 +72,8 @@ int py_tuple_set(op, i, newitem)struct py_object* op;
 
 	if(i < 0 || i >= (int) ((struct py_tuple*) op)->size) {
 		if(newitem != NULL) PY_DECREF(newitem);
-		py_error_set_string(PY_INDEX_ERROR, "tuple assignment index out of range");
+		py_error_set_string(
+				PY_INDEX_ERROR, "tuple assignment index out of range");
 		return -1;
 	}
 	olditem = ((struct py_tuple*) op)->item[i];
@@ -158,7 +159,7 @@ static int tuplelength(a)struct py_tuple* a;
 }
 
 static struct py_object* tupleitem(a, i)struct py_tuple* a;
-							  int i;
+										int i;
 {
 	if(i < 0 || i >= (int) a->size) {
 		py_error_set_string(PY_INDEX_ERROR, "tuple index out of range");
@@ -169,7 +170,7 @@ static struct py_object* tupleitem(a, i)struct py_tuple* a;
 }
 
 static struct py_object* tupleslice(a, ilow, ihigh)struct py_tuple* a;
-										 int ilow, ihigh;
+												   int ilow, ihigh;
 {
 	struct py_tuple* np;
 	int i;
@@ -200,7 +201,7 @@ static struct py_object* tupleslice(a, ilow, ihigh)struct py_tuple* a;
 }
 
 static struct py_object* tupleconcat(a, bb)struct py_tuple* a;
-								 struct py_object* bb;
+										   struct py_object* bb;
 {
 	int size;
 	int i;
@@ -244,8 +245,8 @@ static struct py_sequencemethods tuple_as_sequence = {
 
 struct py_type py_tuple_type = {
 		PY_OB_SEQ_INIT(&py_type_type) 0, "tuple",
-		sizeof(struct py_tuple) - sizeof(struct py_object*), sizeof(struct py_object*),
-		tupledealloc,   /*dealloc*/
+		sizeof(struct py_tuple) - sizeof(struct py_object*),
+		sizeof(struct py_object*), tupledealloc,   /*dealloc*/
 		tupleprint,     /*print*/
 		0,              /*get_attr*/
 		0,              /*set_attr*/

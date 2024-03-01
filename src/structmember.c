@@ -13,7 +13,8 @@
 #include <python/floatobject.h>
 #include <python/stringobject.h>
 
-struct py_object* py_memberlist_get(char* addr, struct py_memberlist* mlist, const char* name) {
+struct py_object*
+py_memberlist_get(char* addr, struct py_memberlist* mlist, const char* name) {
 	struct py_memberlist* l;
 
 	for(l = mlist; l->name != NULL; l++) {
@@ -46,7 +47,9 @@ struct py_object* py_memberlist_get(char* addr, struct py_memberlist* mlist, con
 					}
 					PY_INCREF(v);
 					break;
-				default: py_error_set_string(py_system_error, "bad memberlist type");
+				default:
+					py_error_set_string(
+							py_system_error, "bad memberlist type");
 					v = NULL;
 			}
 			return v;
@@ -58,9 +61,9 @@ struct py_object* py_memberlist_get(char* addr, struct py_memberlist* mlist, con
 }
 
 int py_memberlist_set(addr, mlist, name, v)char* addr;
-								   struct py_memberlist* mlist;
-								   char* name;
-								   struct py_object* v;
+										   struct py_memberlist* mlist;
+										   char* name;
+										   struct py_object* v;
 {
 	struct py_memberlist* l;
 
@@ -121,7 +124,9 @@ int py_memberlist_set(addr, mlist, name, v)char* addr;
 					PY_XINCREF(v);
 					*(struct py_object**) addr = v;
 					break;
-				default:py_error_set_string(py_system_error, "bad memberlist type");
+				default:
+					py_error_set_string(
+							py_system_error, "bad memberlist type");
 					return -1;
 			}
 			return 0;

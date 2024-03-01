@@ -40,8 +40,8 @@ FILE* py_file_get(f)struct py_object* f;
 }
 
 struct py_object* py_openfile_new(fp, name, mode)FILE* fp;
-										 char* name;
-										 char* mode;
+												 char* name;
+												 char* mode;
 {
 	fileobject* f = py_object_new(&py_file_type);
 	if(f == NULL) {
@@ -120,7 +120,7 @@ static struct py_object* file_repr(f)fileobject* f;
 }
 
 static struct py_object* file_close(f, args)fileobject* f;
-								  struct py_object* args;
+											struct py_object* args;
 {
 	if(args != NULL) {
 		py_error_set_badarg();
@@ -135,7 +135,7 @@ static struct py_object* file_close(f, args)fileobject* f;
 }
 
 static struct py_object* file_read(f, args)fileobject* f;
-								 struct py_object* args;
+										   struct py_object* args;
 {
 	int n;
 	struct py_object* v;
@@ -166,7 +166,7 @@ static struct py_object* file_read(f, args)fileobject* f;
 /* XXX Should this be unified with raw_input()? */
 
 static struct py_object* file_readline(f, args)fileobject* f;
-									 struct py_object* args;
+											   struct py_object* args;
 {
 	int n;
 	struct py_object* v;
@@ -209,7 +209,7 @@ static struct py_object* file_readline(f, args)fileobject* f;
 }
 
 static struct py_object* file_write(f, args)fileobject* f;
-								  struct py_object* args;
+											struct py_object* args;
 {
 	int n, n2;
 	if(f->f_fp == NULL) {
@@ -221,7 +221,8 @@ static struct py_object* file_write(f, args)fileobject* f;
 		return NULL;
 	}
 	errno = 0;
-	n2 = fwrite(py_string_get_value(args), 1, n = py_string_size(args), f->f_fp);
+	n2 = fwrite(
+			py_string_get_value(args), 1, n = py_string_size(args), f->f_fp);
 	if(n2 != n) {
 		if(errno == 0)
 			errno = EIO;
@@ -233,15 +234,15 @@ static struct py_object* file_write(f, args)fileobject* f;
 }
 
 static struct py_methodlist file_methods[] = {
-		{ "write",    file_write },
-		{ "read",     file_read },
+		{ "write", file_write },
+		{ "read", file_read },
 		{ "readline", file_readline },
-		{ "close",    file_close },
+		{ "close", file_close },
 		{ NULL, NULL }           /* sentinel */
 };
 
 static struct py_object* file_getattr(f, name)fileobject* f;
-									char* name;
+											  char* name;
 {
 	return py_methodlist_find(file_methods, (struct py_object*) f, name);
 }
@@ -254,5 +255,4 @@ struct py_type py_file_type = {
 		0,              /*set_attr*/
 		0,              /*cmp*/
 		file_repr,      /*repr*/
-		0, 0, 0
-};
+		0, 0, 0 };

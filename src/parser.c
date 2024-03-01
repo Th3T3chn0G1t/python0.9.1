@@ -72,7 +72,7 @@ static void s_pop(s)struct py_stack* s;
 /* PARSER CREATION */
 
 struct py_parser* py_parser_new(g, start)struct py_grammar* g;
-								 int start;
+										 int start;
 {
 	struct py_parser* ps;
 
@@ -151,8 +151,8 @@ static int classify(g, type, str)struct py_grammar* g;
 		struct py_label* l = g->labels.label;
 		int i;
 		for(i = n; i > 0; i--, l++) {
-			if(l->type == PY_NAME && l->str != NULL &&
-			   l->str[0] == s[0] && strcmp(l->str, s) == 0) {
+			if(l->type == PY_NAME && l->str != NULL && l->str[0] == s[0] &&
+			   strcmp(l->str, s) == 0) {
 				D(printf("It's a keyword\n"));
 				return n - i;
 			}
@@ -175,9 +175,9 @@ static int classify(g, type, str)struct py_grammar* g;
 }
 
 int py_parser_add(ps, type, str, lineno)struct py_parser* ps;
-								   int type;
-								   char* str;
-								   int lineno;
+										int type;
+										char* str;
+										int lineno;
 {
 	int ilabel;
 
@@ -224,8 +224,8 @@ int py_parser_add(ps, type, str, lineno)struct py_parser* ps;
 				}
 				D(printf(" Shift.\n"));
 				/* Pop while we are in an accept-only state */
-				while(s = &d->states[ps->stack.top->state],
-						s->accept && s->count == 1) {
+				while(s = &d->states[ps->stack.top->state], s->accept &&
+															s->count == 1) {
 					D(printf("  Direct pop.\n"));
 					s_pop(&ps->stack);
 					if(s_empty(&ps->stack)) {

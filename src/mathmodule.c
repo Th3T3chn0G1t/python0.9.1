@@ -43,7 +43,7 @@ static int get2doublearg(args, px, py)struct py_object* args;
 }
 
 static struct py_object* math_1(args, func)struct py_object* args;
-								 double (* func)(double);
+										   double (* func)(double);
 {
 	double x;
 	if(!getdoublearg(
@@ -61,7 +61,7 @@ static struct py_object* math_1(args, func)struct py_object* args;
 }
 
 static struct py_object* math_2(args, func)struct py_object* args;
-								 double (* func)(double, double);
+										   double (* func)(double, double);
 {
 	double x, y;
 	if(!get2doublearg(
