@@ -24,17 +24,11 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 /* Math module -- standard C math library functions, pi and e */
 
-#include "allobjects.h"
-
+#include <math.h>
 #include <errno.h>
 
-#ifndef errno
-extern int errno;
-#endif
-
-#include "modsupport.h"
-
-#include <math.h>
+#include <python/allobjects.h>
+#include <python/modsupport.h>
 
 static int getdoublearg(args, px)object* args;
 								 double* px;

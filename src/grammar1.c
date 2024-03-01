@@ -24,10 +24,11 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 /* Grammar subroutines needed by parser */
 
-#include "pgenheaders.h"
-#include "assert.h"
-#include "grammar.h"
-#include "token.h"
+#include <assert.h>
+
+#include <python/pgenheaders.h>
+#include <python/grammar.h>
+#include <python/token.h>
 
 /* Return the DFA for the given type */
 

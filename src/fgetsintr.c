@@ -28,13 +28,12 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 /* XXX This uses longjmp() from a signal out of fgets().
    Should use read() instead?! */
 
-#include "pgenheaders.h"
-
 #include <signal.h>
 #include <setjmp.h>
 
-#include "errcode.h"
-#include "fgetsintr.h"
+#include <python/pgenheaders.h>
+#include <python/errcode.h>
+#include <python/fgetsintr.h>
 
 static jmp_buf jback;
 

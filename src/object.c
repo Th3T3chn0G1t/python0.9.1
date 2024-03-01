@@ -26,8 +26,8 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 #include <stdlib.h>
 
-#include "allobjects.h"
-#include "fgetsintr.h"
+#include <python/allobjects.h>
+#include <python/fgetsintr.h>
 
 #ifdef REF_DEBUG
 long ref_total;

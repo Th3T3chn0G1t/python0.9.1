@@ -33,7 +33,7 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #include <stdlib.h>
 #include <errno.h>
 
-#include "allobjects.h"
+#include <python/allobjects.h>
 
 typedef struct {
 	OB_HEAD

@@ -39,22 +39,11 @@ Data members:
 
 #include <stdlib.h>
 
-#include "allobjects.h"
-
-#include "sysmodule.h"
-#include "pythonrun.h"
-#include "import.h"
-#include "modsupport.h"
-
-/* Define delimiter used in $PYTHONPATH */
-
-#ifdef THINK_C
-#define DELIM ' '
-#endif
-
-#ifndef DELIM
-#define DELIM ':'
-#endif
+#include <python/allobjects.h>
+#include <python/sysmodule.h>
+#include <python/pythonrun.h>
+#include <python/import.h>
+#include <python/modsupport.h>
 
 static object* sysdict;
 static object* sysin, * sysout, * syserr;
@@ -175,7 +164,7 @@ static object* makepathobject(path, delim)char* path;
 
 void setpythonpath(char* path) {
 	object* v;
-	if((v = makepathobject(path, DELIM)) == NULL) {
+	if((v = makepathobject(path, ':')) == NULL) {
 		fatal("can't create sys.path");
 	}
 	if(sysset("path", v) != 0) {

@@ -24,9 +24,8 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 /* Map C struct members to Python object attributes */
 
-#include "allobjects.h"
-
-#include "structmember.h"
+#include <python/allobjects.h>
+#include <python/structmember.h>
 
 object* getmember(addr, mlist, name)char* addr;
 									struct memberlist* mlist;

@@ -24,7 +24,7 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 /* Type object implementation */
 
-#include "allobjects.h"
+#include <python/allobjects.h>
 
 /* Type object implementation */
 

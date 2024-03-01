@@ -26,15 +26,14 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 #include <stdlib.h>
 
-#include "pgenheaders.h"
-#include "grammar.h"
-#include "token.h"
+#include <python/pgenheaders.h>
+#include <python/grammar.h>
+#include <python/token.h>
 
 extern int debugging;
 
 /* Forward */
-static void calcfirstset
-(grammar*, dfa *);
+static void calcfirstset(grammar*, dfa *);
 
 void addfirstsets(g)grammar* g;
 {

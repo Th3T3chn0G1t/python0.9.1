@@ -48,8 +48,8 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 # include <sys/dir.h>
 #endif
 
-#include "allobjects.h"
-#include "modsupport.h"
+#include <python/allobjects.h>
+#include <python/modsupport.h>
 
 #ifndef _WIN32
 /* Return a dictionary corresponding to the POSIX environment table */

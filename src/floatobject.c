@@ -27,7 +27,7 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 /* XXX There should be overflow checks here, but it's hard to check
    for any kind of float exception without losing portability. */
 
-#include "allobjects.h"
+#include <python/allobjects.h>
 
 #include <stdlib.h>
 #include <errno.h>

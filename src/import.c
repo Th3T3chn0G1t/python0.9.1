@@ -22,26 +22,23 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 ******************************************************************/
 
-/* Added by Andrew Dalke, 27 March 2009 to handle the needed forward declaration for gcc*/
-static int init_builtin(char* name);
-
-
 /* Module definition and import implementation */
 
-#include "allobjects.h"
-
-#include "node.h"
-#include "token.h"
-#include "config.h"
-#include "graminit.h"
-#include "import.h"
-#include "errcode.h"
-#include "sysmodule.h"
-#include "pythonrun.h"
+#include <python/allobjects.h>
+#include <python/node.h>
+#include <python/token.h>
+#include <python/graminit.h>
+#include <python/import.h>
+#include <python/sysmodule.h>
+#include <python/pythonrun.h>
+#include <python/config.h>
+#include <python/errcode.h>
 
 static object* modules;
 
 /* Initialization */
+
+static int init_builtin(char* name);
 
 void initimport(void) {
 	if((modules = newdictobject()) == NULL) {

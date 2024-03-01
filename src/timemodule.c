@@ -24,10 +24,6 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 /* Time module */
 
-#include "allobjects.h"
-
-#include "modsupport.h"
-
 #include <signal.h>
 #include <setjmp.h>
 #include <time.h>
@@ -35,6 +31,9 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #ifdef _WIN32
 # include <windows.h>
 #endif
+
+#include <python/allobjects.h>
+#include <python/modsupport.h>
 
 /*
  * TODO: Remove all builtin modules from Python itself and move to AGA to make

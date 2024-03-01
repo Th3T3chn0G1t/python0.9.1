@@ -34,7 +34,7 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 /* Xx objects */
 
-#include "allobjects.h"
+#include <python/allobjects.h>
 
 typedef struct {
 	OB_HEAD

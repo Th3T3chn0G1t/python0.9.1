@@ -24,20 +24,19 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 /* Built-in functions */
 
-#include "allobjects.h"
+#include <python/allobjects.h>
 
-#include "node.h"
-#include "graminit.h"
-#include "errcode.h"
-#include "sysmodule.h"
-#include "fgetsintr.h"
-#include "bltinmodule.h"
-#include "import.h"
-#include "pythonrun.h"
-#include "compile.h" /* For ceval.h */
-#include "frameobject.h"
-#include "ceval.h"
-#include "modsupport.h"
+#include <python/node.h>
+#include <python/graminit.h>
+#include <python/sysmodule.h>
+#include <python/import.h>
+#include <python/pythonrun.h>
+#include <python/modsupport.h>
+#include <python/errcode.h>
+#include <python/fgetsintr.h>
+#include <python/bltinmodule.h>
+#include <python/frameobject.h>
+#include <python/ceval.h>
 
 /* Predefined exceptions */
 

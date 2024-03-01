@@ -26,13 +26,13 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 #include <stdlib.h>
 
-#include "pgenheaders.h"
-#include "tokenizer.h"
-#include "node.h"
-#include "grammar.h"
-#include "parser.h"
-#include "parsetok.h"
-#include "errcode.h"
+#include <python/pgenheaders.h>
+#include <python/tokenizer.h>
+#include <python/node.h>
+#include <python/grammar.h>
+#include <python/parser.h>
+#include <python/parsetok.h>
+#include <python/errcode.h>
 
 
 /* Forward */

@@ -26,17 +26,16 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 #include <stdlib.h>
 
-#include "allobjects.h"
-
-#include "import.h"
-#include "fgetsintr.h"
-#include "sysmodule.h"
-#include "compile.h"
-#include "frameobject.h"
-#include "ceval.h"
-#include "opcode.h"
-#include "bltinmodule.h"
-#include "traceback.h"
+#include <python/allobjects.h>
+#include <python/import.h>
+#include <python/sysmodule.h>
+#include <python/opcode.h>
+#include <python/traceback.h>
+#include <python/fgetsintr.h>
+#include <python/compile.h>
+#include <python/frameobject.h>
+#include <python/ceval.h>
+#include <python/bltinmodule.h>
 
 frameobject* current_frame;
 static int needspace;

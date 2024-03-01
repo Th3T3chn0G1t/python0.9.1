@@ -25,14 +25,12 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 /* Grammar implementation */
 
 #include <stdlib.h>
-
-#include "pgenheaders.h"
-
 #include <ctype.h>
+#include <assert.h>
 
-#include "assert.h"
-#include "token.h"
-#include "grammar.h"
+#include <python/pgenheaders.h>
+#include <python/token.h>
+#include <python/grammar.h>
 
 extern int debugging;
 

@@ -3,7 +3,7 @@
 *.a
 *.exe
 
-src/python
 src/pgenmain
 
-src/graminit*
+src/graminit.c
+include/python/graminit.h

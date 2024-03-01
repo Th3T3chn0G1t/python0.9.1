@@ -24,9 +24,9 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 /* List a node on a file */
 
-#include "pgenheaders.h"
-#include "token.h"
-#include "node.h"
+#include <python/pgenheaders.h>
+#include <python/token.h>
+#include <python/node.h>
 
 /* Forward */
 static void list1node(FILE*, node*);

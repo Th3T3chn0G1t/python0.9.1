@@ -35,10 +35,10 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 #include <stdlib.h>
 
-#include "pgenheaders.h"
-#include "grammar.h"
-#include "token.h"
-#include "parser.h"
+#include <python/pgenheaders.h>
+#include <python/grammar.h>
+#include <python/token.h>
+#include <python/parser.h>
 
 /* TODO: This isn't a great system. */
 static int** freelist = 0;

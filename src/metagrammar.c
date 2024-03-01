@@ -22,10 +22,10 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 ******************************************************************/
 
-#include "pgenheaders.h"
-#include "metagrammar.h"
-#include "grammar.h"
-#include "pgen.h"
+#include <python/pgenheaders.h>
+#include <python/metagrammar.h>
+#include <python/grammar.h>
+#include <python/pgen.h>
 
 static arc arcs_0_0[3] = {
 		{ 2, 0 },

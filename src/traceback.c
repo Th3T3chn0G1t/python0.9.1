@@ -26,14 +26,13 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 #include <stdlib.h>
 
-#include "allobjects.h"
-
-#include "compile.h"
-#include "frameobject.h"
-#include "traceback.h"
-#include "structmember.h"
-#include "sysmodule.h"
-#include "fgetsintr.h"
+#include <python/allobjects.h>
+#include <python/compile.h>
+#include <python/frameobject.h>
+#include <python/traceback.h>
+#include <python/structmember.h>
+#include <python/sysmodule.h>
+#include <python/fgetsintr.h>
 
 typedef struct _tracebackobject {
 	OB_HEAD

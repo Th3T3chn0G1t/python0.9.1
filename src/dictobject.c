@@ -37,8 +37,8 @@ A similar module that I saw by Chris Torek:
 
 #include <stdlib.h>
 
-#include "allobjects.h"
-#include "modsupport.h"
+#include <python/allobjects.h>
+#include <python/modsupport.h>
 
 /*
 Table of primes suitable as keys, in ascending order.

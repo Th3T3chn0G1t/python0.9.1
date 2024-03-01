@@ -24,8 +24,8 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 /* Print a bunch of C initializers that represent a grammar */
 
-#include "pgenheaders.h"
-#include "grammar.h"
+#include <python/pgenheaders.h>
+#include <python/grammar.h>
 
 /* Forward */
 static void printarcs (int, dfa *, FILE *);
@@ -36,8 +36,8 @@ static void printlabels(grammar*, FILE *);
 void printgrammar(g, fp)grammar* g;
 						FILE* fp;
 {
-	fprintf(fp, "#include \"pgenheaders.h\"\n");
-	fprintf(fp, "#include \"grammar.h\"\n");
+	fprintf(fp, "#include <python/pgenheaders.h>\n");
+	fprintf(fp, "#include <python/grammar.h>\n");
 	printdfas(g, fp);
 	printlabels(g, fp);
 	fprintf(fp, "grammar gram = {\n");

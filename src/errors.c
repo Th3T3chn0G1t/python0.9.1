@@ -55,7 +55,7 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
   err_setval() has to be changed.
 */
 
-#include "allobjects.h"
+#include <python/allobjects.h>
 
 #include <errno.h>
 
@@ -63,7 +63,7 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 extern int errno;
 #endif
 
-#include "errcode.h"
+#include <python/errcode.h>
 
 /* Last exception stored by err_setval() */
 

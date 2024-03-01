@@ -29,14 +29,14 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 /* XXX To do: error recovery */
 
 #include <stdlib.h>
+#include <assert.h>
 
-#include "pgenheaders.h"
-#include "assert.h"
-#include "token.h"
-#include "grammar.h"
-#include "node.h"
-#include "parser.h"
-#include "errcode.h"
+#include <python/pgenheaders.h>
+#include <python/token.h>
+#include <python/grammar.h>
+#include <python/node.h>
+#include <python/parser.h>
+#include <python/errcode.h>
 
 #ifdef _DEBUG
 extern int debugging;

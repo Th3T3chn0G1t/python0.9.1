@@ -26,7 +26,7 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 #include <stdlib.h>
 
-#include "allobjects.h"
+#include <python/allobjects.h>
 
 object* newsizedstringobject(str, size)char* str;
 									   int size;

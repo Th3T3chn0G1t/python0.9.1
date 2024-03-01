@@ -26,12 +26,11 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 #include <stdlib.h>
 
-#include "allobjects.h"
-
-#include "compile.h"
-#include "frameobject.h"
-#include "opcode.h"
-#include "structmember.h"
+#include <python/allobjects.h>
+#include <python/compile.h>
+#include <python/frameobject.h>
+#include <python/opcode.h>
+#include <python/structmember.h>
 
 #define OFF(x) offsetof(frameobject, x)
 

@@ -28,26 +28,26 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 # include <io.h> /* For `isatty'. */
 #endif
 
-#include "patchlevel.h"
+#include <stdlib.h>
 
-#include "allobjects.h"
-
-#include "grammar.h"
-#include "node.h"
-#include "parsetok.h"
-#include "graminit.h"
-#include "errcode.h"
-#include "sysmodule.h"
-#include "compile.h"
-#include "frameobject.h"
-#include "ceval.h"
-#include "pythonrun.h"
-#include "import.h"
-#include "bltinmodule.h"
-#include "fgetsintr.h"
+#include <python/grammar.h>
+#include <python/node.h>
+#include <python/parsetok.h>
+#include <python/graminit.h>
+#include <python/sysmodule.h>
+#include <python/pythonrun.h>
+#include <python/import.h>
+#include <python/allobjects.h>
+#include <python/errcode.h>
+#include <python/compile.h>
+#include <python/frameobject.h>
+#include <python/ceval.h>
+#include <python/bltinmodule.h>
+#include <python/fgetsintr.h>
 
 extern grammar gram; /* From graminit.c */
 
+#ifndef PY_NO_MAIN
 int main(int argc, char** argv) {
 	char* filename = NULL;
 	FILE* fp = stdin;
@@ -73,6 +73,7 @@ int main(int argc, char** argv) {
 
 	return 0;
 }
+#endif
 
 /* Initialize all */
 

@@ -34,11 +34,11 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 #include <stdlib.h>
 
-#include "pgenheaders.h"
-#include "grammar.h"
-#include "node.h"
-#include "parsetok.h"
-#include "pgen.h"
+#include <python/pgenheaders.h>
+#include <python/grammar.h>
+#include <python/node.h>
+#include <python/parsetok.h>
+#include <python/pgen.h>
 
 int debugging;
 

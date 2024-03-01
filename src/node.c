@@ -26,8 +26,8 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 #include <stdlib.h>
 
-#include "pgenheaders.h"
-#include "node.h"
+#include <python/pgenheaders.h>
+#include <python/node.h>
 
 node* newtree(type)int type;
 {

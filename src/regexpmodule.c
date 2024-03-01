@@ -27,10 +27,9 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 #include <stdlib.h>
 
-#include "allobjects.h"
-#include "modsupport.h"
-
-#include "regexp.h"
+#include <python/allobjects.h>
+#include <python/modsupport.h>
+#include <python/regexp.h>
 
 static object* RegexpError;    /* Exception */
 

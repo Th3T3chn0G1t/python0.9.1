@@ -48,12 +48,12 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  * precedence is structured in regular expressions.  Serious changes in
  * regular-expression syntax might require a total rethink.
  */
+
 #include <stdio.h>
 #include <stdlib.h>
-
 #include <string.h>              /* XXX Remove if not found */
-#include "regexp.h"
-#include "regmagic.h"
+
+#include <python/regexp.h>
 
 /*
  * Defining MULTILINE turns on the following changes in the semantics:

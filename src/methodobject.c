@@ -26,9 +26,8 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 #include <stdlib.h>
 
-#include "allobjects.h"
-
-#include "token.h"
+#include <python/allobjects.h>
+#include <python/token.h>
 
 typedef struct {
 	OB_HEAD

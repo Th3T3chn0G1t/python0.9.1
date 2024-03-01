@@ -31,17 +31,15 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
 #include <stdlib.h>
-
-#include "allobjects.h"
-
-#include "node.h"
-#include "token.h"
-#include "graminit.h"
-#include "compile.h"
-#include "opcode.h"
-#include "structmember.h"
-
 #include <ctype.h>
+
+#include <python/allobjects.h>
+#include <python/node.h>
+#include <python/token.h>
+#include <python/graminit.h>
+#include <python/opcode.h>
+#include <python/structmember.h>
+#include <python/compile.h>
 
 #define OFF(x) offsetof(codeobject, x)
 

@@ -24,10 +24,9 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 /* Module support implementation */
 
-#include "allobjects.h"
-#include "modsupport.h"
-#include "import.h"
-
+#include <python/allobjects.h>
+#include <python/modsupport.h>
+#include <python/import.h>
 
 object* initmodule(name, methods)char* name;
 								 struct methodlist* methods;

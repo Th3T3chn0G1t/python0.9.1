@@ -28,14 +28,14 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 /* For a description, see the comments at end of this file */
 
 #include <stdlib.h>
+#include <assert.h>
 
-#include "pgenheaders.h"
-#include "assert.h"
-#include "token.h"
-#include "node.h"
-#include "grammar.h"
-#include "metagrammar.h"
-#include "pgen.h"
+#include <python/pgenheaders.h>
+#include <python/token.h>
+#include <python/node.h>
+#include <python/grammar.h>
+#include <python/metagrammar.h>
+#include <python/pgen.h>
 
 extern int debugging;
 

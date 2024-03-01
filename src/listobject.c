@@ -26,8 +26,8 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 #include <stdlib.h>
 
-#include "allobjects.h"
-#include "modsupport.h"
+#include <python/allobjects.h>
+#include <python/modsupport.h>
 
 object* newlistobject(size)int size;
 {

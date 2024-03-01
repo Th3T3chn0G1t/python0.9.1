@@ -26,8 +26,8 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 #include <stdlib.h>
 
-#include "pgenheaders.h"
-#include "bitset.h"
+#include <python/pgenheaders.h>
+#include <python/bitset.h>
 
 py_bitset_t newbitset(int nbits) {
 	int nbytes = PY_NBYTES(nbits);
