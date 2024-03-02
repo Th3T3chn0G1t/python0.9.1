@@ -108,7 +108,6 @@ struct py_numbermethods {
 	struct py_object* (*mul)(struct py_object*, struct py_object*);
 	struct py_object* (*div)(struct py_object*, struct py_object*);
 	struct py_object* (*mod)(struct py_object*, struct py_object*);
-	struct py_object* (*pow)(struct py_object*, struct py_object*);
 	struct py_object* (*neg)(struct py_object*);
 	struct py_object* (*pos)(struct py_object*);
 };

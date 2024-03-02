@@ -180,35 +180,6 @@ static struct py_object* int_rem(v, w)struct py_int* v;
 	return py_int_new(v->value % ((struct py_int*) w)->value);
 }
 
-static struct py_object* int_pow(v, w)struct py_int* v;
-									  struct py_object* w;
-{
-	long iv, iw, ix;
-	int neg;
-	if(!py_is_int(w)) {
-		py_error_set_badarg();
-		return NULL;
-	}
-	iv = v->value;
-	iw = ((struct py_int*) w)->value;
-	neg = 0;
-	if(iw < 0) {
-		neg = 1, iw = -iw;
-	}
-	ix = 1;
-	for(; iw > 0; iw--) {
-		ix = ix * iv;
-	}
-	if(neg) {
-		if(ix == 0) {
-			return err_zdiv();
-		}
-		ix = 1 / ix;
-	}
-	/* XXX How to check for overflow? */
-	return py_int_new(ix);
-}
-
 static struct py_object* int_neg(v)struct py_int* v;
 {
 	long a, x;
@@ -231,7 +202,6 @@ static struct py_numbermethods int_as_number = {
 		int_mul, /* tp_mul */
 		int_div, /* tp_divide */
 		int_rem, /* tp_remainder */
-		int_pow, /* tp_power */
 		int_neg, /* tp_negate */
 		int_pos /* tp_plus */
 };

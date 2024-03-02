@@ -107,29 +107,6 @@ static struct py_object* float_rem(v, w)struct py_float* v;
 	return py_float_new(fmod(v->value, wx));
 }
 
-static struct py_object* float_pow(v, w)struct py_float* v;
-										struct py_object* w;
-{
-	double iv, iw, ix;
-	if(!py_is_float(w)) {
-		py_error_set_badarg();
-		return NULL;
-	}
-	iv = v->value;
-	iw = ((struct py_float*) w)->value;
-	if(iw == 0.0) {
-		return py_float_new(1.0);
-	} /* x**0 is always 1, even 0**0 */
-	errno = 0;
-	ix = pow(iv, iw);
-	if(errno != 0) {
-		/* XXX could it be another type of error? */
-		py_error_set_errno(PY_OVERFLOW_ERROR);
-		return NULL;
-	}
-	return py_float_new(ix);
-}
-
 static struct py_object* float_neg(v)struct py_float* v;
 {
 	return py_float_new(-v->value);
@@ -146,7 +123,6 @@ static struct py_numbermethods float_as_number = {
 		float_mul,      /*tp_mul*/
 		float_div,      /*tp_divide*/
 		float_rem,      /*tp_remainder*/
-		float_pow,      /*tp_power*/
 		float_neg,      /*tp_negate*/
 		float_pos,      /*tp_plus*/
 };
