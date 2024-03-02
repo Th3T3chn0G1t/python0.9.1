@@ -15,81 +15,89 @@
 #include <python/tupleobject.h>
 #include <python/funcobject.h>
 
-typedef struct {
+struct py_class {
 	PY_OB_SEQ
-	struct py_object* cl_bases;      /* A tuple */
-	struct py_object* cl_methods;    /* A dictionary */
-} classobject;
+	struct py_object* bases; /* A tuple */
+	struct py_object* methods; /* A dictionary */
+};
+struct py_object* py_class_new(
+		struct py_object* bases, struct py_object* methods) {
 
-struct py_object* py_class_new(bases, methods)
-		struct py_object* bases; /* NULL or tuple of classobjects! */
-		struct py_object* methods;
-{
-	classobject* op;
+	struct py_class* op;
+
 	op = py_object_new(&py_class_type);
-	if(op == NULL) {
-		return NULL;
-	}
-	if(bases != NULL)
-		PY_INCREF(bases);
-	op->cl_bases = bases;
+	if(op == NULL) return NULL;
+
+	if(bases != NULL) PY_INCREF(bases);
+
+	op->bases = bases;
 	PY_INCREF(methods);
-	op->cl_methods = methods;
+	op->methods = methods;
+
 	return (struct py_object*) op;
 }
 
 /* Class methods */
 
-static void class_dealloc(op)classobject* op;
-{
-	if(op->cl_bases != NULL) PY_DECREF(op->cl_bases);
-	PY_DECREF(op->cl_methods);
+static void py_class_dealloc(struct py_object* op) {
+	struct py_class* cls;
+
+	cls = (struct py_class*) op;
+
+	if(cls->bases != NULL) PY_DECREF(cls->bases);
+	PY_DECREF(cls->methods);
+
 	free(op);
 }
 
-static struct py_object* class_getattr(op, name)classobject* op;
-												char* name;
-{
+static struct py_object* py_class_get_attr(
+		struct py_object* op, const char* name) {
+
 	struct py_object* v;
-	v = py_dict_lookup(op->cl_methods, name);
+	struct py_class* cls;
+
+	cls = (struct py_class*) op;
+	v = py_dict_lookup(cls->methods, name);
+
 	if(v != NULL) {
 		PY_INCREF(v);
 		return v;
 	}
-	if(op->cl_bases != NULL) {
-		int n = py_tuple_size(op->cl_bases);
+
+	if(cls->bases != NULL) {
+		int n = py_tuple_size(cls->bases);
 		int i;
+
 		for(i = 0; i < n; i++) {
-			v = class_getattr(py_tuple_get(op->cl_bases, i), name);
-			if(v != NULL) {
-				return v;
-			}
+			v = py_class_get_attr(py_tuple_get(cls->bases, i), name);
+			if(v != NULL) return v;
+
 			py_error_clear();
 		}
 	}
+
 	py_error_set_string(py_name_error, name);
 	return NULL;
 }
 
 struct py_type py_class_type = {
-		PY_OB_SEQ_INIT(&py_type_type) 0, "class", sizeof(classobject), 0,
-		class_dealloc,  /*dealloc*/
-		0,              /*print*/
-		class_getattr,  /*get_attr*/
-		0,              /*set_attr*/
-		0,              /*cmp*/
-		0,              /*repr*/
-		0,              /*numbermethods*/
-		0,              /*sequencemethods*/
-		0,              /*mappingmethods*/
+		PY_OB_SEQ_INIT(&py_type_type)
+		0, "class", sizeof(struct py_class), 0,
+		py_class_dealloc, /* dealloc */
+		0, /* print */
+		py_class_get_attr, /* get_attr */
+		0, /* set_attr */
+		0, /* cmp */
+		0, /* repr */
+		0, /* numbermethods */
+		0, /* sequencemethods */
+		0, /* mappingmethods */
 };
 
-
 /* We're not done yet: next, we define class member objects... */
-
 typedef struct {
 	PY_OB_SEQ
-	classobject* cm_class;      /* The class object */
+	struct py_class* cm_class;      /* The class object */
 	struct py_object* cm_attr;       /* A dictionary */
 } classmemberobject;
 
@@ -105,7 +113,7 @@ struct py_object* py_classmember_new(class)struct py_object* class;
 		return NULL;
 	}
 	PY_INCREF(class);
-	cm->cm_class = (classobject*) class;
+	cm->cm_class = (struct py_class*) class;
 	cm->cm_attr = py_dict_new();
 	if(cm->cm_attr == NULL) {
 		PY_DECREF(cm);
@@ -132,10 +140,10 @@ static struct py_object* classmember_getattr(cm, name)classmemberobject* cm;
 		PY_INCREF(v);
 		return v;
 	}
-	v = class_getattr(cm->cm_class, name);
+	v = py_class_get_attr((struct py_object*) cm->cm_class, name);
 	if(v == NULL) {
 		return v;
-	} /* class_getattr() has set the error */
+	} /* py_class_get_attr() has set the error */
 	if(py_is_func(v)) {
 		struct py_object* w = py_classmethod_new(v, (struct py_object*) cm);
 		PY_DECREF(v);

@@ -77,6 +77,7 @@
 # define PY_OB_SEQ_INIT(type) 1, type,
 #endif
 
+/* TODO: Fix unsigned/signed size mixing everywhere. */
 #define PY_VAROB_SEQ \
        PY_OB_SEQ \
        unsigned int size; /* Number of items in variable part */
