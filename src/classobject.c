@@ -28,10 +28,10 @@ struct py_object* py_class_new(
 	op = py_object_new(&py_class_type);
 	if(op == NULL) return NULL;
 
-	if(bases != NULL) PY_INCREF(bases);
+	if(bases != NULL) py_object_incref(bases);
 
 	op->bases = bases;
-	PY_INCREF(methods);
+	py_object_incref(methods);
 	op->methods = methods;
 
 	return (struct py_object*) op;
@@ -44,8 +44,8 @@ static void py_class_dealloc(struct py_object* op) {
 
 	cls = (struct py_class*) op;
 
-	if(cls->bases != NULL) PY_DECREF(cls->bases);
-	PY_DECREF(cls->methods);
+	if(cls->bases != NULL) py_object_decref(cls->bases);
+	py_object_decref(cls->methods);
 
 	free(op);
 }
@@ -60,7 +60,7 @@ static struct py_object* py_class_get_attr(
 	v = py_dict_lookup(cls->methods, name);
 
 	if(v != NULL) {
-		PY_INCREF(v);
+		py_object_incref(v);
 		return v;
 	}
 
@@ -111,11 +111,11 @@ struct py_object* py_classmember_new(class)struct py_object* class;
 	if(cm == NULL) {
 		return NULL;
 	}
-	PY_INCREF(class);
+	py_object_incref(class);
 	cm->cm_class = (struct py_class*) class;
 	cm->cm_attr = py_dict_new();
 	if(cm->cm_attr == NULL) {
-		PY_DECREF(cm);
+		py_object_decref(cm);
 		return NULL;
 	}
 	return (struct py_object*) cm;
@@ -125,9 +125,9 @@ struct py_object* py_classmember_new(class)struct py_object* class;
 
 static void classmember_dealloc(cm)classmemberobject* cm;
 {
-	PY_DECREF(cm->cm_class);
+	py_object_decref(cm->cm_class);
 	if(cm->cm_attr != NULL)
-		PY_DECREF(cm->cm_attr);
+		py_object_decref(cm->cm_attr);
 	free(cm);
 }
 
@@ -136,7 +136,7 @@ static struct py_object* classmember_getattr(cm, name)classmemberobject* cm;
 {
 	struct py_object* v = py_dict_lookup(cm->cm_attr, name);
 	if(v != NULL) {
-		PY_INCREF(v);
+		py_object_incref(v);
 		return v;
 	}
 	v = py_class_get_attr((struct py_object*) cm->cm_class, name);
@@ -145,10 +145,10 @@ static struct py_object* classmember_getattr(cm, name)classmemberobject* cm;
 	} /* py_class_get_attr() has set the error */
 	if(py_is_func(v)) {
 		struct py_object* w = py_classmethod_new(v, (struct py_object*) cm);
-		PY_DECREF(v);
+		py_object_decref(v);
 		return w;
 	}
-	PY_DECREF(v);
+	py_object_decref(v);
 	py_error_set_string(py_name_error, name);
 	return NULL;
 }
@@ -201,9 +201,9 @@ struct py_object* py_classmethod_new(func, self)struct py_object* func;
 	if(cm == NULL) {
 		return NULL;
 	}
-	PY_INCREF(func);
+	py_object_incref(func);
 	cm->cm_func = func;
-	PY_INCREF(self);
+	py_object_incref(self);
 	cm->cm_self = self;
 	return (struct py_object*) cm;
 }
@@ -244,8 +244,8 @@ static struct py_object* classmethod_getattr(cm, name)classmethodobject* cm;
 
 static void classmethod_dealloc(cm)classmethodobject* cm;
 {
-	PY_DECREF(cm->cm_func);
-	PY_DECREF(cm->cm_self);
+	py_object_decref(cm->cm_func);
+	py_object_decref(cm->cm_self);
 	free(cm);
 }
 

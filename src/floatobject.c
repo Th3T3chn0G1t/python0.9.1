@@ -21,7 +21,7 @@ struct py_object* py_float_new(fval)double fval;
 	if(op == NULL) {
 		return py_error_set_nomem();
 	}
-	PY_NEWREF(op);
+	py_object_newref(op);
 	op->ob.type = &py_float_type;
 	op->value = fval;
 	return (struct py_object*) op;

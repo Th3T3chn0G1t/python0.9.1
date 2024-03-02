@@ -35,7 +35,7 @@ struct py_object* py_module_init(name, methods)char* name;
 			fprintf(stderr, "initializing module: %s\n", name);
 			py_fatal("can't initialize module");
 		}
-		PY_DECREF(v);
+		py_object_decref(v);
 	}
 	return m;
 }

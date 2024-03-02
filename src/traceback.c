@@ -39,8 +39,8 @@ static struct py_object* tb_getattr(tb, name)tracebackobject* tb;
 
 static void tb_dealloc(tb)tracebackobject* tb;
 {
-	PY_XDECREF(tb->tb_next);
-	PY_XDECREF(tb->tb_frame);
+	py_object_decref(tb->tb_next);
+	py_object_decref(tb->tb_frame);
 	free(tb);
 }
 
@@ -73,9 +73,9 @@ static tracebackobject* newtracebackobject(next, frame, lasti, lineno)
 	}
 	tb = py_object_new(&Tracebacktype);
 	if(tb != NULL) {
-		PY_XINCREF(next);
+		py_object_incref(next);
 		tb->tb_next = next;
-		PY_XINCREF(frame);
+		py_object_incref(frame);
 		tb->tb_frame = frame;
 		tb->tb_lasti = lasti;
 		tb->tb_lineno = lineno;
@@ -94,7 +94,7 @@ int py_traceback_new(frame, lasti, lineno)struct py_frame* frame;
 	if(tb == NULL) {
 		return -1;
 	}
-	PY_XDECREF(tb_current);
+	py_object_decref(tb_current);
 	tb_current = tb;
 	return 0;
 }
@@ -112,8 +112,8 @@ int py_traceback_set(v)struct py_object* v;
 		py_error_set_badcall();
 		return -1;
 	}
-	PY_XDECREF(tb_current);
-	PY_XINCREF(v);
+	py_object_decref(tb_current);
+	py_object_incref(v);
 	tb_current = (tracebackobject*) v;
 	return 0;
 }

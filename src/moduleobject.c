@@ -28,7 +28,7 @@ struct py_object* py_module_new(name)char* name;
 	m->md_name = py_string_new(name);
 	m->md_dict = py_dict_new();
 	if(m->md_name == NULL || m->md_dict == NULL) {
-		PY_DECREF(m);
+		py_object_decref(m);
 		return NULL;
 	}
 	return (struct py_object*) m;
@@ -57,9 +57,9 @@ char* py_module_get_name(m)struct py_object* m;
 static void module_dealloc(m)moduleobject* m;
 {
 	if(m->md_name != NULL)
-		PY_DECREF(m->md_name);
+		py_object_decref(m->md_name);
 	if(m->md_dict != NULL)
-		PY_DECREF(m->md_dict);
+		py_object_decref(m->md_dict);
 	free(m);
 }
 
@@ -83,11 +83,11 @@ static struct py_object* module_getattr(m, name)moduleobject* m;
 {
 	struct py_object* res;
 	if(strcmp(name, "__dict__") == 0) {
-		PY_INCREF(m->md_dict);
+		py_object_incref(m->md_dict);
 		return m->md_dict;
 	}
 	if(strcmp(name, "__name__") == 0) {
-		PY_INCREF(m->md_name);
+		py_object_incref(m->md_name);
 		return m->md_name;
 	}
 	res = py_dict_lookup(m->md_dict, name);
@@ -95,7 +95,7 @@ static struct py_object* module_getattr(m, name)moduleobject* m;
 		py_error_set_string(py_name_error, name);
 	}
 	else
-		PY_INCREF(res);
+		py_object_incref(res);
 	return res;
 }
 

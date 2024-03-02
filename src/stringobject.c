@@ -14,10 +14,9 @@ struct py_object* py_string_new_size(str, size)const char* str;
 {
 	struct py_string* op = malloc(
 			sizeof(struct py_string) + size * sizeof(char));
-	if(op == NULL) {
-		return py_error_set_nomem();
-	}
-	PY_NEWREF(op);
+	if(op == NULL) return py_error_set_nomem();
+
+	py_object_newref(op);
 	op->ob.type = &py_string_type;
 	op->ob.size = size;
 	if(str != NULL) {
@@ -34,7 +33,7 @@ struct py_object* py_string_new(const char* str) {
 	if(op == NULL) {
 		return py_error_set_nomem();
 	}
-	PY_NEWREF(op);
+	py_object_newref(op);
 	op->ob.type = &py_string_type;
 	op->ob.size = size;
 	strcpy(op->value, str);
@@ -90,7 +89,7 @@ static struct py_object* stringrepr(op)struct py_string* op;
 		int i;
 		char c;
 		char* p;
-		PY_NEWREF(v);
+		py_object_newref(v);
 		v->type = &py_string_type;
 		((struct py_varobject*) v)->size = newsize;
 		p = ((struct py_string*) v)->value;
@@ -130,11 +129,11 @@ static struct py_object* stringconcat(a, bb)struct py_string* a;
 	b = ((struct py_string*) bb);
 	/* Optimize cases with empty left or right operand */
 	if(a->ob.size == 0) {
-		PY_INCREF(bb);
+		py_object_incref(bb);
 		return bb;
 	}
 	if(b->ob.size == 0) {
-		PY_INCREF(a);
+		py_object_incref(a);
 		return (struct py_object*) a;
 	}
 	size = a->ob.size + b->ob.size;
@@ -142,7 +141,7 @@ static struct py_object* stringconcat(a, bb)struct py_string* a;
 	if(op == NULL) {
 		return py_error_set_nomem();
 	}
-	PY_NEWREF(op);
+	py_object_newref(op);
 	op->ob.type = &py_string_type;
 	op->ob.size = size;
 	memcpy(op->value, a->value, (int) a->ob.size);
@@ -162,14 +161,14 @@ static struct py_object* stringrepeat(a, n)struct py_string* a;
 	}
 	size = a->ob.size * n;
 	if(size == a->ob.size) {
-		PY_INCREF(a);
+		py_object_incref(a);
 		return (struct py_object*) a;
 	}
 	op = malloc(sizeof(struct py_string) + size * sizeof(char));
 	if(op == NULL) {
 		return py_error_set_nomem();
 	}
-	PY_NEWREF(op);
+	py_object_newref(op);
 	op->ob.type = &py_string_type;
 	op->ob.size = size;
 	for(i = 0; i < (int) size; i += a->ob.size) {
@@ -194,7 +193,7 @@ static struct py_object* stringslice(a, i, j)struct py_string* a;
 		j = (int) a->ob.size;
 	}
 	if(i == 0 && j == (int) a->ob.size) { /* It's the same as a */
-		PY_INCREF(a);
+		py_object_incref(a);
 		return (struct py_object*) a;
 	}
 	if(j < i) {
@@ -254,7 +253,7 @@ void py_string_join(pv, w)struct py_object** pv;
 		return;
 	}
 	v = stringconcat((struct py_string*) *pv, w);
-	PY_DECREF(*pv);
+	py_object_decref(*pv);
 	*pv = v;
 }
 
@@ -264,7 +263,7 @@ void py_string_join(pv, w)struct py_object** pv;
    as creating a new string object and destroying the old one, only
    more efficiently. In any case, don't use this if the string may
    already be known to some other part of the code... */
-
+/* TODO: Remove/rework. */
 int py_string_resize(pv, newsize)struct py_object** pv;
 								 int newsize;
 {
@@ -274,15 +273,15 @@ int py_string_resize(pv, newsize)struct py_object** pv;
 	v = *pv;
 	if(!py_is_string(v) || v->refcount != 1) {
 		*pv = 0;
-		PY_DECREF(v);
+		py_object_decref(v);
 		py_error_set_badcall();
 		return -1;
 	}
-	/* XXX PY_UNREF/PY_NEWREF interface should be more symmetrical */
+	/* XXX PY_UNREF/py_object_newref interface should be more symmetrical */
 #ifdef PY_REF_DEBUG
 	--py_ref_total;
 #endif
-	PY_UNREF(v);
+	py_object_unref(v);
 
 	*pv = realloc(v, sizeof(struct py_string) + newsize * sizeof(char));
 
@@ -297,7 +296,7 @@ int py_string_resize(pv, newsize)struct py_object** pv;
 		return -1;
 	}
 
-	PY_NEWREF(*pv);
+	py_object_newref(*pv);
 	sv = (struct py_string*) *pv;
 	sv->ob.size = newsize;
 	sv->value[newsize] = '\0';

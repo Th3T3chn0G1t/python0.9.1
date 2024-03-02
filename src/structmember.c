@@ -34,7 +34,7 @@ py_memberlist_get(char* addr, struct py_memberlist* mlist, const char* name) {
 					break;
 				case PY_TYPE_STRING:
 					if(*(char**) addr == NULL) {
-						PY_INCREF(PY_NONE);
+						py_object_incref(PY_NONE);
 						v = PY_NONE;
 					}
 					else {
@@ -45,7 +45,7 @@ py_memberlist_get(char* addr, struct py_memberlist* mlist, const char* name) {
 					if(v == NULL) {
 						v = PY_NONE;
 					}
-					PY_INCREF(v);
+					py_object_incref(v);
 					break;
 				default:
 					py_error_set_string(
@@ -75,60 +75,74 @@ int py_memberlist_set(addr, mlist, name, v)char* addr;
 			}
 			addr += l->offset;
 			switch(l->type) {
-				case PY_TYPE_SHORT:
+				case PY_TYPE_SHORT: {
 					if(!py_is_int(v)) {
 						py_error_set_badarg();
 						return -1;
 					}
-					*(short*) addr = py_int_get(v);
+
+					*(short*) addr = (short) py_int_get(v);
 					break;
-				case PY_TYPE_INT:
+				}
+
+				case PY_TYPE_INT: {
 					if(!py_is_int(v)) {
 						py_error_set_badarg();
 						return -1;
 					}
+
 					*(int*) addr = py_int_get(v);
 					break;
-				case PY_TYPE_LONG:
+				}
+
+				case PY_TYPE_LONG: {
 					if(!py_is_int(v)) {
 						py_error_set_badarg();
 						return -1;
 					}
+
 					*(long*) addr = py_int_get(v);
 					break;
-				case PY_TYPE_FLOAT:
+				}
+
+				case PY_TYPE_FLOAT: {
 					if(py_is_int(v)) {
-						*(float*) addr = py_int_get(v);
+						*(float*) addr = (float) py_int_get(v);
 					}
 					else if(py_is_float(v)) {
-						*(float*) addr = py_float_get(v);
+						*(float*) addr = (float) py_float_get(v);
 					}
 					else {
 						py_error_set_badarg();
 						return -1;
 					}
+
 					break;
-				case PY_TYPE_DOUBLE:
-					if(py_is_int(v)) {
-						*(double*) addr = py_int_get(v);
-					}
-					else if(py_is_float(v)) {
-						*(double*) addr = py_float_get(v);
-					}
+				}
+
+				case PY_TYPE_DOUBLE: {
+					if(py_is_int(v)) *(double*) addr = py_int_get(v);
+					else if(py_is_float(v)) *(double*) addr = py_float_get(v);
 					else {
 						py_error_set_badarg();
 						return -1;
 					}
+
 					break;
-				case PY_TYPE_OBJECT:PY_XDECREF(*(struct py_object**) addr);
-					PY_XINCREF(v);
-					*(struct py_object**) addr = v;
+				}
+
+				case PY_TYPE_OBJECT: {
+					*(struct py_object**) addr = py_object_incref(v);
 					break;
-				default:
+				}
+
+				default: {
 					py_error_set_string(
 							py_system_error, "bad memberlist type");
 					return -1;
+				}
 			}
+
 			return 0;
 		}
 	}

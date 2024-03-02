@@ -41,7 +41,7 @@ static xxobject* newxxobject(arg)struct py_object* arg;
 
 static void xx_dealloc(xp)xxobject* xp;
 {
-	PY_XDECREF(xp->x_attr);
+	py_object_decref(xp->x_attr);
 	free(xp);
 }
 
@@ -51,7 +51,7 @@ static struct py_object* xx_demo(self, args)xxobject* self;
 	if(!py_arg_none(args)) {
 		return NULL;
 	}
-	PY_INCREF(PY_NONE);
+	py_object_incref(PY_NONE);
 	return PY_NONE;
 }
 
@@ -65,7 +65,7 @@ static struct py_object* xx_getattr(xp, name)xxobject* xp;
 	if(xp->x_attr != NULL) {
 		struct py_object* v = py_dict_lookup(xp->x_attr, name);
 		if(v != NULL) {
-			PY_INCREF(v);
+			py_object_incref(v);
 			return v;
 		}
 	}

@@ -179,7 +179,7 @@ static struct py_object* py_object_not(struct py_object* v) {
 	int outcome = py_object_truthy(v);
 	struct py_object* w = outcome == 0 ? PY_TRUE : PY_FALSE;
 
-	PY_INCREF(w);
+	py_object_incref(w);
 	return w;
 }
 
@@ -224,8 +224,8 @@ py_call_function(struct py_object* func, struct py_object* arg) {
 
 			if(newarg == NULL) return NULL;
 
-			PY_INCREF(self);
-			PY_INCREF(arg);
+			py_object_incref(self);
+			py_object_incref(arg);
 			py_tuple_set(newarg, 0, self);
 			py_tuple_set(newarg, 1, arg);
 			arg = newarg;
@@ -238,7 +238,7 @@ py_call_function(struct py_object* func, struct py_object* arg) {
 
 	co = py_func_get_code(func);
 	if(co == NULL) {
-		PY_XDECREF(newarg);
+		py_object_decref(newarg);
 		return NULL;
 	}
 
@@ -249,19 +249,19 @@ py_call_function(struct py_object* func, struct py_object* arg) {
 
 	newlocals = py_dict_new();
 	if(newlocals == NULL) {
-		PY_XDECREF(newarg);
+		py_object_decref(newarg);
 		return NULL;
 	}
 
 	newglobals = py_func_get_globals(func);
-	PY_INCREF(newglobals);
+	py_object_incref(newglobals);
 
 	v = py_code_eval((struct py_code*) co, newglobals, newlocals, arg);
 
-	PY_DECREF(newlocals);
-	PY_DECREF(newglobals);
+	py_object_decref(newlocals);
+	py_object_decref(newglobals);
 
-	PY_XDECREF(newarg);
+	py_object_decref(newarg);
 
 	return v;
 }
@@ -456,7 +456,7 @@ static int cmp_member(struct py_object* v, struct py_object* w) {
 	for(i = 0; i < n; i++) {
 		x = (*sq->ind)(w, i);
 		cmp = py_object_cmp(v, x);
-		PY_XDECREF(x);
+		py_object_decref(x);
 
 		if(cmp == 0) return 1;
 	}
@@ -522,7 +522,7 @@ cmp_outcome(enum py_cmp_op op, struct py_object* v, struct py_object* w) {
 	}
 
 	v = res ? PY_TRUE : PY_FALSE;
-	PY_INCREF(v);
+	py_object_incref(v);
 
 	return v;
 }
@@ -674,7 +674,7 @@ struct py_object* py_code_eval(
 	stack_pointer = f->valuestack;
 
 	if(arg != NULL) {
-		PY_INCREF(arg);
+		py_object_incref(arg);
 		PUSH(arg);
 	}
 
@@ -718,7 +718,7 @@ struct py_object* py_code_eval(
 
 			case PY_OP_POP_TOP: {
 				v = POP();
-				PY_DECREF(v);
+				py_object_decref(v);
 
 				break;
 			}
@@ -745,7 +745,7 @@ struct py_object* py_code_eval(
 
 			case PY_OP_DUP_TOP: {
 				v = TOP();
-				PY_INCREF(v);
+				py_object_incref(v);
 				PUSH(v);
 
 				break;
@@ -754,7 +754,7 @@ struct py_object* py_code_eval(
 			case PY_OP_UNARY_POSITIVE: {
 				v = POP();
 				x = py_object_pos(v);
-				PY_DECREF(v);
+				py_object_decref(v);
 				PUSH(x);
 
 				break;
@@ -763,7 +763,7 @@ struct py_object* py_code_eval(
 			case PY_OP_UNARY_NEGATIVE: {
 				v = POP();
 				x = py_object_neg(v);
-				PY_DECREF(v);
+				py_object_decref(v);
 				PUSH(x);
 
 				break;
@@ -772,7 +772,7 @@ struct py_object* py_code_eval(
 			case PY_OP_UNARY_NOT: {
 				v = POP();
 				x = py_object_not(v);
-				PY_DECREF(v);
+				py_object_decref(v);
 				PUSH(x);
 
 				break;
@@ -781,7 +781,7 @@ struct py_object* py_code_eval(
 			case PY_OP_UNARY_CONVERT: {
 				v = POP();
 				x = py_object_repr(v);
-				PY_DECREF(v);
+				py_object_decref(v);
 				PUSH(x);
 
 				break;
@@ -795,7 +795,7 @@ struct py_object* py_code_eval(
 				}
 				else { x = call_builtin(v, (struct py_object*) NULL); }
 
-				PY_DECREF(v);
+				py_object_decref(v);
 				PUSH(x);
 
 				break;
@@ -805,8 +805,8 @@ struct py_object* py_code_eval(
 				w = POP();
 				v = POP();
 				x = py_object_mul(v, w);
-				PY_DECREF(v);
-				PY_DECREF(w);
+				py_object_decref(v);
+				py_object_decref(w);
 				PUSH(x);
 
 				break;
@@ -816,8 +816,8 @@ struct py_object* py_code_eval(
 				w = POP();
 				v = POP();
 				x = py_object_div(v, w);
-				PY_DECREF(v);
-				PY_DECREF(w);
+				py_object_decref(v);
+				py_object_decref(w);
 				PUSH(x);
 
 				break;
@@ -827,8 +827,8 @@ struct py_object* py_code_eval(
 				w = POP();
 				v = POP();
 				x = py_object_mod(v, w);
-				PY_DECREF(v);
-				PY_DECREF(w);
+				py_object_decref(v);
+				py_object_decref(w);
 				PUSH(x);
 
 				break;
@@ -838,8 +838,8 @@ struct py_object* py_code_eval(
 				w = POP();
 				v = POP();
 				x = py_object_add(v, w);
-				PY_DECREF(v);
-				PY_DECREF(w);
+				py_object_decref(v);
+				py_object_decref(w);
 				PUSH(x);
 
 				break;
@@ -849,8 +849,8 @@ struct py_object* py_code_eval(
 				w = POP();
 				v = POP();
 				x = py_object_sub(v, w);
-				PY_DECREF(v);
-				PY_DECREF(w);
+				py_object_decref(v);
+				py_object_decref(w);
 				PUSH(x);
 
 				break;
@@ -860,8 +860,8 @@ struct py_object* py_code_eval(
 				w = POP();
 				v = POP();
 				x = py_object_ind(v, w);
-				PY_DECREF(v);
-				PY_DECREF(w);
+				py_object_decref(v);
+				py_object_decref(w);
 				PUSH(x);
 
 				break;
@@ -876,8 +876,8 @@ struct py_object* py_code_eval(
 				}
 				else { x = call_builtin(v, w); }
 
-				PY_DECREF(v);
-				PY_DECREF(w);
+				py_object_decref(v);
+				py_object_decref(w);
 				PUSH(x);
 
 				break;
@@ -904,9 +904,9 @@ struct py_object* py_code_eval(
 
 				u = POP();
 				x = apply_slice(u, v, w);
-				PY_DECREF(u);
-				PY_XDECREF(v);
-				PY_XDECREF(w);
+				py_object_decref(u);
+				py_object_decref(v);
+				py_object_decref(w);
 				PUSH(x);
 
 				break;
@@ -934,10 +934,10 @@ struct py_object* py_code_eval(
 				u = POP();
 				t = POP();
 				err = assign_slice(u, v, w, t); /* u[v:w] = t */
-				PY_DECREF(t);
-				PY_DECREF(u);
-				PY_XDECREF(v);
-				PY_XDECREF(w);
+				py_object_decref(t);
+				py_object_decref(u);
+				py_object_decref(v);
+				py_object_decref(w);
 
 				break;
 			}
@@ -964,9 +964,9 @@ struct py_object* py_code_eval(
 				u = POP();
 				err = assign_slice(u, v, w, (struct py_object*) NULL);
 				/* del u[v:w] */
-				PY_DECREF(u);
-				PY_XDECREF(v);
-				PY_XDECREF(w);
+				py_object_decref(u);
+				py_object_decref(v);
+				py_object_decref(w);
 
 				break;
 			}
@@ -977,9 +977,9 @@ struct py_object* py_code_eval(
 				u = POP();
 				/* v[w] = u */
 				err = assign_subscript(v, w, u);
-				PY_DECREF(u);
-				PY_DECREF(v);
-				PY_DECREF(w);
+				py_object_decref(u);
+				py_object_decref(v);
+				py_object_decref(w);
 
 				break;
 			}
@@ -989,8 +989,8 @@ struct py_object* py_code_eval(
 				v = POP();
 				/* del v[w] */
 				err = assign_subscript(v, w, (struct py_object*) NULL);
-				PY_DECREF(v);
-				PY_DECREF(w);
+				py_object_decref(v);
+				py_object_decref(w);
 
 				break;
 			}
@@ -1002,7 +1002,7 @@ struct py_object* py_code_eval(
 			}
 			case PY_OP_PRINT_ITEM: {
 				v = POP();
-				PY_DECREF(v);
+				py_object_decref(v);
 				break;
 			}
 			case PY_OP_PRINT_NEWLINE: ;break;
@@ -1022,8 +1022,8 @@ struct py_object* py_code_eval(
 				}
 				else { py_error_set_value(w, v); }
 
-				PY_DECREF(v);
-				PY_DECREF(w);
+				py_object_decref(v);
+				py_object_decref(w);
 				why = WHY_EXCEPTION;
 
 				break;
@@ -1031,7 +1031,7 @@ struct py_object* py_code_eval(
 
 			case PY_OP_LOAD_LOCALS: {
 				v = f->locals;
-				PY_INCREF(v);
+				py_object_incref(v);
 				PUSH(v);
 
 				break;
@@ -1067,7 +1067,7 @@ struct py_object* py_code_eval(
 			case PY_OP_BUILD_FUNCTION: {
 				v = POP();
 				x = py_func_new(v, f->globals);
-				PY_DECREF(v);
+				py_object_decref(v);
 				PUSH(x);
 
 				break;
@@ -1078,7 +1078,7 @@ struct py_object* py_code_eval(
 
 				while(STACK_LEVEL() > b->level) {
 					v = POP();
-					PY_DECREF(v);
+					py_object_decref(v);
 				}
 
 				break;
@@ -1094,10 +1094,10 @@ struct py_object* py_code_eval(
 				else if(py_is_string(v)) {
 					w = POP();
 					py_error_set_value(v, w);
-					PY_DECREF(w);
+					py_object_decref(w);
 					w = POP();
 					py_traceback_set(w);
-					PY_DECREF(w);
+					py_object_decref(w);
 					why = WHY_RERAISE;
 				}
 				else if(v != PY_NONE) {
@@ -1106,7 +1106,7 @@ struct py_object* py_code_eval(
 					why = WHY_EXCEPTION;
 				}
 
-				PY_DECREF(v);
+				py_object_decref(v);
 
 				break;
 			}
@@ -1116,8 +1116,8 @@ struct py_object* py_code_eval(
 				v = POP();
 				x = build_class(v, w);
 				PUSH(x);
-				PY_DECREF(v);
-				PY_DECREF(w);
+				py_object_decref(v);
+				py_object_decref(w);
 
 				break;
 			}
@@ -1126,7 +1126,7 @@ struct py_object* py_code_eval(
 				name = GETNAME(oparg);
 				v = POP();
 				err = py_dict_insert(f->locals, name, v);
-				PY_DECREF(v);
+				py_object_decref(v);
 
 				break;
 			}
@@ -1155,12 +1155,12 @@ struct py_object* py_code_eval(
 				else {
 					for(; --oparg >= 0;) {
 						w = py_tuple_get(v, oparg);
-						PY_INCREF(w);
+						py_object_incref(w);
 						PUSH(w);
 					}
 				}
 
-				PY_DECREF(v);
+				py_object_decref(v);
 
 				break;
 			}
@@ -1179,12 +1179,12 @@ struct py_object* py_code_eval(
 				else {
 					for(; --oparg >= 0;) {
 						w = py_list_get(v, oparg);
-						PY_INCREF(w);
+						py_object_incref(w);
 						PUSH(w);
 					}
 				}
 
-				PY_DECREF(v);
+				py_object_decref(v);
 
 				break;
 			}
@@ -1194,8 +1194,8 @@ struct py_object* py_code_eval(
 				v = POP();
 				u = POP();
 				err = py_object_set_attr(v, name, u); /* v.name = u */
-				PY_DECREF(v);
-				PY_DECREF(u);
+				py_object_decref(v);
+				py_object_decref(u);
 
 				break;
 			}
@@ -1205,14 +1205,14 @@ struct py_object* py_code_eval(
 				v = POP();
 				err = py_object_set_attr(v, name, (struct py_object*) NULL);
 				/* del v.name */
-				PY_DECREF(v);
+				py_object_decref(v);
 
 				break;
 			}
 
 			case PY_OP_LOAD_CONST: {
 				x = py_list_get(f->code->consts, oparg);
-				PY_INCREF(x);
+				py_object_incref(x);
 				PUSH(x);
 
 				break;
@@ -1231,7 +1231,7 @@ struct py_object* py_code_eval(
 					py_error_set_string(py_name_error, name);
 				}
 				else
-					PY_INCREF(x);
+					py_object_incref(x);
 
 				PUSH(x);
 
@@ -1283,7 +1283,7 @@ struct py_object* py_code_eval(
 				name = GETNAME(oparg);
 				v = POP();
 				x = py_object_get_attr(v, name);
-				PY_DECREF(v);
+				py_object_decref(v);
 				PUSH(x);
 
 				break;
@@ -1292,14 +1292,14 @@ struct py_object* py_code_eval(
 			case PY_OP_COMPARE_OP:w = POP();
 				v = POP();
 				x = cmp_outcome((enum py_cmp_op) oparg, v, w);
-				PY_DECREF(v);
-				PY_DECREF(w);
+				py_object_decref(v);
+				py_object_decref(w);
 				PUSH(x);
 				break;
 
 			case PY_OP_IMPORT_NAME:name = GETNAME(oparg);
 				x = py_import_module(name);
-				PY_XINCREF(x);
+				py_object_incref(x);
 				PUSH(x);
 				break;
 
@@ -1337,12 +1337,12 @@ struct py_object* py_code_eval(
 					PUSH(v);
 					x = py_int_new(py_int_get(w) + 1);
 					PUSH(x);
-					PY_DECREF(w);
+					py_object_decref(w);
 					PUSH(u);
 				}
 				else {
-					PY_DECREF(v);
-					PY_DECREF(w);
+					py_object_decref(v);
+					py_object_decref(w);
 					/* A NULL can mean "s exhausted"
 					but also an error: */
 					if(py_error_occurred()) {
@@ -1430,7 +1430,7 @@ struct py_object* py_code_eval(
 			struct py_block* b = py_block_pop(f);
 			while(STACK_LEVEL() > b->level) {
 				v = POP();
-				PY_XDECREF(v);
+				py_object_decref(v);
 			}
 			if(b->type == PY_OP_SETUP_LOOP && why == WHY_BREAK) {
 				why = WHY_NOT;
@@ -1444,7 +1444,7 @@ struct py_object* py_code_eval(
 					py_error_get(&exc, &val);
 					if(val == NULL) {
 						val = PY_NONE;
-						PY_INCREF(val);
+						py_object_incref(val);
 					}
 					v = py_traceback_get();
 					/* Make the raw exception data
@@ -1483,13 +1483,13 @@ struct py_object* py_code_eval(
 
 	while(!EMPTY()) {
 		v = POP();
-		PY_XDECREF(v);
+		py_object_decref(v);
 	}
 
 	/* Restore previous frame and release the current one */
 
 	py_frame_current = f->back;
-	PY_DECREF(f);
+	py_object_decref(f);
 
 	if(why == WHY_RETURN) {
 		return retval;

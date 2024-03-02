@@ -24,7 +24,7 @@ struct py_object* py_tuple_new(size)int size;
 	if(op == NULL) {
 		return py_error_set_nomem();
 	}
-	PY_NEWREF(op);
+	py_object_newref(op);
 	op->ob.type = &py_tuple_type;
 	op->ob.size = size;
 	for(i = 0; i < size; i++) {
@@ -52,13 +52,13 @@ int py_tuple_set(struct py_object* op, int i, struct py_object* newitem) {
 	struct py_object* olditem;
 
 	if(!py_is_tuple(op)) {
-		if(newitem != NULL) PY_DECREF(newitem);
+		if(newitem != NULL) py_object_decref(newitem);
 		py_error_set_badcall();
 		return -1;
 	}
 
 	if(i < 0 || i >= (int) py_varobject_size(op)) {
-		if(newitem != NULL) PY_DECREF(newitem);
+		if(newitem != NULL) py_object_decref(newitem);
 		py_error_set_string(
 				PY_INDEX_ERROR, "tuple assignment index out of range");
 		return -1;
@@ -66,7 +66,7 @@ int py_tuple_set(struct py_object* op, int i, struct py_object* newitem) {
 	olditem = ((struct py_tuple*) op)->item[i];
 	((struct py_tuple*) op)->item[i] = newitem;
 	if(olditem != NULL)
-		PY_DECREF(olditem);
+		py_object_decref(olditem);
 	return 0;
 }
 
@@ -76,7 +76,7 @@ static void tupledealloc(struct py_object* op) {
 	int i;
 	for(i = 0; i < (int) py_varobject_size(op); i++) {
 		if(((struct py_tuple*) op)->item[i] != NULL) {
-			PY_DECREF(((struct py_tuple*) op)->item[i]);
+			py_object_decref(((struct py_tuple*) op)->item[i]);
 		}
 	}
 	free(op);
@@ -112,17 +112,17 @@ struct py_object* tuplerepr(v)struct py_tuple* v;
 		t = py_object_repr(v->item[i]);
 		py_string_join(&s, t);
 		if(t != NULL)
-			PY_DECREF(t);
+			py_object_decref(t);
 	}
-	PY_DECREF(comma);
+	py_object_decref(comma);
 	if(((struct py_varobject*) v)->size == 1) {
 		t = py_string_new(",");
 		py_string_join(&s, t);
-		PY_DECREF(t);
+		py_object_decref(t);
 	}
 	t = py_string_new(")");
 	py_string_join(&s, t);
-	PY_DECREF(t);
+	py_object_decref(t);
 	return s;
 }
 
@@ -156,7 +156,7 @@ static struct py_object* tupleitem(struct py_object* op, int i) {
 
 	item = ((struct py_tuple*) op)->item[i];
 
-	PY_INCREF(item);
+	py_object_incref(item);
 	return item;
 }
 
@@ -174,7 +174,7 @@ static struct py_object* tupleslice(
 
 	if(ilow == 0 && ihigh == (int) py_varobject_size(op)) {
 		/* XXX can only do this if tuples are immutable! */
-		PY_INCREF(op);
+		py_object_incref(op);
 		return op;
 	}
 
@@ -184,7 +184,7 @@ static struct py_object* tupleslice(
 	for(i = ilow; i < ihigh; i++) {
 		struct py_object* v = ((struct py_tuple*) op)->item[i];
 
-		PY_INCREF(v);
+		py_object_incref(v);
 		np->item[i - ilow] = v;
 	}
 
@@ -211,14 +211,14 @@ static struct py_object* tupleconcat(
 	for(i = 0; i < py_varobject_size(a); i++) {
 		struct py_object* v = ((struct py_tuple*) a)->item[i];
 
-		PY_INCREF(v);
+		py_object_incref(v);
 		np->item[i] = v;
 	}
 
 	for(i = 0; i < py_varobject_size(b); i++) {
 		struct py_object* v = ((struct py_tuple*) b)->item[i];
 
-		PY_INCREF(v);
+		py_object_incref(v);
 		np->item[i + py_varobject_size(a)] = v;
 	}
 

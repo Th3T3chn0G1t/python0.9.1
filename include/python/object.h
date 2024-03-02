@@ -93,7 +93,7 @@ struct py_varobject {
  * in debugging), the allocation parameters (see newobj() and newvarobj()),
  * and methods for accessing objects of the type. Methods are optional,a
  * nil pointer meaning that particular kind of access is not available for
- * this type. The PY_DECREF() macro uses the dealloc method without
+ * this type. The py_object_decref() macro uses the dealloc method without
  * checking for a nil pointer; it should always be implemented except if
  * the implementation can guarantee that the reference count will never
  * reach zero (e.g., for type objects).
@@ -180,12 +180,12 @@ int py_object_set_attr(struct py_object*, const char*, struct py_object*);
 unsigned py_varobject_size(const void*);
 
 /*
- * The macros PY_INCREF(op) and PY_DECREF(op) are used to increment or decrement
- * reference counts. PY_DECREF calls the object's deallocator function; for
+ * The macros py_object_incref(op) and py_object_decref(op) are used to increment or decrement
+ * reference counts. py_object_decref calls the object's deallocator function; for
  * objects that don't contain references to other objects or heap memory
  * this can be the standard function free(). Both macros can be used
  * wherever a void expression is allowed. The argument shouldn't be a
- * NIL pointer. The macro PY_NEWREF(op) is used only to initialize reference
+ * NIL pointer. The macro py_object_newref(op) is used only to initialize reference
  * counts to 1; it is defined here for convenience.
  *
  * We assume that the reference count field can never overflow; this can
@@ -199,48 +199,31 @@ unsigned py_varobject_size(const void*);
  * decision that's up to the implementer of each new type so if you want,
  * you can count such references to the type object.)
  *
- * *** WARNING*** The PY_DECREF macro must have a side-effect-free argument
+ * *** WARNING*** The py_object_decref macro must have a side-effect-free argument
  * since it may evaluate its argument multiple times. (The alternative
  * would be to mace it a proper function or assign it to a global temporary
  * variable first, both of which are slower; and in a multi-threaded
  * environment the global variable trick is not safe.)
  */
 
-/* TODO: Rework all of these into functions. */
-#ifndef PY_TRACE_REFS
-# define PY_DELREF(op) \
-		(*((struct py_object*) (op))->type->dealloc)((struct py_object*) (op))
-# define PY_UNREF(op) /* empty */
-#endif
-
-#ifdef PY_REF_DEBUG
 /* TODO: Python global state. */
 extern long py_ref_total;
-# ifndef PY_TRACE_REFS
-#  define PY_NEWREF(op) \
-		(py_ref_total++, ((struct py_object*) (op))->refcount = 1)
-# else
-void py_print_refs(FILE*);
-# endif
-# define PY_INCREF(op) (py_ref_total++, ((struct py_object*) (op))->refcount++)
-# define PY_DECREF(op) \
-		if(--py_ref_total, !(--((struct py_object*) (op))->refcount > 0)) \
-			PY_DELREF(op)
-#else
-# define PY_NEWREF(op) ((op)->refcount = 1)
-# define PY_INCREF(op) ((op)->refcount++)
-# define PY_DECREF(op) if(--(op)->refcount <= 0) PY_DELREF(op)
-#endif
 
-/* Macros to use in case the object pointer may be NULL: */
-#define PY_XINCREF(op) if((op) != NULL) PY_INCREF(op)
-#define PY_XDECREF(op) if((op) != NULL) PY_DECREF(op)
+void* py_object_incref(void*);
+void* py_object_decref(void*);
+
+void* py_object_newref(void*);
+void py_object_unref(void*);
+
+#ifdef PY_TRACE_REFS
+void py_print_refs(FILE*);
+#endif
 
 /*
  * py_none_object is an object of undefined type which can be used in contexts
  * where NULL (nil) is not suitable (since NULL often means 'error').
  *
- * Don't forget to apply PY_INCREF() when returning this value!!!
+ * Don't forget to apply py_object_incref() when returning this value!!!
  */
 
 /* TODO: Python global state. */
@@ -276,14 +259,14 @@ extern struct py_object py_none_object; /* Don't use this directly */
  * It takes a while to get used to the proper usage of reference counts.
  *
  * Functions that create an object set the reference count to 1; such new
- * objects must be stored somewhere or destroyed again with PY_DECREF().
+ * objects must be stored somewhere or destroyed again with py_object_decref().
  * Functions that 'store' objects such as py_tuple_set() and py_dict_insert()
  * don't increment the reference count of the object, since the most
  * frequent use is to store a fresh object. Functions that 'retrieve'
  * objects such as py_tuple_get() and py_dict_lookup() also don't increment
  * the reference count, since most frequently the object is only looked at
  * quickly. Thus, to retrieve an object and store it again, the caller
- * must call PY_INCREF() explicitly.
+ * must call py_object_incref() explicitly.
  *
  * NOTE: functions that 'consume' a reference count like py_dict_insert() even
  * consume the reference if the object wasn't stored, to simplify error
@@ -292,7 +275,7 @@ extern struct py_object py_none_object; /* Don't use this directly */
  * It seems attractive to make other functions that take an object as
  * argument consume a reference count; however this may quickly get
  * confusing (even the current practice is already confusing). Consider
- * it carefully, it may save lots of calls to PY_INCREF() and PY_DECREF() at
+ * it carefully, it may save lots of calls to py_object_incref() and py_object_decref() at
  * times.
  */
 

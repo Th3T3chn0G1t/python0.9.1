@@ -32,7 +32,7 @@ struct py_object* py_method_new(name, meth, self, heapname)
 		op->m_name = name;
 		op->m_meth = meth;
 		if(self != NULL)
-			PY_INCREF(self);
+			py_object_incref(self);
 		op->m_self = self;
 	}
 	return (struct py_object*) op;
@@ -62,7 +62,7 @@ static void meth_dealloc(m)methodobject* m;
 {
 	if(m->m_heap_name) free(m->m_name);
 	if(m->m_self != NULL) {
-		PY_DECREF(m->m_self);
+		py_object_decref(m->m_self);
 	}
 	free(m);
 }

@@ -49,7 +49,7 @@ struct py_object* py_path_new(const char* path) {
 		} /* End of string */
 		w = py_string_new_size(path, (int) (p - path));
 		if(w == NULL) {
-			PY_DECREF(v);
+			py_object_decref(v);
 			return NULL;
 		}
 		py_list_set(v, i, w);
@@ -80,10 +80,10 @@ struct py_object* py_add_module(name)char* name;
 		return NULL;
 	}
 	if(py_dict_insert(modules, name, m) != 0) {
-		PY_DECREF(m);
+		py_object_decref(m);
 		return NULL;
 	}
-	PY_DECREF(m); /* Yes, it still exists, in modules! */
+	py_object_decref(m); /* Yes, it still exists, in modules! */
 	return m;
 }
 
@@ -170,7 +170,7 @@ static struct py_object* load_module(name)char* name;
 	if(v == NULL) {
 		return NULL;
 	}
-	PY_DECREF(v);
+	py_object_decref(v);
 	return m;
 }
 
@@ -227,5 +227,5 @@ void py_import_done(void) {
 		}
 		cleardict(modules);
 	}
-	PY_DECREF(modules);
+	py_object_decref(modules);
 }

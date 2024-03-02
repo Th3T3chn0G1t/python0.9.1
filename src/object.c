@@ -24,7 +24,7 @@ void* py_object_new(struct py_type* tp) {
 	struct py_object* op = malloc(tp->basicsize);
 	if(op == NULL) return py_error_set_nomem();
 
-	PY_NEWREF(op);
+	py_object_newref(op);
 	op->type = tp;
 
 	return op;
@@ -141,53 +141,103 @@ struct py_object py_none_object = { 1, &py_none_type };
 void py_object_delete(struct py_object* p) { free(p); }
 
 #ifdef PY_TRACE_REFS
-static object refchain = {&refchain, &refchain};
+/* TODO: Python global state. */
+static object py_refchain = { &py_refchain, &py_refchain };
+#endif
 
-void PY_NEWREF(struct py_object* op) {
+void* py_object_incref(void* p) {
+	struct py_object* op = p;
+
+	if(!p) return 0;
+
+#ifdef PY_REF_DEBUG
 	py_ref_total++;
-	op->refcount = 1;
-	op->next = refchain.next;
-	op->prev = &refchain;
-	refchain.next->prev = op;
-	refchain.next = op;
+#endif
+
+#ifdef PY_TRACE_REFS
+#endif
+
+	op->refcount++;
+
+	return op;
 }
 
-void PY_UNREF(struct py_object*) {
-	struct py_object*p;
-	int dbg;
+void* py_object_decref(void* p) {
+	struct py_object* op = p;
+
+	if(!p) return 0;
+
+#ifdef PY_REF_DEBUG
+	py_ref_total--;
+#endif
+
+#ifdef PY_TRACE_REFS
+#endif
+
+	if(op->refcount-- <= 0) {
+		py_object_unref(op);
+		op->type->dealloc(op);
+	}
+
+	return op;
+}
+
+void* py_object_newref(void* p) {
+	struct py_object* op = p;
+
+	if(!p) return 0;
+
+#ifdef PY_REF_DEBUG
+	py_ref_total++;
+#endif
+
+#ifdef PY_TRACE_REFS
+	op->next = py_refchain.next;
+	op->prev = &py_refchain;
+	py_refchain.next->prev = op;
+	py_refchain.next = op;
+#endif
+
+	op->refcount = 1;
+
+	return op;
+}
+
+void py_object_unref(void* p) {
+#ifdef PY_TRACE_REFS
+	struct py_object* op;
+
+	if(!p) return;
 
 	if(op->refcount < 0) {
-		fprintf(stderr, "PY_UNREF negative refcnt\n");
+		fprintf(stderr, "unref negative refcnt\n");
 		abort();
 	}
 
-	for(p = refchain.next; p != &refchain; p = p->next) {
+	for(op = py_refchain.next; op != &py_refchain; op = op->next) {
 		if(p == op) break;
-		dbg++;
 	}
 
-	if(p == &refchain) { /* Not found */
-		fprintf(stderr, "PY_UNREF unknown object\n");
+	if(op == &py_refchain) { /* Not found */
+		fprintf(stderr, "unref unknown object\n");
 		abort();
 	}
 
 	op->next->prev = op->prev;
 	op->prev->next = op->next;
+#else
+	(void) p;
+#endif
 }
 
-void PY_DELREF(struct py_object* op) {
-	PY_UNREF(op);
-	(*(op)->type->dealloc)(op);
-}
-
+#ifdef PY_TRACE_REFS
 void py_print_refs(FILE* fp) {
-	   struct py_object*op;
-	   fprintf(fp, "Remaining objects:\n");
-	   for (op = refchain.next; op != &refchain; op = op->next) {
-			   fprintf(fp, "[%d] ", op->refcount);
-			   py_object_print(op, fp, PY_PRINT_NORMAL);
-			   putc('\n', fp);
-	   }
+	struct py_object*op;
+	fprintf(fp, "Remaining objects:\n");
+	for (op = py_refchain.next; op != &py_refchain; op = op->next) {
+		fprintf(fp, "[%d] ", op->refcount);
+		py_object_print(op, fp, PY_PRINT_NORMAL);
+		putc('\n', fp);
+	}
 }
-
 #endif

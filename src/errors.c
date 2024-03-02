@@ -55,12 +55,12 @@ static struct py_object* last_exc_val;
 void py_error_set_value(exception, value)struct py_object* exception;
 										 struct py_object* value;
 {
-	PY_XDECREF(last_exception);
-	PY_XINCREF(exception);
+	py_object_decref(last_exception);
+	py_object_incref(exception);
 	last_exception = exception;
 
-	PY_XDECREF(last_exc_val);
-	PY_XINCREF(value);
+	py_object_decref(last_exc_val);
+	py_object_incref(value);
 	last_exc_val = value;
 }
 
@@ -74,7 +74,7 @@ void py_error_set_string(exception, string)struct py_object* exception;
 {
 	struct py_object* value = py_string_new(string);
 	py_error_set_value(exception, value);
-	PY_XDECREF(value);
+	py_object_decref(value);
 }
 
 int py_error_occurred() {
@@ -91,9 +91,9 @@ void py_error_get(p_exc, p_val)struct py_object** p_exc;
 }
 
 void py_error_clear() {
-	PY_XDECREF(last_exception);
+	py_object_decref(last_exception);
 	last_exception = NULL;
-	PY_XDECREF(last_exc_val);
+	py_object_decref(last_exc_val);
 	last_exc_val = NULL;
 }
 
@@ -118,7 +118,7 @@ struct py_object* py_error_set_errno(exc)struct py_object* exc;
 		py_tuple_set(v, 1, py_string_new(strerror(errno)));
 	}
 	py_error_set_value(exc, v);
-	PY_XDECREF(v);
+	py_object_decref(v);
 	return NULL;
 }
 

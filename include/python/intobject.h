@@ -41,7 +41,7 @@ long py_int_get(struct py_object*);
  * All values of type Boolean must point to either of these; but in
  * contexts where integers are required they are integers (valued 0 and 1).
  *
- * Don't forget to apply PY_INCREF() when returning True or False!!!
+ * Don't forget to apply py_object_incref() when returning True or False!!!
  */
 
 /* TODO: Python global state */

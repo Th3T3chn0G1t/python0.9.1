@@ -68,7 +68,7 @@ struct py_object* py_int_new(long ival) {
 	}
 	v = free_list;
 	free_list = *(struct py_int**) free_list;
-	PY_NEWREF(v);
+	py_object_newref(v);
 	v->ob.type = &py_int_type;
 	v->value = ival;
 	return (struct py_object*) v;
@@ -237,7 +237,7 @@ static struct py_object* int_neg(v)struct py_int* v;
 }
 
 static struct py_object* int_pos(struct py_object* v) {
-	PY_INCREF(v);
+	py_object_incref(v);
 	return v;
 }
 

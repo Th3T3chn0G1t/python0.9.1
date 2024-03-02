@@ -32,10 +32,10 @@ static struct py_object* frame_getattr(f, name)struct py_frame* f;
 
 static void frame_dealloc(f)struct py_frame* f;
 {
-	PY_XDECREF(f->back);
-	PY_XDECREF(f->code);
-	PY_XDECREF(f->globals);
-	PY_XDECREF(f->locals);
+	py_object_decref(f->back);
+	py_object_decref(f->code);
+	py_object_decref(f->globals);
+	py_object_decref(f->locals);
 	free(f->valuestack);
 	free(f->blockstack);
 	free(f);
@@ -72,13 +72,13 @@ struct py_frame* py_frame_new(back, code, globals, locals, nvalues, nblocks)
 	f = py_object_new(&py_frame_type);
 	if(f != NULL) {
 		if(back)
-			PY_INCREF(back);
+			py_object_incref(back);
 		f->back = back;
-		PY_INCREF(code);
+		py_object_incref(code);
 		f->code = code;
-		PY_INCREF(globals);
+		py_object_incref(globals);
 		f->globals = globals;
-		PY_INCREF(locals);
+		py_object_incref(locals);
 		f->locals = locals;
 		f->valuestack = malloc((nvalues + 1) * sizeof(struct py_object*));
 		f->blockstack = malloc((nblocks + 1) * sizeof(struct py_block));
@@ -87,7 +87,7 @@ struct py_frame* py_frame_new(back, code, globals, locals, nvalues, nblocks)
 		f->iblock = 0;
 		if(f->valuestack == NULL || f->blockstack == NULL) {
 			py_error_set_nomem();
-			PY_DECREF(f);
+			py_object_decref(f);
 			f = NULL;
 		}
 	}

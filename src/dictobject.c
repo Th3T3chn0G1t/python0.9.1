@@ -158,14 +158,14 @@ insertdict(dictobject* dp, struct py_string* key, struct py_object* value) {
 	dictentry* ep;
 	ep = lookdict(dp, GETSTRINGVALUE(key));
 	if(ep->de_value != NULL) {
-		PY_DECREF(ep->de_value);
-		PY_DECREF(key);
+		py_object_decref(ep->de_value);
+		py_object_decref(key);
 	}
 	else {
 		if(ep->de_key == NULL) {
 			dp->di_fill++;
 		}
-		else PY_DECREF(ep->de_key);
+		else py_object_decref(ep->de_key);
 		ep->de_key = key;
 		dp->di_used++;
 	}
@@ -206,7 +206,7 @@ static int dictresize(dictobject* dp) {
 			insertdict(dp, ep->de_key, ep->de_value);
 		}
 		else if(ep->de_key != NULL)
-			PY_DECREF(ep->de_key);
+			py_object_decref(ep->de_key);
 	}
 	free(oldtable);
 	return 0;
@@ -266,8 +266,8 @@ static int dict2insert(op, key, value)struct py_object* op;
 			}
 		}
 	}
-	PY_INCREF(keyobj);
-	PY_INCREF(value);
+	py_object_incref(keyobj);
+	py_object_incref(value);
 	insertdict(dp, keyobj, value);
 	return 0;
 }
@@ -284,7 +284,7 @@ int py_dict_insert(op, key, value)struct py_object* op;
 		return -1;
 	}
 	err = dict2insert(op, keyobj, value);
-	PY_DECREF(keyobj);
+	py_object_decref(keyobj);
 	return err;
 }
 
@@ -303,10 +303,10 @@ int py_dict_remove(op, key)struct py_object* op;
 		py_error_set_string(PY_KEY_ERROR, "key not in dictionary");
 		return -1;
 	}
-	PY_DECREF(ep->de_key);
-	PY_INCREF(dummy);
+	py_object_decref(ep->de_key);
+	py_object_incref(dummy);
 	ep->de_key = dummy;
-	PY_DECREF(ep->de_value);
+	py_object_decref(ep->de_value);
 	ep->de_value = NULL;
 	dp->di_used--;
 	return 0;
@@ -371,9 +371,9 @@ static void dict_dealloc(dp)dictobject* dp;
 	dictentry* ep;
 	for(i = 0, ep = dp->di_table; i < dp->di_size; i++, ep++) {
 		if(ep->de_key != NULL)
-			PY_DECREF(ep->de_key);
+			py_object_decref(ep->de_key);
 		if(ep->de_value != NULL)
-			PY_DECREF(ep->de_value);
+			py_object_decref(ep->de_value);
 	}
 	if(dp->di_table != NULL) {
 		free(dp->di_table);
@@ -408,7 +408,7 @@ static void js(pv, w)struct py_object** pv;
 {
 	py_string_join(pv, w);
 	if(w != NULL)
-		PY_DECREF(w);
+		py_object_decref(w);
 }
 
 static struct py_object* dict_repr(dp)dictobject* dp;
@@ -435,9 +435,9 @@ static struct py_object* dict_repr(dp)dictobject* dp;
 	}
 	js(&v, w = py_string_new("}"));
 	if(semi != NULL)
-		PY_DECREF(semi);
+		py_object_decref(semi);
 	if(colon != NULL)
-		PY_DECREF(colon);
+		py_object_decref(colon);
 	return v;
 }
 
@@ -458,7 +458,7 @@ static struct py_object* dict_subscript(dp, v)dictobject* dp;
 		py_error_set_string(PY_KEY_ERROR, "key not in dictionary");
 	}
 	else
-		PY_INCREF(v);
+		py_object_incref(v);
 	return v;
 }
 
@@ -494,7 +494,7 @@ static struct py_object* dict_keys(dp, args)dictobject* dp;
 	for(i = 0, j = 0; i < dp->di_size; i++) {
 		if(dp->di_table[i].de_value != NULL) {
 			struct py_string* key = dp->di_table[i].de_key;
-			PY_INCREF(key);
+			py_object_incref(key);
 			py_list_set(v, j, (struct py_object*) key);
 			j++;
 		}
@@ -537,7 +537,7 @@ static struct py_object* dict_getattr(dp, name)dictobject* dp;
 }
 
 void py_done_dict(void) {
-	PY_DECREF(dummy);
+	py_object_decref(dummy);
 }
 
 struct py_type py_dict_type = {

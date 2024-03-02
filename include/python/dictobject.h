@@ -8,7 +8,7 @@
  * NB: the key is given as a char *, not as a struct py_string.
  * These functions set errno for errors. Functions py_dict_remove() and
  * py_dict_insert() return nonzero for errors, py_dict_size() returns -1,
- * the others NULL. A successful call to py_dict_insert() calls PY_INCREF()
+ * the others NULL. A successful call to py_dict_insert() calls py_object_incref()
  * for the inserted item.
  */
 

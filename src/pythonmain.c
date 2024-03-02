@@ -41,7 +41,7 @@ struct py_object* py_tree_eval(n, filename, globals, locals)struct py_node* n;
 		return NULL;
 	}
 	v = py_code_eval(co, globals, locals, (struct py_object*) NULL);
-	PY_DECREF(co);
+	py_object_decref(co);
 	return v;
 }
 

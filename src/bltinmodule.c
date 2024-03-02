@@ -99,7 +99,7 @@ builtin_dir(struct py_object* self, struct py_object* v) {
 
 	v = py_dict_get_keys(d);
 	if(py_list_sort(v) != 0) {
-		PY_DECREF(v);
+		py_object_decref(v);
 		v = NULL;
 	}
 
@@ -150,11 +150,11 @@ builtin_divmod(struct py_object* self, struct py_object* v) {
 	y = py_int_new(xmody);
 
 	if(v == NULL || x == NULL || y == NULL || py_tuple_set(v, 0, x) != 0 ||
-	   py_tuple_set(v, 1, y) != 0) {
+		py_tuple_set(v, 1, y) != 0) {
 
-		PY_XDECREF(v);
-		PY_XDECREF(x);
-		PY_XDECREF(y);
+		py_object_decref(v);
+		py_object_decref(x);
+		py_object_decref(y);
 
 		return NULL;
 	}
@@ -170,7 +170,7 @@ builtin_float(struct py_object* self, struct py_object* v) {
 		/* */
 	}
 	else if(py_is_float(v)) {
-		PY_INCREF(v);
+		py_object_incref(v);
 		return v;
 	}
 	else if(py_is_int(v)) {
@@ -190,7 +190,7 @@ builtin_int(struct py_object* self, struct py_object* v) {
 		/* */
 	}
 	else if(py_is_int(v)) {
-		PY_INCREF(v);
+		py_object_incref(v);
 		return v;
 	}
 	else if(py_is_float(v)) {
@@ -252,17 +252,17 @@ static struct py_object* min_max(struct py_object* v, int sign) {
 		return NULL;
 	}
 
-	w = (*sq->ind)(v, 0); /* Implies PY_INCREF */
+	w = (*sq->ind)(v, 0); /* Implies py_object_incref */
 
 	for(i = 1; i < n; i++) {
-		x = (*sq->ind)(v, i); /* Implies PY_INCREF */
+		x = (*sq->ind)(v, i); /* Implies py_object_incref */
 		cmp = py_object_cmp(x, w);
 
 		if(cmp * sign > 0) {
-			PY_DECREF(w);
+			py_object_decref(w);
 			w = x;
 		}
-		else PY_DECREF(x);
+		else py_object_decref(x);
 	}
 
 	return w;
@@ -361,7 +361,7 @@ builtin_range(struct py_object* self, struct py_object* v) {
 		struct py_object* w = py_int_new(ilow);
 
 		if(w == NULL) {
-			PY_DECREF(v);
+			py_object_decref(v);
 			return NULL;
 		}
 
@@ -389,7 +389,7 @@ builtin_type(struct py_object* self, struct py_object* v) {
 	}
 
 	v = (struct py_object*) v->type;
-	PY_INCREF(v);
+	py_object_incref(v);
 	return v;
 }
 
@@ -436,12 +436,12 @@ static void initerrors(void) {
 }
 
 void py_errors_done(void) {
-	PY_DECREF(py_runtime_error);
-	PY_DECREF(py_eof_error);
-	PY_DECREF(py_type_error);
-	PY_DECREF(py_memory_error);
-	PY_DECREF(py_name_error);
-	PY_DECREF(py_system_error);
+	py_object_decref(py_runtime_error);
+	py_object_decref(py_eof_error);
+	py_object_decref(py_type_error);
+	py_object_decref(py_memory_error);
+	py_object_decref(py_name_error);
+	py_object_decref(py_system_error);
 }
 
 void py_builtin_init(void) {
@@ -449,12 +449,12 @@ void py_builtin_init(void) {
 
 	m = py_module_init("builtin", builtin_methods);
 	builtin_dict = py_module_get_dict(m);
-	PY_INCREF(builtin_dict);
+	py_object_incref(builtin_dict);
 
 	initerrors();
 	(void) py_dict_insert(builtin_dict, "PY_NONE", PY_NONE);
 }
 
 void py_builtin_done(void) {
-	PY_DECREF(builtin_dict);
+	py_object_decref(builtin_dict);
 }

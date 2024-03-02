@@ -29,7 +29,7 @@ struct py_object* py_list_new(unsigned size) {
 		}
 	}
 
-	PY_NEWREF(op);
+	py_object_newref(op);
 	op->ob.type = &py_list_type;
 	op->ob.size = size;
 
@@ -57,14 +57,14 @@ int py_list_set(struct py_object* op, int i, struct py_object* newitem) {
 	struct py_list* lp = (struct py_list*) op;
 
 	if(!py_is_list(op)) {
-		if(newitem != NULL) PY_DECREF(newitem);
+		if(newitem != NULL) py_object_decref(newitem);
 
 		py_error_set_badcall();
 		return -1;
 	}
 
 	if(i < 0 || i >= (int) py_varobject_size(op)) {
-		if(newitem != NULL) PY_DECREF(newitem);
+		if(newitem != NULL) py_object_decref(newitem);
 
 		py_error_set_string(
 				PY_INDEX_ERROR, "list assignment index out of range");
@@ -74,7 +74,7 @@ int py_list_set(struct py_object* op, int i, struct py_object* newitem) {
 	olditem = lp->item[i];
 	lp->item[i] = newitem;
 
-	if(olditem != NULL) PY_DECREF(olditem);
+	if(olditem != NULL) py_object_decref(olditem);
 
 	return 0;
 }
@@ -104,7 +104,7 @@ static int ins1(struct py_list* self, int where, struct py_object* v) {
 
 	for(i = (int) self->ob.size; --i >= where;) items[i + 1] = items[i];
 
-	PY_INCREF(v);
+	py_object_incref(v);
 	items[where] = v;
 
 	self->item = items;
@@ -139,7 +139,7 @@ static void list_dealloc(struct py_object* op) {
 	unsigned i;
 
 	for(i = 0; i < lp->ob.size; i++) {
-		if(lp->item[i] != NULL) PY_DECREF(lp->item[i]);
+		if(lp->item[i] != NULL) py_object_decref(lp->item[i]);
 	}
 
 	free(lp->item);
@@ -176,14 +176,14 @@ struct py_object* list_repr(struct py_object* op) {
 
 		t = py_object_repr(lp->item[i]);
 		py_string_join(&s, t);
-		PY_DECREF(t);
+		py_object_decref(t);
 	}
 
-	PY_DECREF(comma);
+	py_object_decref(comma);
 
 	t = py_string_new("]");
 	py_string_join(&s, t);
-	PY_DECREF(t);
+	py_object_decref(t);
 
 	return s;
 }
@@ -214,7 +214,7 @@ static struct py_object* list_item(struct py_object* op, int i) {
 	}
 
 	item = ((struct py_list*) op)->item[i];
-	PY_INCREF(item);
+	py_object_incref(item);
 	return item;
 }
 
@@ -239,7 +239,7 @@ static struct py_object* list_slice(struct py_object* op, int ilow, int ihigh) {
 
 	for(i = ilow; i < ihigh; i++) {
 		struct py_object* v = ((struct py_list*) op)->item[i];
-		PY_INCREF(v);
+		py_object_incref(v);
 		np->item[i - ilow] = v;
 	}
 
@@ -266,13 +266,13 @@ static struct py_object* list_concat(
 	for(i = 0; i < py_varobject_size(a); i++) {
 		struct py_object* v = ((struct py_list*) a)->item[i];
 
-		PY_INCREF(v);
+		py_object_incref(v);
 		np->item[i] = v;
 	}
 
 	for(i = 0; i < py_varobject_size(b); i++) {
 		struct py_object* v = ((struct py_list*) b)->item[i];
-		PY_INCREF(v);
+		py_object_incref(v);
 		np->item[i + py_varobject_size(a)] = v;
 	}
 
@@ -316,8 +316,8 @@ static int list_ass_slice(
 	item = a->item;
 	d = (int) n - (ihigh - ilow);
 
-	if(d <= 0) { /* Delete -d items; PY_DECREF ihigh-ilow items */
-		for(k = ilow; k < (unsigned) ihigh; k++) PY_DECREF(item[k]);
+	if(d <= 0) { /* Delete -d items; py_object_decref ihigh-ilow items */
+		for(k = ilow; k < (unsigned) ihigh; k++) py_object_decref(item[k]);
 
 		if(d < 0) {
 			for(; k < py_varobject_size(a); k++) item[k + d] = item[k];
@@ -331,7 +331,7 @@ static int list_ass_slice(
 			a->item = item;
 		}
 	}
-	else { /* Insert d items; PY_DECREF ihigh-ilow items */
+	else { /* Insert d items; py_object_decref ihigh-ilow items */
 		/* TODO: Leaky realloc. */
 		item = realloc(
 				item, (py_varobject_size(a) + d) * sizeof(struct py_object*));
@@ -344,7 +344,7 @@ static int list_ass_slice(
 			item[k + d] = item[k];
 		}
 
-		for(; k >= (unsigned) ilow; --k) PY_DECREF(item[k]);
+		for(; k >= (unsigned) ilow; --k) py_object_decref(item[k]);
 
 		a->item = item;
 		((struct py_varobject*) a)->size += d;
@@ -353,7 +353,7 @@ static int list_ass_slice(
 	for(k = 0; k < n; k++, ilow++) {
 		struct py_object* x = b->item[k];
 
-		PY_INCREF(x);
+		py_object_incref(x);
 		item[ilow] = x;
 	}
 
@@ -369,8 +369,8 @@ static int list_ass_item(struct py_object* v, int i, struct py_object* w) {
 
 	if(v == NULL) return list_ass_slice((struct py_object*) v, i, i + 1, w);
 
-	PY_INCREF(w);
-	PY_DECREF(((struct py_list*) v)->item[i]);
+	py_object_incref(w);
+	py_object_decref(((struct py_list*) v)->item[i]);
 	((struct py_list*) v)->item[i] = w;
 
 	return 0;
@@ -383,7 +383,7 @@ static struct py_object* ins(self, where, v)struct py_list* self;
 	if(ins1(self, where, v) != 0) {
 		return NULL;
 	}
-	PY_INCREF(PY_NONE);
+	py_object_incref(PY_NONE);
 	return PY_NONE;
 }
 
@@ -431,7 +431,7 @@ static struct py_object* listsort(
 
 	if(py_error_occurred()) return NULL;
 
-	PY_INCREF(PY_NONE);
+	py_object_incref(PY_NONE);
 	return PY_NONE;
 }
 
@@ -444,7 +444,7 @@ int py_list_sort(struct py_object* v) {
 	v = listsort(v, (struct py_object*) NULL);
 	if(v == NULL) return -1;
 
-	PY_DECREF(v);
+	py_object_decref(v);
 	return 0;
 }
 

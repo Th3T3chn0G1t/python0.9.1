@@ -42,10 +42,10 @@ static struct py_object* code_getattr(co, name)struct py_code* co;
 
 static void code_dealloc(co)struct py_code* co;
 {
-	PY_XDECREF(co->code);
-	PY_XDECREF(co->consts);
-	PY_XDECREF(co->names);
-	PY_XDECREF(co->filename);
+	py_object_decref(co->code);
+	py_object_decref(co->consts);
+	py_object_decref(co->names);
+	py_object_decref(co->filename);
 	free(co);
 }
 
@@ -89,14 +89,14 @@ static struct py_code* newcodeobject(code, consts, names, filename)
 	}
 	co = py_object_new(&py_code_type);
 	if(co != NULL) {
-		PY_INCREF(code);
+		py_object_incref(code);
 		co->code = (struct py_string*) code;
-		PY_INCREF(consts);
+		py_object_incref(consts);
 		co->consts = consts;
-		PY_INCREF(names);
+		py_object_incref(names);
 		co->names = names;
 		if((co->filename = py_string_new(filename)) == NULL) {
-			PY_DECREF(co);
+			py_object_decref(co);
 			co = NULL;
 		}
 	}
@@ -163,18 +163,18 @@ static int com_init(c, filename)struct compiling* c;
 	return 1;
 
 	fail_1:
-	PY_DECREF(c->c_consts);
+	py_object_decref(c->c_consts);
 	fail_2:
-	PY_DECREF(c->c_code);
+	py_object_decref(c->c_code);
 	fail_3:
 	return 0;
 }
 
 static void com_free(c)struct compiling* c;
 {
-	PY_XDECREF(c->c_code);
-	PY_XDECREF(c->c_consts);
-	PY_XDECREF(c->c_names);
+	py_object_decref(c->c_code);
+	py_object_decref(c->c_consts);
+	py_object_decref(c->c_names);
 }
 
 static void com_done(c)struct compiling* c;
@@ -308,7 +308,7 @@ static void com_addopname(c, op, n)struct compiling* c;
 	}
 	else {
 		i = com_addname(c, v);
-		PY_DECREF(v);
+		py_object_decref(v);
 	}
 	com_addoparg(c, op, i);
 }
@@ -464,7 +464,7 @@ static void com_atom(c, n)struct compiling* c;
 			}
 			else {
 				i = com_addconst(c, v);
-				PY_DECREF(v);
+				py_object_decref(v);
 			}
 			com_addoparg(c, PY_OP_LOAD_CONST, i);
 			break;
@@ -475,7 +475,7 @@ static void com_atom(c, n)struct compiling* c;
 			}
 			else {
 				i = com_addconst(c, v);
-				PY_DECREF(v);
+				py_object_decref(v);
 			}
 			com_addoparg(c, PY_OP_LOAD_CONST, i);
 			break;
@@ -1188,7 +1188,7 @@ static void com_for_stmt(c, n)struct compiling* c;
 		c->c_errors++;
 	}
 	com_addoparg(c, PY_OP_LOAD_CONST, com_addconst(c, v));
-	PY_XDECREF(v);
+	py_object_decref(v);
 	begin = c->c_nexti;
 	com_addoparg(c, PY_OP_SET_LINENO, n->lineno);
 	com_addfwref(c, PY_OP_FOR_LOOP, &anchor);
@@ -1395,7 +1395,7 @@ static void com_funcdef(c, n)struct compiling* c;
 		com_addoparg(c, PY_OP_LOAD_CONST, i);
 		com_addbyte(c, PY_OP_BUILD_FUNCTION);
 		com_addopname(c, PY_OP_STORE_NAME, &n->children[1]);
-		PY_DECREF(v);
+		py_object_decref(v);
 	}
 }
 
@@ -1441,7 +1441,7 @@ static void com_classdef(c, n)struct compiling* c;
 		com_addbyte(c, PY_OP_UNARY_CALL);
 		com_addbyte(c, PY_OP_BUILD_CLASS);
 		com_addopname(c, PY_OP_STORE_NAME, &n->children[1]);
-		PY_DECREF(v);
+		py_object_decref(v);
 	}
 }
 

@@ -23,9 +23,9 @@ struct py_object* py_func_new(code, globals)struct py_object* code;
 {
 	funcobject* op = py_object_new(&py_func_type);
 	if(op != NULL) {
-		PY_INCREF(code);
+		py_object_incref(code);
 		op->func_code = code;
-		PY_INCREF(globals);
+		py_object_incref(globals);
 		op->func_globals = globals;
 	}
 	return (struct py_object*) op;
@@ -67,8 +67,8 @@ static struct py_object* func_getattr(op, name)funcobject* op;
 
 static void func_dealloc(op)funcobject* op;
 {
-	PY_DECREF(op->func_code);
-	PY_DECREF(op->func_globals);
+	py_object_decref(op->func_code);
+	py_object_decref(op->func_globals);
 	free(op);
 }
 
