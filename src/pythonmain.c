@@ -61,7 +61,7 @@ void finaloutput(void) {
 #ifdef PY_TRACE_REFS
 	if (!askyesno("Print left references?"))
 			return;
-	printrefs(stderr);
+	py_print_refs(stderr);
 #endif
 }
  */

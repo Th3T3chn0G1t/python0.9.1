@@ -35,7 +35,6 @@ struct py_frame* py_frame_current;
 #endif
 
 #ifdef TRACE
-
 static int prtrace(struct py_object* v, char* str, int trace) {
 	if(!trace) return 0;
 
@@ -45,23 +44,21 @@ static int prtrace(struct py_object* v, char* str, int trace) {
 
 	return 0;
 }
-
 #endif
 
-
 struct py_object* py_get_locals(void) {
-	if(py_frame_current == NULL) { return NULL; }
-	else { return py_frame_current->locals; }
+	if(py_frame_current == NULL) return NULL;
+	else return py_frame_current->locals;
 }
 
 struct py_object* py_get_globals(void) {
-	if(py_frame_current == NULL) { return NULL; }
-	else { return py_frame_current->globals; }
+	if(py_frame_current == NULL) return NULL;
+	else return py_frame_current->globals;
 }
 
+/* TODO: Move all these "generalising" functions into their own place. */
 /* Test a value used as condition, e.g., in a for or if statement */
-
-static int testbool(struct py_object* v) {
+static int py_object_truthy(struct py_object* v) {
 	if(py_is_int(v)) return py_int_get(v) != 0;
 	if(py_is_float(v)) return py_float_get(v) != 0.0;
 
@@ -79,7 +76,9 @@ static int testbool(struct py_object* v) {
 	return 1;
 }
 
-static struct py_object* add(struct py_object* v, struct py_object* w) {
+static struct py_object* py_object_add(
+		struct py_object* v, struct py_object* w) {
+
 	if(v->type->numbermethods != NULL) {
 		v = (*v->type->numbermethods->add)(v, w);
 	}
@@ -94,7 +93,9 @@ static struct py_object* add(struct py_object* v, struct py_object* w) {
 	return v;
 }
 
-static struct py_object* sub(struct py_object* v, struct py_object* w) {
+static struct py_object* py_object_sub(
+		struct py_object* v, struct py_object* w) {
+
 	if(v->type->numbermethods != NULL) {
 		return (*v->type->numbermethods->sub)(v, w);
 	}
@@ -103,7 +104,9 @@ static struct py_object* sub(struct py_object* v, struct py_object* w) {
 	return NULL;
 }
 
-static struct py_object* mul(struct py_object* v, struct py_object* w) {
+static struct py_object* py_object_mul(
+		struct py_object* v, struct py_object* w) {
+
 	struct py_type* tp;
 
 	if(py_is_int(v) && w->type->sequencemethods != NULL) {
@@ -117,6 +120,7 @@ static struct py_object* mul(struct py_object* v, struct py_object* w) {
 	tp = v->type;
 
 	if(tp->numbermethods != NULL) return (*tp->numbermethods->mul)(v, w);
+
 	if(tp->sequencemethods != NULL) {
 		if(!py_is_int(w)) {
 			py_error_set_string(
@@ -136,7 +140,7 @@ static struct py_object* mul(struct py_object* v, struct py_object* w) {
 	return NULL;
 }
 
-static struct py_object* divide(struct py_object* v, struct py_object* w) {
+static struct py_object* py_object_div(struct py_object* v, struct py_object* w) {
 	if(v->type->numbermethods != NULL) {
 		return (*v->type->numbermethods->div)(v, w);
 	}
@@ -145,7 +149,7 @@ static struct py_object* divide(struct py_object* v, struct py_object* w) {
 	return NULL;
 }
 
-static struct py_object* rem(struct py_object* v, struct py_object* w) {
+static struct py_object* py_object_mod(struct py_object* v, struct py_object* w) {
 	if(v->type->numbermethods != NULL) {
 		return (*v->type->numbermethods->mod)(v, w);
 	}
@@ -154,7 +158,7 @@ static struct py_object* rem(struct py_object* v, struct py_object* w) {
 	return NULL;
 }
 
-static struct py_object* neg(struct py_object* v) {
+static struct py_object* py_object_neg(struct py_object* v) {
 	if(v->type->numbermethods != NULL) {
 		return (*v->type->numbermethods->neg)(v);
 	}
@@ -163,7 +167,7 @@ static struct py_object* neg(struct py_object* v) {
 	return NULL;
 }
 
-static struct py_object* pos(struct py_object* v) {
+static struct py_object* py_object_pos(struct py_object* v) {
 	if(v->type->numbermethods != NULL) {
 		return (*v->type->numbermethods->pos)(v);
 	}
@@ -172,8 +176,8 @@ static struct py_object* pos(struct py_object* v) {
 	return NULL;
 }
 
-static struct py_object* not(struct py_object* v) {
-	int outcome = testbool(v);
+static struct py_object* py_object_not(struct py_object* v) {
+	int outcome = py_object_truthy(v);
 	struct py_object* w = outcome == 0 ? PY_TRUE : PY_FALSE;
 
 	PY_INCREF(w);
@@ -215,7 +219,7 @@ py_call_function(struct py_object* func, struct py_object* arg) {
 		struct py_object* self = py_classmethod_get_self(func);
 		func = py_classmethod_get_func(func);
 
-		if(arg == NULL) { arg = self; }
+		if(arg == NULL) arg = self;
 		else {
 			newarg = py_tuple_new(2);
 
@@ -264,7 +268,7 @@ py_call_function(struct py_object* func, struct py_object* arg) {
 }
 
 static struct py_object*
-apply_subscript(struct py_object* v, struct py_object* w) {
+py_object_ind(struct py_object* v, struct py_object* w) {
 	struct py_type* tp = v->type;
 
 	if(tp->sequencemethods == NULL && tp->mappingmethods == NULL) {
@@ -766,7 +770,7 @@ struct py_object* py_code_eval(
 
 			case PY_OP_UNARY_POSITIVE: {
 				v = POP();
-				x = pos(v);
+				x = py_object_pos(v);
 				PY_DECREF(v);
 				PUSH(x);
 
@@ -775,7 +779,7 @@ struct py_object* py_code_eval(
 
 			case PY_OP_UNARY_NEGATIVE: {
 				v = POP();
-				x = neg(v);
+				x = py_object_neg(v);
 				PY_DECREF(v);
 				PUSH(x);
 
@@ -784,7 +788,7 @@ struct py_object* py_code_eval(
 
 			case PY_OP_UNARY_NOT: {
 				v = POP();
-				x = not(v);
+				x = py_object_not(v);
 				PY_DECREF(v);
 				PUSH(x);
 
@@ -817,7 +821,7 @@ struct py_object* py_code_eval(
 			case PY_OP_BINARY_MULTIPLY: {
 				w = POP();
 				v = POP();
-				x = mul(v, w);
+				x = py_object_mul(v, w);
 				PY_DECREF(v);
 				PY_DECREF(w);
 				PUSH(x);
@@ -828,7 +832,7 @@ struct py_object* py_code_eval(
 			case PY_OP_BINARY_DIVIDE: {
 				w = POP();
 				v = POP();
-				x = divide(v, w);
+				x = py_object_div(v, w);
 				PY_DECREF(v);
 				PY_DECREF(w);
 				PUSH(x);
@@ -839,7 +843,7 @@ struct py_object* py_code_eval(
 			case PY_OP_BINARY_MODULO: {
 				w = POP();
 				v = POP();
-				x = rem(v, w);
+				x = py_object_mod(v, w);
 				PY_DECREF(v);
 				PY_DECREF(w);
 				PUSH(x);
@@ -850,7 +854,7 @@ struct py_object* py_code_eval(
 			case PY_OP_BINARY_ADD: {
 				w = POP();
 				v = POP();
-				x = add(v, w);
+				x = py_object_add(v, w);
 				PY_DECREF(v);
 				PY_DECREF(w);
 				PUSH(x);
@@ -861,7 +865,7 @@ struct py_object* py_code_eval(
 			case PY_OP_BINARY_SUBTRACT: {
 				w = POP();
 				v = POP();
-				x = sub(v, w);
+				x = py_object_sub(v, w);
 				PY_DECREF(v);
 				PY_DECREF(w);
 				PUSH(x);
@@ -872,7 +876,7 @@ struct py_object* py_code_eval(
 			case PY_OP_BINARY_SUBSCR: {
 				w = POP();
 				v = POP();
-				x = apply_subscript(v, w);
+				x = py_object_ind(v, w);
 				PY_DECREF(v);
 				PY_DECREF(w);
 				PUSH(x);
@@ -1325,12 +1329,12 @@ struct py_object* py_code_eval(
 				break;
 
 			case PY_OP_JUMP_IF_FALSE:
-				if(!testbool(TOP()))
+				if(!py_object_truthy(TOP()))
 					JUMPBY(oparg);
 				break;
 
 			case PY_OP_JUMP_IF_TRUE:
-				if(testbool(TOP()))
+				if(py_object_truthy(TOP()))
 					JUMPBY(oparg);
 				break;
 

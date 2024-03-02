@@ -126,6 +126,11 @@ struct py_mappingmethods {
 	int (*assign)(struct py_object*, struct py_object*, struct py_object*);
 };
 
+enum py_print_mode {
+	PY_PRINT_NORMAL,
+	PY_PRINT_RAW
+};
+
 struct py_type {
 	PY_VAROB_SEQ
 	char* name; /* For printing */
@@ -134,9 +139,10 @@ struct py_type {
 	/* Methods to implement standard operations */
 
 	void (*dealloc)(struct py_object*);
-	void (*print)(struct py_object*, FILE*, int); /* TODO: Unbake print. */
-	struct py_object* (*get_attr)(struct py_object*, char*);
-	int (*set_attr)(struct py_object*, char*, struct py_object*);
+	/* TODO: Unbake print. */
+	void (*print)(struct py_object*, FILE*, enum py_print_mode);
+	struct py_object* (*get_attr)(struct py_object*, const char*);
+	int (*set_attr)(struct py_object*, const char*, struct py_object*);
 	int (*cmp)(struct py_object*, struct py_object*);
 	struct py_object* (*repr)(struct py_object*);
 
@@ -149,11 +155,6 @@ struct py_type {
 /* TODO: Python global state. */
 extern struct py_type py_type_type; /* The type of type objects */
 extern int py_stop_print; /* Set when printing is interrupted */
-
-enum py_print_mode {
-	PY_PRINT_NORMAL,
-	PY_PRINT_RAW
-};
 
 /* Generic operations on objects */
 /*
@@ -170,8 +171,8 @@ void py_object_delete(struct py_object* p);
 void py_object_print(struct py_object*, FILE*, enum py_print_mode);
 struct py_object* py_object_repr(struct py_object*);
 int py_object_cmp(struct py_object*, struct py_object*);
-struct py_object* py_object_get_attr(struct py_object*, char*);
-int py_object_set_attr(struct py_object*, char*, struct py_object*);
+struct py_object* py_object_get_attr(struct py_object*, const char*);
+int py_object_set_attr(struct py_object*, const char*, struct py_object*);
 
 /*
  * The macros PY_INCREF(op) and PY_DECREF(op) are used to increment or decrement
@@ -211,6 +212,8 @@ int py_object_set_attr(struct py_object*, char*, struct py_object*);
 extern long py_ref_total;
 # ifndef PY_TRACE_REFS
 #  define PY_NEWREF(op) (py_ref_total++, (op)->refcount = 1)
+# else
+void py_print_refs(FILE*);
 # endif
 # define PY_INCREF(op) (py_ref_total++, (op)->refcount++)
 # define PY_DECREF(op) \

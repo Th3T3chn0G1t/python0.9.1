@@ -22,7 +22,7 @@
  * - errno is a global variable, which makes extensions to a multi-
  *   threading environment difficult; e.g., in IRIX, multi-threaded
  *   programs must use the function oserror() instead of looking in errno
- * - there is no portable way to add new error numbers for specic
+ * - there is no portable way to add new error numbers for specific
  *   situations -- the value space for errno is reserved to the OS, yet
  *   the way to turn module-specific errors into a module-specific
  *   exception requires module-specific values for errno
