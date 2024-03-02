@@ -50,16 +50,16 @@ static void code_dealloc(co)struct py_code* co;
 }
 
 struct py_type py_code_type = {
-		PY_OB_SEQ_INIT(&py_type_type) 0, "code", sizeof(struct py_code), 0,
-		code_dealloc,   /*dealloc*/
-		0,              /*print*/
-		code_getattr,   /*get_attr*/
-		0,              /*set_attr*/
-		0,              /*cmp*/
-		0,              /*repr*/
-		0,              /*numbermethods*/
-		0,              /*sequencemethods*/
-		0,              /*mappingmethods*/
+		{ 1, &py_type_type, 0 }, "code", sizeof(struct py_code), 0,
+		code_dealloc, /* dealloc */
+		0, /* print */
+		code_getattr, /* get_attr */
+		0, /* set_attr */
+		0, /* cmp */
+		0, /* repr */
+		0, /* numbermethods */
+		0, /* sequencemethods */
+		0, /* mappingmethods */
 };
 
 static struct py_code*
@@ -80,7 +80,7 @@ static struct py_code* newcodeobject(code, consts, names, filename)
 		return NULL;
 	}
 	/* Make sure the list of names contains only strings */
-	for(i = py_list_size(names); --i >= 0;) {
+	for(i = py_varobject_size(names); --i >= 0;) {
 		struct py_object* v = py_list_get(names, i);
 		if(v == NULL || !py_is_string(v)) {
 			py_error_set_badcall();
@@ -197,7 +197,7 @@ static void com_addbyte(c, byte)struct compiling* c;
 	if(c->c_code == NULL) {
 		return;
 	}
-	len = py_string_size(c->c_code);
+	len = py_varobject_size(c->c_code);
 	if(c->c_nexti >= len) {
 		if(py_string_resize(&c->c_code, len + 1000) != 0) {
 			c->c_errors++;
@@ -262,7 +262,7 @@ static int com_add(c, list, v)struct compiling* c;
 							  struct py_object* list;
 							  struct py_object* v;
 {
-	int n = py_list_size(list);
+	int n = py_varobject_size(list);
 	int i;
 	for(i = n; --i >= 0;) {
 		struct py_object* w = py_list_get(list, i);
@@ -396,7 +396,7 @@ static struct py_object* parsestr(s)char* s;
 				break;
 			case 'x':
 				if(isxdigit(*s)) {
-					sscanf(s, "%x", (unsigned int*) &c);
+					sscanf(s, "%x", (unsigned*) &c);
 					*p++ = c;
 					do {
 						s++;

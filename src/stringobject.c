@@ -18,8 +18,8 @@ struct py_object* py_string_new_size(str, size)const char* str;
 		return py_error_set_nomem();
 	}
 	PY_NEWREF(op);
-	op->type = &py_string_type;
-	op->size = size;
+	op->ob.type = &py_string_type;
+	op->ob.size = size;
 	if(str != NULL) {
 		memcpy(op->value, str, size);
 	}
@@ -28,34 +28,25 @@ struct py_object* py_string_new_size(str, size)const char* str;
 }
 
 struct py_object* py_string_new(const char* str) {
-	unsigned int size = strlen(str);
+	unsigned size = strlen(str);
 	struct py_string* op = malloc(
 			sizeof(struct py_string) + size * sizeof(char));
 	if(op == NULL) {
 		return py_error_set_nomem();
 	}
 	PY_NEWREF(op);
-	op->type = &py_string_type;
-	op->size = size;
+	op->ob.type = &py_string_type;
+	op->ob.size = size;
 	strcpy(op->value, str);
 	return (struct py_object*) op;
 }
 
-unsigned int py_string_size(op)struct py_object* op;
-{
-	if(!py_is_string(op)) {
-		py_error_set_badcall();
-		return -1;
-	}
-	return ((struct py_string*) op)->size;
-}
-
-/*const*/ char* py_string_get_value(op)struct py_object* op;
-{
+char* py_string_get_value(struct py_object* op) {
 	if(!py_is_string(op)) {
 		py_error_set_badcall();
 		return NULL;
 	}
+
 	return ((struct py_string*) op)->value;
 }
 
@@ -68,11 +59,11 @@ static void stringprint(op, fp, flags)struct py_string* op;
 	int i;
 	char c;
 	if(flags & PY_PRINT_RAW) {
-		fwrite(op->value, 1, (int) op->size, fp);
+		fwrite(op->value, 1, (int) op->ob.size, fp);
 		return;
 	}
 	fprintf(fp, "'");
-	for(i = 0; i < (int) op->size; i++) {
+	for(i = 0; i < (int) op->ob.size; i++) {
 		c = op->value[i];
 		if(c == '\'' || c == '\\') {
 			fprintf(fp, "\\%c", c);
@@ -90,7 +81,7 @@ static void stringprint(op, fp, flags)struct py_string* op;
 static struct py_object* stringrepr(op)struct py_string* op;
 {
 	/* XXX overflow? */
-	int newsize = 2 + 4 * op->size * sizeof(char);
+	int newsize = 2 + 4 * op->ob.size * sizeof(char);
 	struct py_object* v = py_string_new_size((char*) NULL, newsize);
 	if(v == NULL) {
 		return py_error_set_nomem();
@@ -101,10 +92,10 @@ static struct py_object* stringrepr(op)struct py_string* op;
 		char* p;
 		PY_NEWREF(v);
 		v->type = &py_string_type;
-		((struct py_string*) v)->size = newsize;
+		((struct py_varobject*) v)->size = newsize;
 		p = ((struct py_string*) v)->value;
 		*p++ = '\'';
-		for(i = 0; i < (int) op->size; i++) {
+		for(i = 0; i < (int) op->ob.size; i++) {
 			c = op->value[i];
 			if(c == '\'' || c == '\\') {
 				*p++ = '\\', *p++ = c;
@@ -126,15 +117,10 @@ static struct py_object* stringrepr(op)struct py_string* op;
 	}
 }
 
-static int stringlength(a)struct py_string* a;
-{
-	return a->size;
-}
-
 static struct py_object* stringconcat(a, bb)struct py_string* a;
 											struct py_object* bb;
 {
-	unsigned int size;
+	unsigned size;
 	struct py_string* op;
 	struct py_string* b;
 	if(!py_is_string(bb)) {
@@ -143,24 +129,24 @@ static struct py_object* stringconcat(a, bb)struct py_string* a;
 	}
 	b = ((struct py_string*) bb);
 	/* Optimize cases with empty left or right operand */
-	if(a->size == 0) {
+	if(a->ob.size == 0) {
 		PY_INCREF(bb);
 		return bb;
 	}
-	if(b->size == 0) {
+	if(b->ob.size == 0) {
 		PY_INCREF(a);
 		return (struct py_object*) a;
 	}
-	size = a->size + b->size;
+	size = a->ob.size + b->ob.size;
 	op = malloc(sizeof(struct py_string) + size * sizeof(char));
 	if(op == NULL) {
 		return py_error_set_nomem();
 	}
 	PY_NEWREF(op);
-	op->type = &py_string_type;
-	op->size = size;
-	memcpy(op->value, a->value, (int) a->size);
-	memcpy(op->value + a->size, b->value, (int) b->size);
+	op->ob.type = &py_string_type;
+	op->ob.size = size;
+	memcpy(op->value, a->value, (int) a->ob.size);
+	memcpy(op->value + a->ob.size, b->value, (int) b->ob.size);
 	op->value[size] = '\0';
 	return (struct py_object*) op;
 }
@@ -169,13 +155,13 @@ static struct py_object* stringrepeat(a, n)struct py_string* a;
 										   int n;
 {
 	int i;
-	unsigned int size;
+	unsigned size;
 	struct py_string* op;
 	if(n < 0) {
 		n = 0;
 	}
-	size = a->size * n;
-	if(size == a->size) {
+	size = a->ob.size * n;
+	if(size == a->ob.size) {
 		PY_INCREF(a);
 		return (struct py_object*) a;
 	}
@@ -184,10 +170,10 @@ static struct py_object* stringrepeat(a, n)struct py_string* a;
 		return py_error_set_nomem();
 	}
 	PY_NEWREF(op);
-	op->type = &py_string_type;
-	op->size = size;
-	for(i = 0; i < (int) size; i += a->size) {
-		memcpy(op->value + i, a->value, (int) a->size);
+	op->ob.type = &py_string_type;
+	op->ob.size = size;
+	for(i = 0; i < (int) size; i += a->ob.size) {
+		memcpy(op->value + i, a->value, (int) a->ob.size);
 	}
 	op->value[size] = '\0';
 	return (struct py_object*) op;
@@ -204,10 +190,10 @@ static struct py_object* stringslice(a, i, j)struct py_string* a;
 	if(j < 0) {
 		j = 0;
 	} /* Avoid signed/unsigned bug in next line */
-	if(j > (int) a->size) {
-		j = (int) a->size;
+	if(j > (int) a->ob.size) {
+		j = (int) a->ob.size;
 	}
-	if(i == 0 && j == (int) a->size) { /* It's the same as a */
+	if(i == 0 && j == (int) a->ob.size) { /* It's the same as a */
 		PY_INCREF(a);
 		return (struct py_object*) a;
 	}
@@ -220,7 +206,7 @@ static struct py_object* stringslice(a, i, j)struct py_string* a;
 static struct py_object* stringitem(a, i)struct py_string* a;
 										 int i;
 {
-	if(i < 0 || i >= (int) a->size) {
+	if(i < 0 || i >= (int) a->ob.size) {
 		py_error_set_string(PY_INDEX_ERROR, "string index out of range");
 		return NULL;
 	}
@@ -229,7 +215,7 @@ static struct py_object* stringitem(a, i)struct py_string* a;
 
 static int stringcompare(a, b)struct py_string* a, * b;
 {
-	int len_a = a->size, len_b = b->size;
+	int len_a = a->ob.size, len_b = b->ob.size;
 	int min_len = (len_a < len_b) ? len_a : len_b;
 	int cmp = memcmp(a->value, b->value, min_len);
 	if(cmp != 0) {
@@ -239,7 +225,6 @@ static int stringcompare(a, b)struct py_string* a, * b;
 }
 
 static struct py_sequencemethods string_as_sequence = {
-		stringlength,   /*tp_length*/
 		stringconcat,   /*tp_concat*/
 		stringrepeat,   /*tp_repeat*/
 		stringitem,     /*tp_item*/
@@ -249,7 +234,7 @@ static struct py_sequencemethods string_as_sequence = {
 };
 
 struct py_type py_string_type = {
-		PY_OB_SEQ_INIT(&py_type_type) 0, "string", sizeof(struct py_string),
+		{ 1, &py_type_type, 0 }, "string", sizeof(struct py_string),
 		sizeof(char), py_object_delete,  /*dealloc*/
 		stringprint,    /*print*/
 		0,              /*get_attr*/
@@ -314,7 +299,7 @@ int py_string_resize(pv, newsize)struct py_object** pv;
 
 	PY_NEWREF(*pv);
 	sv = (struct py_string*) *pv;
-	sv->size = newsize;
+	sv->ob.size = newsize;
 	sv->value[newsize] = '\0';
 	return 0;
 }

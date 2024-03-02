@@ -18,7 +18,7 @@
 #include <python/allobjects.h>
 
 typedef struct {
-	PY_OB_SEQ
+	struct py_object ob;
 	struct py_object* x_attr;        /* Attributes dictionary */
 } xxobject;
 

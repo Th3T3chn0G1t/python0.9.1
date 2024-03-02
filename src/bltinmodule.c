@@ -114,7 +114,7 @@ builtin_divmod(struct py_object* self, struct py_object* v) {
 
 	(void) self;
 
-	if(v == NULL || !py_is_tuple(v) || py_tuple_size(v) != 2) {
+	if(v == NULL || !py_is_tuple(v) || py_varobject_size(v) != 2) {
 		py_error_set_string(py_type_error, "divmod() requires 2 int arguments");
 		return NULL;
 	}
@@ -216,13 +216,8 @@ builtin_len(struct py_object* self, struct py_object* v) {
 
 	tp = v->type;
 
-	if(tp->sequencemethods != NULL) {
-		len = (*tp->sequencemethods->len)(
-				v);
-	}
-	else if(tp->mappingmethods != NULL) {
-		len = (*tp->mappingmethods->len)(v);
-	}
+	if(tp->sequencemethods != NULL) len = py_varobject_size(v);
+	else if(tp->mappingmethods != NULL) len = (*tp->mappingmethods->len)(v);
 	else {
 		py_error_set_string(py_type_error, "len() of unsized object");
 		return NULL;
@@ -249,7 +244,7 @@ static struct py_object* min_max(struct py_object* v, int sign) {
 		return NULL;
 	}
 
-	n = (*sq->len)(v);
+	n = py_varobject_size(v);
 
 	if(n == 0) {
 		py_error_set_string(
@@ -296,7 +291,7 @@ builtin_ord(struct py_object* self, struct py_object* v) {
 		return NULL;
 	}
 
-	if(py_string_size(v) != 1) {
+	if(py_varobject_size(v) != 1) {
 		py_error_set_string(py_runtime_error, "ord() arg must have length 1");
 		return NULL;
 	}
@@ -322,7 +317,7 @@ builtin_range(struct py_object* self, struct py_object* v) {
 		return NULL;
 	}
 	else {
-		n = py_tuple_size(v);
+		n = py_varobject_size(v);
 
 		if(n < 1 || n > 3) {
 			py_error_set_string(py_type_error, errmsg);

@@ -16,7 +16,7 @@
 #include <python/funcobject.h>
 
 struct py_class {
-	PY_OB_SEQ
+	struct py_object ob;
 	struct py_object* bases; /* A tuple */
 	struct py_object* methods; /* A dictionary */
 };
@@ -65,7 +65,7 @@ static struct py_object* py_class_get_attr(
 	}
 
 	if(cls->bases != NULL) {
-		int n = py_tuple_size(cls->bases);
+		int n = py_varobject_size(cls->bases);
 		int i;
 
 		for(i = 0; i < n; i++) {
@@ -81,8 +81,7 @@ static struct py_object* py_class_get_attr(
 }
 
 struct py_type py_class_type = {
-		PY_OB_SEQ_INIT(&py_type_type)
-		0, "class", sizeof(struct py_class), 0,
+		{ 1, &py_type_type, 0 }, "class", sizeof(struct py_class), 0,
 		py_class_dealloc, /* dealloc */
 		0, /* print */
 		py_class_get_attr, /* get_attr */
@@ -96,7 +95,7 @@ struct py_type py_class_type = {
 
 /* We're not done yet: next, we define class member objects... */
 typedef struct {
-	PY_OB_SEQ
+	struct py_object ob;
 	struct py_class* cm_class;      /* The class object */
 	struct py_object* cm_attr;       /* A dictionary */
 } classmemberobject;
@@ -167,16 +166,16 @@ static int classmember_setattr(cm, name, v)classmemberobject* cm;
 }
 
 struct py_type py_class_member_type = {
-		PY_OB_SEQ_INIT(&py_type_type) 0, "class member",
-		sizeof(classmemberobject), 0, classmember_dealloc,    /*dealloc*/
-		0,                      /*print*/
-		classmember_getattr,    /*get_attr*/
-		classmember_setattr,    /*set_attr*/
-		0,                      /*cmp*/
-		0,                      /*repr*/
-		0,                      /*numbermethods*/
-		0,                      /*sequencemethods*/
-		0,                      /*mappingmethods*/
+		{ 1, &py_type_type, 0 }, "class member",
+		sizeof(classmemberobject), 0, classmember_dealloc, /* dealloc */
+		0, /* print */
+		classmember_getattr, /* get_attr */
+		classmember_setattr, /* set_attr */
+		0, /* cmp */
+		0, /* repr */
+		0, /* numbermethods */
+		0, /* sequencemethods */
+		0, /* mappingmethods */
 };
 
 
@@ -185,7 +184,7 @@ struct py_type py_class_member_type = {
 /* (Really methods of class members) */
 
 typedef struct {
-	PY_OB_SEQ
+	struct py_object ob;
 	struct py_object* cm_func;       /* The method function */
 	struct py_object* cm_self;       /* The object to which this applies */
 } classmethodobject;
@@ -251,14 +250,14 @@ static void classmethod_dealloc(cm)classmethodobject* cm;
 }
 
 struct py_type py_class_method_type = {
-		PY_OB_SEQ_INIT(&py_type_type) 0, "class method",
-		sizeof(classmethodobject), 0, classmethod_dealloc,    /*dealloc*/
-		0,                      /*print*/
-		classmethod_getattr,    /*get_attr*/
-		0,                      /*set_attr*/
-		0,                      /*cmp*/
-		0,                      /*repr*/
-		0,                      /*numbermethods*/
-		0,                      /*sequencemethods*/
-		0,                      /*mappingmethods*/
+		{ 1, &py_type_type, 0 }, "class method",
+		sizeof(classmethodobject), 0, classmethod_dealloc, /* dealloc */
+		0, /* print */
+		classmethod_getattr, /* get_attr */
+		0, /* set_attr */
+		0, /* cmp */
+		0, /* repr */
+		0, /* numbermethods */
+		0, /* sequencemethods */
+		0, /* mappingmethods */
 };

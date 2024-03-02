@@ -22,7 +22,7 @@ struct py_object* py_float_new(fval)double fval;
 		return py_error_set_nomem();
 	}
 	PY_NEWREF(op);
-	op->type = &py_float_type;
+	op->ob.type = &py_float_type;
 	op->value = fval;
 	return (struct py_object*) op;
 }
@@ -199,16 +199,16 @@ static struct py_numbermethods float_as_number = {
 };
 
 struct py_type py_float_type = {
-		PY_OB_SEQ_INIT(&py_type_type) 0, "float", sizeof(struct py_float), 0,
-		py_object_delete,           /*dealloc*/
-		float_print,            /*print*/
-		0,                      /*get_attr*/
-		0,                      /*set_attr*/
-		float_compare,          /*cmp*/
-		float_repr,             /*repr*/
-		&float_as_number,   /*numbermethods*/
-		0,                      /*sequencemethods*/
-		0,                      /*mappingmethods*/
+		{ 1, &py_type_type, 0 }, "float", sizeof(struct py_float), 0,
+		py_object_delete, /* dealloc */
+		float_print, /* print */
+		0, /* get_attr */
+		0, /* set_attr */
+		float_compare, /* cmp */
+		float_repr, /* repr */
+		&float_as_number, /* numbermethods */
+		0, /* sequencemethods */
+		0, /* mappingmethods */
 };
 
 /*

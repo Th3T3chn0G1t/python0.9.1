@@ -29,7 +29,7 @@ static int py_arg_double(struct py_object* args, double* px) {
 }
 
 static int py_arg_double_double(struct py_object* args, double* px, double* py) {
-	if(args == NULL || !py_is_tuple(args) || py_tuple_size(args) != 2) {
+	if(args == NULL || !py_is_tuple(args) || py_varobject_size(args) != 2) {
 		return py_error_set_badarg();
 	}
 

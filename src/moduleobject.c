@@ -14,7 +14,7 @@
 #include <python/moduleobject.h>
 
 typedef struct {
-	PY_OB_SEQ
+	struct py_object ob;
 	struct py_object* md_name;
 	struct py_object* md_dict;
 } moduleobject;
@@ -117,14 +117,14 @@ static int module_setattr(m, name, v)moduleobject* m;
 }
 
 struct py_type py_module_type = {
-		PY_OB_SEQ_INIT(&py_type_type) 0,                      /*size*/
-		"module",             /*name*/
-		sizeof(moduleobject),   /*tp_size*/
-		0,                      /*itemsize*/
-		module_dealloc,         /*dealloc*/
-		module_print,           /*print*/
-		module_getattr,         /*get_attr*/
-		module_setattr,         /*set_attr*/
-		0,                      /*cmp*/
-		module_repr,            /*repr*/
+		{ 1, &py_type_type, 0 }, /* size */
+		"module", /* name */
+		sizeof(moduleobject), /* tp_size */
+		0, /* itemsize */
+		module_dealloc, /* dealloc */
+		module_print, /* print */
+		module_getattr, /* get_attr */
+		module_setattr, /* set_attr */
+		0, /* cmp */
+		module_repr, /* repr */
 		0, 0, 0 };

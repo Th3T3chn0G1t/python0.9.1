@@ -58,7 +58,7 @@ int py_arg_int(struct py_object* v, int* a) {
 }
 
 int py_arg_int_int(struct py_object* v, int* a, int* b) {
-	if(v == NULL || !py_is_tuple(v) || py_tuple_size(v) != 2) {
+	if(v == NULL || !py_is_tuple(v) || py_varobject_size(v) != 2) {
 		return py_error_set_badarg();
 	}
 	return py_arg_int(py_tuple_get(v, 0), a) &&
@@ -74,7 +74,7 @@ int py_arg_long(struct py_object* v, long* a) {
 }
 
 int py_arg_long_long(struct py_object* v, long* a, long* b) {
-	if(v == NULL || !py_is_tuple(v) || py_tuple_size(v) != 2) {
+	if(v == NULL || !py_is_tuple(v) || py_varobject_size(v) != 2) {
 		return py_error_set_badarg();
 	}
 	return py_arg_long(py_tuple_get(v, 0), a) &&
@@ -91,7 +91,7 @@ int py_arg_str(struct py_object* v, struct py_object** a) {
 
 int py_arg_str_str(
 		struct py_object* v, struct py_object** a, struct py_object** b) {
-	if(v == NULL || !py_is_tuple(v) || py_tuple_size(v) != 2) {
+	if(v == NULL || !py_is_tuple(v) || py_varobject_size(v) != 2) {
 		return py_error_set_badarg();
 	}
 	return py_arg_str(py_tuple_get(v, 0), a) &&
@@ -99,7 +99,7 @@ int py_arg_str_str(
 }
 
 int py_arg_str_int(struct py_object* v, struct py_object** a, int* b) {
-	if(v == NULL || !py_is_tuple(v) || py_tuple_size(v) != 2) {
+	if(v == NULL || !py_is_tuple(v) || py_varobject_size(v) != 2) {
 		return py_error_set_badarg();
 	}
 	return py_arg_str(py_tuple_get(v, 0), a) &&

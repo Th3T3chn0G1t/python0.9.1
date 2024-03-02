@@ -15,7 +15,7 @@
  */
 
 struct py_float {
-	PY_OB_SEQ
+	struct py_object ob;
 	double value;
 };
 

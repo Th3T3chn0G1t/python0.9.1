@@ -62,28 +62,30 @@
 # define PY_REF_DEBUG
 #endif
 
-/* TODO: PY_OB_SEQ as common sequence not top level. */
-#ifdef PY_TRACE_REFS
-# define PY_OB_SEQ \
-	   struct py_object* next \
-	   struct py_object* prev; \
-	   int refcount; \
-	   struct py_type* type;
-# define PY_OB_SEQ_INIT(type) 0, 0, 1, type,
-#else
-# define PY_OB_SEQ \
-       unsigned int refcount; \
-       struct py_type* type;
-# define PY_OB_SEQ_INIT(type) 1, type,
-#endif
-
 /* TODO: Fix unsigned/signed size mixing everywhere. */
-#define PY_VAROB_SEQ \
-       PY_OB_SEQ \
-       unsigned int size; /* Number of items in variable part */
+
+struct py_type;
 
 struct py_object {
-	PY_OB_SEQ
+	unsigned refcount;
+	struct py_type* type;
+
+#ifdef PY_TRACE_REFS
+	struct py_object* next;
+	struct py_object* prev;
+#endif
+};
+
+struct py_varobject {
+	unsigned refcount;
+	struct py_type* type;
+
+	unsigned size;
+
+#ifdef PY_TRACE_REFS
+	struct py_object* next;
+	struct py_object* prev;
+#endif
 };
 
 /*
@@ -112,7 +114,6 @@ struct py_numbermethods {
 };
 
 struct py_sequencemethods {
-	int (*len)(struct py_object*);
 	struct py_object* (*cat)(struct py_object*, struct py_object*);
 	struct py_object* (*rep)(struct py_object*, int);
 	struct py_object* (*ind)(struct py_object*, int);
@@ -133,9 +134,11 @@ enum py_print_mode {
 };
 
 struct py_type {
-	PY_VAROB_SEQ
-	char* name; /* For printing */
-	unsigned int basicsize, itemsize; /* For allocation */
+	struct py_varobject ob;
+
+	const char* name; /* For printing */
+
+	unsigned basicsize, itemsize; /* For allocation */
 
 	/* Methods to implement standard operations */
 
@@ -144,7 +147,7 @@ struct py_type {
 	void (*print)(struct py_object*, FILE*, enum py_print_mode);
 	struct py_object* (*get_attr)(struct py_object*, const char*);
 	int (*set_attr)(struct py_object*, const char*, struct py_object*);
-	int (*cmp)(struct py_object*, struct py_object*);
+	int (*cmp)(const struct py_object*, const struct py_object*);
 	struct py_object* (*repr)(struct py_object*);
 
 	/* Method suites for standard classes */
@@ -170,9 +173,11 @@ void* py_object_new(struct py_type*); /* `void*' for convenience's sake. */
 void py_object_delete(struct py_object* p);
 void py_object_print(struct py_object*, FILE*, enum py_print_mode);
 struct py_object* py_object_repr(struct py_object*);
-int py_object_cmp(struct py_object*, struct py_object*);
+int py_object_cmp(const struct py_object*, const struct py_object*);
 struct py_object* py_object_get_attr(struct py_object*, const char*);
 int py_object_set_attr(struct py_object*, const char*, struct py_object*);
+
+unsigned py_varobject_size(const void*);
 
 /*
  * The macros PY_INCREF(op) and PY_DECREF(op) are used to increment or decrement
@@ -203,7 +208,8 @@ int py_object_set_attr(struct py_object*, const char*, struct py_object*);
 
 /* TODO: Rework all of these into functions. */
 #ifndef PY_TRACE_REFS
-# define PY_DELREF(op) (*(op)->type->dealloc)((struct py_object*)(op))
+# define PY_DELREF(op) \
+		(*((struct py_object*) (op))->type->dealloc)((struct py_object*) (op))
 # define PY_UNREF(op) /* empty */
 #endif
 
@@ -211,13 +217,15 @@ int py_object_set_attr(struct py_object*, const char*, struct py_object*);
 /* TODO: Python global state. */
 extern long py_ref_total;
 # ifndef PY_TRACE_REFS
-#  define PY_NEWREF(op) (py_ref_total++, (op)->refcount = 1)
+#  define PY_NEWREF(op) \
+		(py_ref_total++, ((struct py_object*) (op))->refcount = 1)
 # else
 void py_print_refs(FILE*);
 # endif
-# define PY_INCREF(op) (py_ref_total++, (op)->refcount++)
+# define PY_INCREF(op) (py_ref_total++, ((struct py_object*) (op))->refcount++)
 # define PY_DECREF(op) \
-       if(--py_ref_total, !(--(op)->refcount > 0)) PY_DELREF(op)
+		if(--py_ref_total, !(--((struct py_object*) (op))->refcount > 0)) \
+			PY_DELREF(op)
 #else
 # define PY_NEWREF(op) ((op)->refcount = 1)
 # define PY_INCREF(op) ((op)->refcount++)

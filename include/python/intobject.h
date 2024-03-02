@@ -24,7 +24,7 @@
  */
 
 struct py_int {
-	PY_OB_SEQ
+	struct py_object ob;
 	long value;
 };
 

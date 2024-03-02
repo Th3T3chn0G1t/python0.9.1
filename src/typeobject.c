@@ -27,15 +27,14 @@ static struct py_object* type_repr(v)struct py_type* v;
 }
 
 struct py_type py_type_type = {
-		PY_OB_SEQ_INIT(&py_type_type)
-		0,                      /* Number of items for varobject */
-		"type",                       /* Name of this type */
-		sizeof(struct py_type),     /* Basic object size */
-		0,                      /* Item size for varobject */
-		0,                      /*dealloc*/
-		type_print,             /*print*/
-		0,                      /*get_attr*/
-		0,                      /*set_attr*/
-		0,                      /*cmp*/
-		type_repr,              /*repr*/
+		{ 1, &py_type_type, 0 },
+		"type", /* Name of this type */
+		sizeof(struct py_type), /* Basic object size */
+		0, /* Item size for varobject */
+		0, /* dealloc */
+		type_print, /* print */
+		0, /* get_attr */
+		0, /* set_attr */
+		0, /* cmp*/
+		type_repr,  /*repr */
 		0, 0, 0 };

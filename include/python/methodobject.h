@@ -22,7 +22,7 @@ struct py_methodlist {
 	py_method_t method;
 };
 
-struct py_object* py_method_new(char*, py_method_t, struct py_object*, unsigned int);
+struct py_object* py_method_new(char*, py_method_t, struct py_object*, unsigned);
 py_method_t py_method_get(struct py_object*);
 struct py_object* py_method_get_self(struct py_object*);
 

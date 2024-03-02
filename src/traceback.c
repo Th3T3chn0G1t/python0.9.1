@@ -14,7 +14,7 @@
 #include <python/env.h>
 
 typedef struct _tracebackobject {
-	PY_OB_SEQ
+	struct py_object ob;
 	struct _tracebackobject* tb_next;
 	struct py_frame* tb_frame;
 	int tb_lasti;
@@ -45,7 +45,7 @@ static void tb_dealloc(tb)tracebackobject* tb;
 }
 
 static struct py_type Tracebacktype = {
-		PY_OB_SEQ_INIT(&py_type_type) 0, "traceback", sizeof(tracebackobject),
+		{ 1, &py_type_type, 0 }, "traceback", sizeof(tracebackobject),
 		0, tb_dealloc,     /*dealloc*/
 		0,              /*print*/
 		tb_getattr,     /*get_attr*/
@@ -57,7 +57,8 @@ static struct py_type Tracebacktype = {
 		0,              /*mappingmethods*/
 };
 
-#define is_tracebackobject(v) ((v)->type == &Tracebacktype)
+#define is_tracebackobject(v) \
+	(((struct py_object*) (v))->type == &Tracebacktype)
 
 static tracebackobject* newtracebackobject(next, frame, lasti, lineno)
 		tracebackobject* next;

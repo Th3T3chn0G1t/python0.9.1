@@ -34,7 +34,7 @@ The final value is a sentinel and should cause the memory allocation
 of that many entries to fail (if none of the earlier values cause such
 failure already).
 */
-static unsigned int primes[] = {
+static unsigned primes[] = {
 		3, 7, 13, 31, 61, 127, 251, 509, 1021, 2017, 4093, 5987, 9551, 15683,
 		19609, 31397, 0xffffffff /* All bits set -- truncation OK */
 };
@@ -62,7 +62,7 @@ To avoid slowing down lookups on a near-full table, we resize the table
 when it is more than half filled.
 */
 typedef struct {
-	PY_OB_SEQ
+	struct py_object ob;
 	int di_fill;
 	int di_used;
 	int di_size;
@@ -541,14 +541,14 @@ void py_done_dict(void) {
 }
 
 struct py_type py_dict_type = {
-		PY_OB_SEQ_INIT(&py_type_type) 0, "dictionary", sizeof(dictobject), 0,
-		dict_dealloc,   /*dealloc*/
-		dict_print,     /*print*/
-		dict_getattr,   /*get_attr*/
-		0,              /*set_attr*/
-		0,              /*cmp*/
-		dict_repr,      /*repr*/
-		0,              /*numbermethods*/
-		0,              /*sequencemethods*/
-		&dict_as_mapping,   /*mappingmethods*/
+		{ 1, &py_type_type, 0 }, "dictionary", sizeof(dictobject), 0,
+		dict_dealloc, /* dealloc */
+		dict_print, /* print */
+		dict_getattr, /* get_attr */
+		0, /* set_attr */
+		0, /* cmp */
+		dict_repr, /* repr */
+		0, /* numbermethods */
+		0, /* sequencemethods */
+		&dict_as_mapping, /* mappingmethods */
 };

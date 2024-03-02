@@ -21,7 +21,7 @@
  */
 
 struct py_tuple {
-	PY_VAROB_SEQ
+	struct py_varobject ob;
 	struct py_object* item[1];
 };
 
@@ -31,7 +31,6 @@ extern struct py_type py_tuple_type;
 #define py_is_tuple(op) ((op)->type == &py_tuple_type)
 
 struct py_object* py_tuple_new(int size);
-int py_tuple_size(struct py_object*);
 struct py_object* py_tuple_get(struct py_object*, int);
 int py_tuple_set(struct py_object*, int, struct py_object*);
 

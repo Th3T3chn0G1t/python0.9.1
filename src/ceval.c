@@ -62,7 +62,7 @@ static int py_object_truthy(struct py_object* v) {
 	if(py_is_float(v)) return py_float_get(v) != 0.0;
 
 	if(v->type->sequencemethods != NULL) {
-		return (*v->type->sequencemethods->len)(v) != 0;
+		return py_varobject_size(v) != 0;
 	}
 
 	if(v->type->mappingmethods != NULL) {
@@ -301,7 +301,7 @@ loop_subscript(struct py_object* v, struct py_object* w) {
 	}
 
 	i = py_int_get(w);
-	n = (*sq->len)(v);
+	n = py_varobject_size(v);
 
 	if(i >= n) return NULL; /* End of loop */
 
@@ -334,7 +334,7 @@ apply_slice(struct py_object* u, struct py_object* v, struct py_object* w) {
 	}
 
 	ilow = 0;
-	isize = ihigh = (*tp->sequencemethods->len)(u);
+	isize = ihigh = py_varobject_size(u);
 
 	if(slice_index(v, isize, &ilow) != 0) return NULL;
 	if(slice_index(w, isize, &ihigh) != 0) return NULL;
@@ -390,7 +390,7 @@ static int assign_slice(
 	}
 
 	ilow = 0;
-	isize = ihigh = (*sq->len)(u);
+	isize = ihigh = py_varobject_size(u);
 
 	if(slice_index(v, isize, &ilow) != 0) return -1;
 	if(slice_index(w, isize, &ihigh) != 0) return -1;
@@ -402,7 +402,7 @@ static int cmp_exception(struct py_object* err, struct py_object* v) {
 	if(py_is_tuple(v)) {
 		int i, n;
 
-		n = py_tuple_size(v);
+		n = py_varobject_size(v);
 		for(i = 0; i < n; i++) {
 			if(err == py_tuple_get(v, i)) return 1;
 		}
@@ -424,7 +424,7 @@ static int cmp_member(struct py_object* v, struct py_object* w) {
 		char* end;
 		char c;
 
-		if(!py_is_string(v) || py_string_size(v) != 1) {
+		if(!py_is_string(v) || py_varobject_size(v) != 1) {
 			py_error_set_string(
 					py_type_error,
 					"string member test needs char left operand");
@@ -433,7 +433,7 @@ static int cmp_member(struct py_object* v, struct py_object* w) {
 
 		c = py_string_get_value(v)[0];
 		s = py_string_get_value(w);
-		end = s + py_string_size(w);
+		end = s + py_varobject_size(w);
 
 		while(s < end) {
 			if(c == *s++) return 1;
@@ -451,7 +451,7 @@ static int cmp_member(struct py_object* v, struct py_object* w) {
 		return -1;
 	}
 
-	n = (*sq->len)(w);
+	n = py_varobject_size(w);
 
 	for(i = 0; i < n; i++) {
 		x = (*sq->ind)(w, i);
@@ -571,7 +571,7 @@ static struct py_object* build_class(struct py_object* v, struct py_object* w) {
 	if(py_is_tuple(v)) {
 		int i;
 
-		for(i = py_tuple_size(v); --i >= 0;) {
+		for(i = py_varobject_size(v); --i >= 0;) {
 			struct py_object* x = py_tuple_get(v, i);
 
 			if(!py_is_class(x)) {
@@ -699,8 +699,7 @@ struct py_object* py_code_eval(
 						oparg);
 			}
 			else {
-				printf(
-						"%d: %d\n", (int) (INSTR_OFFSET() - 1), opcode);
+				printf("%d: %d\n", (int) (INSTR_OFFSET() - 1), opcode);
 			}
 		}
 #endif
@@ -1148,7 +1147,7 @@ struct py_object* py_code_eval(
 					py_error_set_string(py_type_error, "unpack non-tuple");
 					why = WHY_EXCEPTION;
 				}
-				else if(py_tuple_size(v) != oparg) {
+				else if(py_varobject_size(v) != (unsigned) oparg) {
 					py_error_set_string(
 							py_runtime_error, "unpack tuple of wrong size");
 					why = WHY_EXCEPTION;
@@ -1172,7 +1171,7 @@ struct py_object* py_code_eval(
 					py_error_set_string(py_type_error, "unpack non-list");
 					why = WHY_EXCEPTION;
 				}
-				else if(py_list_size(v) != oparg) {
+				else if(py_varobject_size(v) != (unsigned) oparg) {
 					py_error_set_string(
 							py_runtime_error, "unpack list of wrong size");
 					why = WHY_EXCEPTION;

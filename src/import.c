@@ -99,7 +99,7 @@ static FILE* open_module(name, suffix, namebuf)char* name;
 		fp = pyopen_r(namebuf);
 	}
 	else {
-		int npath = py_list_size(py_path);
+		int npath = py_varobject_size(py_path);
 		int i;
 		fp = NULL;
 		for(i = 0; i < npath; i++) {
@@ -109,7 +109,7 @@ static FILE* open_module(name, suffix, namebuf)char* name;
 				continue;
 			}
 			strcpy(namebuf, py_string_get_value(v));
-			len = py_string_size(v);
+			len = py_varobject_size(v);
 			if(len > 0 && namebuf[len - 1] != '/') {
 				namebuf[len++] = '/';
 			}

@@ -17,7 +17,8 @@ struct py_block {
 };
 
 struct py_frame {
-	PY_OB_SEQ
+	struct py_object ob;
+
 	struct py_frame* back; /* previous frame, or NULL */
 	struct py_code* code; /* code segment */
 	struct py_object* globals; /* global symbol table (dictobject) */
@@ -34,7 +35,7 @@ struct py_frame {
 /* TODO: Python global state. */
 extern struct py_type py_frame_type;
 
-#define py_is_frame(op) ((op)->type == &py_frame_type)
+#define py_is_frame(op) (((struct py_object*) (op))->type == &py_frame_type)
 
 struct py_frame* py_frame_new(struct py_frame*, struct py_code*, struct py_object*, struct py_object*, int, int);
 

@@ -13,7 +13,7 @@
 #include <python/methodobject.h>
 
 typedef struct {
-	PY_OB_SEQ
+	struct py_object ob;
 	char* m_name;
 	unsigned m_heap_name;
 	py_method_t m_meth;
@@ -24,7 +24,7 @@ struct py_object* py_method_new(name, meth, self, heapname)
 		char* name; /* static string */
 		py_method_t meth;
 		struct py_object* self;
-		unsigned int heapname;
+		unsigned heapname;
 {
 	methodobject* op = py_object_new(&py_method_type);
 	if(op != NULL) {
@@ -98,16 +98,16 @@ static struct py_object* meth_repr(m)methodobject* m;
 }
 
 struct py_type py_method_type = {
-		PY_OB_SEQ_INIT(&py_type_type) 0, "method", sizeof(methodobject), 0,
-		meth_dealloc,   /*dealloc*/
-		meth_print,     /*print*/
-		0,              /*get_attr*/
-		0,              /*set_attr*/
-		0,              /*cmp*/
-		meth_repr,      /*repr*/
-		0,              /*numbermethods*/
-		0,              /*sequencemethods*/
-		0,              /*mappingmethods*/
+		{ 1, &py_type_type, 0 }, "method", sizeof(methodobject), 0,
+		meth_dealloc, /* dealloc */
+		meth_print, /* print */
+		0, /* get_attr */
+		0, /* set_attr */
+		0, /* cmp */
+		meth_repr, /* repr */
+		0, /* numbermethods */
+		0, /* sequencemethods */
+		0, /* mappingmethods */
 };
 
 /* Find a method in a module's method table.

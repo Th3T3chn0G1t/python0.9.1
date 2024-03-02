@@ -18,7 +18,8 @@
    - and a list of the names used. */
 
 struct py_code {
-	PY_OB_SEQ
+	struct py_object ob;
+
 	struct py_string* code;  /* instruction opcodes */
 	struct py_object* consts;      /* list of immutable constant objects */
 	struct py_object* names;       /* list of stringobjects */
@@ -28,7 +29,7 @@ struct py_code {
 /* TODO: Python global state. */
 extern struct py_type py_code_type;
 
-#define py_is_code(op) ((op)->type == &py_code_type)
+#define py_is_code(op) (((struct py_object*) (op))->type == &py_code_type)
 
 struct py_code* py_compile(struct py_node*, char *);
 

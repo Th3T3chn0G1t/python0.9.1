@@ -13,7 +13,7 @@
 #include <python/funcobject.h>
 
 typedef struct {
-	PY_OB_SEQ
+	struct py_object ob;
 	struct py_object* func_code;
 	struct py_object* func_globals;
 } funcobject;
@@ -73,11 +73,11 @@ static void func_dealloc(op)funcobject* op;
 }
 
 struct py_type py_func_type = {
-		PY_OB_SEQ_INIT(&py_type_type) 0, "function", sizeof(funcobject), 0,
-		func_dealloc,   /*dealloc*/
-		0,              /*print*/
-		func_getattr,   /*get_attr*/
-		0,              /*set_attr*/
-		0,              /*cmp*/
-		0,              /*repr*/
+		{ 1, &py_type_type, 0 }, "function", sizeof(funcobject), 0,
+		func_dealloc, /* dealloc */
+		0, /* print */
+		func_getattr, /* get_attr */
+		0, /* set_attr */
+		0, /* cmp */
+		0, /* repr */
 		0, 0, 0 };

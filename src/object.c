@@ -59,7 +59,7 @@ struct py_object* py_object_repr(struct py_object* v) {
 	return w;
 }
 
-int py_object_cmp(struct py_object* v, struct py_object* w) {
+int py_object_cmp(const struct py_object* v, const struct py_object* w) {
 	struct py_type* tp;
 
 	if(v == w) return 0;
@@ -97,6 +97,10 @@ int py_object_set_attr(
 	else return (*v->type->set_attr)(v, name, w);
 }
 
+unsigned py_varobject_size(const void* op) {
+	return ((struct py_varobject*) op)->size;
+}
+
 /*
  * `py_none_object' is usable as a non-NULL undefined value, used by the macro
  * PY_NONE. There is (and should be!) no way to create other objects of this
@@ -120,19 +124,19 @@ static struct py_object* py_none_repr(struct py_object* op) {
 
 /* TODO: Python global state. */
 static struct py_type py_none_type = {
-		PY_OB_SEQ_INIT(&py_type_type) 0, "None", 0, 0,
-		0, /*dealloc*/ /*never called*/
+		{ 1, &py_type_type, 0 }, "None", 0, 0,
+		0, /* dealloc */ /* never called */
 		py_none_print, /* print */
-		0, /*get_attr*/
-		0, /*set_attr*/
-		0, /*cmp*/
+		0, /* get_attr */
+		0, /* set_attr */
+		0, /* cmp */
 		py_none_repr, /* repr */
 		0, /* numbermethods */
 		0, /* sequencemethods */
 		0, /* mappingmethods */
 };
 
-struct py_object py_none_object = { PY_OB_SEQ_INIT(&py_none_type) };
+struct py_object py_none_object = { 1, &py_none_type };
 
 void py_object_delete(struct py_object* p) { free(p); }
 

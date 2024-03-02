@@ -23,7 +23,7 @@
  */
 
 struct py_list {
-	PY_VAROB_SEQ
+	struct py_varobject ob;
 	struct py_object** item;
 };
 
@@ -32,8 +32,7 @@ extern struct py_type py_list_type;
 
 #define py_is_list(op) ((op)->type == &py_list_type)
 
-struct py_object* py_list_new(int size);
-int py_list_size(struct py_object*);
+struct py_object* py_list_new(unsigned);
 struct py_object* py_list_get(struct py_object*, int);
 int py_list_set(struct py_object*, int, struct py_object*);
 int py_list_insert(struct py_object*, int, struct py_object*);
