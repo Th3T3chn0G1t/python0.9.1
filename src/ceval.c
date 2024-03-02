@@ -16,7 +16,6 @@
 #include <python/errors.h>
 
 #include <python/bltinmodule.h>
-#include <python/sysmodule.h>
 
 #include <python/frameobject.h>
 #include <python/intobject.h>
@@ -30,7 +29,6 @@
 #include <python/funcobject.h>
 
 struct py_frame* py_frame_current;
-static int needspace;
 
 #ifndef NDEBUG
 # define TRACE
@@ -626,7 +624,6 @@ struct py_object* py_code_eval(
 	int lineno; /* Current line number */
 	struct py_object* retval; /* Return value iff why == WHY_RETURN */
 	char* name; /* Name used by some instructions */
-	FILE* fp; /* Used by print operations */
 
 #ifdef TRACE
 	int trace = py_dict_lookup(globals, "__trace__") != NULL;
@@ -1011,53 +1008,17 @@ struct py_object* py_code_eval(
 				break;
 			}
 
+			/* TODO: De-printify opcodes. */
 			case PY_OP_PRINT_EXPR: {
-				v = POP();
-				fp = py_system_get_file("stdout", stdout);
-
-				/* Print value except if procedure result */
-				if(v != PY_NONE) {
-					py_object_print(v, fp, PY_PRINT_NORMAL);
-					fprintf(fp, "\n");
-				}
-
-				PY_DECREF(v);
-
-				break;
+				PY_FALLTHROUGH;
+				/* FALLTHRU */
 			}
-
 			case PY_OP_PRINT_ITEM: {
 				v = POP();
-				fp = py_system_get_file("stdout", stdout);
-
-				if(needspace) fprintf(fp, " ");
-
-				if(py_is_string(v)) {
-					char* s = py_string_get_value(v);
-					int len = py_string_size(v);
-
-					fwrite(s, 1, len, fp);
-
-					if(len > 0 && s[len - 1] == '\n') { needspace = 0; }
-					else { needspace = 1; }
-				}
-				else {
-					py_object_print(v, fp, PY_PRINT_NORMAL);
-					needspace = 1;
-				}
-
 				PY_DECREF(v);
-
 				break;
 			}
-
-			case PY_OP_PRINT_NEWLINE: {
-				fp = py_system_get_file("stdout", stdout);
-				fprintf(fp, "\n");
-				needspace = 0;
-
-				break;
-			}
+			case PY_OP_PRINT_NEWLINE: ;break;
 
 			case PY_OP_BREAK_LOOP: {
 				why = WHY_BREAK;
@@ -1505,11 +1466,6 @@ struct py_object* py_code_eval(
 					Python main loop. Don't do
 					this for 'finally'. */
 					if(b->type == PY_OP_SETUP_EXCEPT) {
-#if 0 /* Oops, this breaks too many things */
-						py_system_set("exc_traceback", v);
-#endif
-						py_system_set("exc_value", val);
-						py_system_set("exc_type", exc);
 						py_error_clear();
 					}
 					PUSH(v);

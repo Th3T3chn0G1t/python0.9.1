@@ -9,7 +9,7 @@
 #include <python/stringobject.h>
 #include <python/errors.h>
 
-struct py_object* py_string_new_size(str, size)char* str;
+struct py_object* py_string_new_size(str, size)const char* str;
 											   int size;
 {
 	struct py_string* op = malloc(

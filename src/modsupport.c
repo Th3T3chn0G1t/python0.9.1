@@ -17,10 +17,10 @@
 #include <python/floatobject.h>
 
 struct py_object* py_module_init(name, methods)char* name;
-											   struct py_methodlist* methods;
+											   const struct py_methodlist* methods;
 {
 	struct py_object* m, * d, * v;
-	struct py_methodlist* ml;
+	const struct py_methodlist* ml;
 	char namebuf[256];
 	if((m = py_add_module(name)) == NULL) {
 		fprintf(stderr, "initializing module: %s\n", name);

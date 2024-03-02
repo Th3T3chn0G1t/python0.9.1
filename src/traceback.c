@@ -10,7 +10,6 @@
 #include <python/frameobject.h>
 #include <python/traceback.h>
 #include <python/structmember.h>
-#include <python/sysmodule.h>
 #include <python/fgetsintr.h>
 #include <python/errors.h>
 #include <python/env.h>
@@ -179,7 +178,7 @@ int py_traceback_print(v, fp)struct py_object* v;
 		py_error_set_badcall();
 		return -1;
 	}
-	py_system_set("last_traceback", v);
+
 	tb_printinternal((tracebackobject*) v, fp);
 	return 0;
 }

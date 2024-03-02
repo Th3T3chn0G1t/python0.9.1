@@ -7,7 +7,6 @@
 
 #include <python/grammar.h>
 #include <python/node.h>
-#include <python/sysmodule.h>
 #include <python/compile.h>
 #include <python/ceval.h>
 

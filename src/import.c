@@ -10,34 +10,63 @@
 #include <python/token.h>
 #include <python/graminit.h>
 #include <python/import.h>
-#include <python/config.h>
 #include <python/result.h>
 #include <python/parsetok.h>
 #include <python/errors.h>
 #include <python/grammar.h>
 #include <python/pgen.h>
 
-#include <python/sysmodule.h>
-
 #include <python/moduleobject.h>
 #include <python/dictobject.h>
 #include <python/listobject.h>
 #include <python/stringobject.h>
 
+/* TODO: Python global state. */
 static struct py_object* modules;
+struct py_object* py_path;
+
+struct py_object* py_path_new(const char* path) {
+	static const char delim = ':';
+
+	int i, n;
+	const char* p;
+	struct py_object* v, * w;
+
+	n = 1;
+	p = path;
+	while((p = strchr(p, delim)) != NULL) {
+		n++;
+		p++;
+	}
+	v = py_list_new(n);
+	if(v == NULL) {
+		return NULL;
+	}
+	for(i = 0;; i++) {
+		p = strchr(path, delim);
+		if(p == NULL) {
+			p = strchr(path, '\0');
+		} /* End of string */
+		w = py_string_new_size(path, (int) (p - path));
+		if(w == NULL) {
+			PY_DECREF(v);
+			return NULL;
+		}
+		py_list_set(v, i, w);
+		if(*p == '\0') {
+			break;
+		}
+		path = p + 1;
+	}
+	return v;
+}
 
 /* Initialization */
-
-static int init_builtin(char* name);
 
 void py_import_init(void) {
 	if((modules = py_dict_new()) == NULL) {
 		py_fatal("no mem for dictionary of modules");
 	}
-}
-
-struct py_object* py_get_modules(void) {
-	return modules;
 }
 
 struct py_object* py_add_module(name)char* name;
@@ -62,21 +91,19 @@ static FILE* open_module(name, suffix, namebuf)char* name;
 											   char* suffix;
 											   char* namebuf; /* XXX No buffer overflow checks! */
 {
-	struct py_object* path;
 	FILE* fp;
 
-	path = py_system_get("path");
-	if(path == NULL || !py_is_list(path)) {
+	if(py_path == NULL || !py_is_list(py_path)) {
 		strcpy(namebuf, name);
 		strcat(namebuf, suffix);
 		fp = pyopen_r(namebuf);
 	}
 	else {
-		int npath = py_list_size(path);
+		int npath = py_list_size(py_path);
 		int i;
 		fp = NULL;
 		for(i = 0; i < npath; i++) {
-			struct py_object* v = py_list_get(path, i);
+			struct py_object* v = py_list_get(py_path, i);
 			int len;
 			if(!py_is_string(v)) {
 				continue;
@@ -151,14 +178,7 @@ struct py_object* py_import_module(name)char* name;
 {
 	struct py_object* m;
 	if((m = py_dict_lookup(modules, name)) == NULL) {
-		if(init_builtin(name)) {
-			if((m = py_dict_lookup(modules, name)) == NULL) {
-				py_error_set_string(py_system_error, "builtin module missing");
-			}
-		}
-		else {
-			m = load_module(name);
-		}
+		m = load_module(name);
 	}
 	return m;
 }
@@ -185,7 +205,7 @@ static void cleardict(d)struct py_object* d;
 	}
 }
 
-void py_import_done() {
+void py_import_done(void) {
 	if(modules != NULL) {
 		int i;
 		/* Explicitly erase all modules; this is the safest way
@@ -208,19 +228,4 @@ void py_import_done() {
 		cleardict(modules);
 	}
 	PY_DECREF(modules);
-}
-
-
-/* Initialize built-in modules when first imported */
-
-static int init_builtin(name)char* name;
-{
-	int i;
-	for(i = 0; py_init_table[i].name != NULL; i++) {
-		if(strcmp(name, py_init_table[i].name) == 0) {
-			(*py_init_table[i].func)();
-			return 1;
-		}
-	}
-	return 0;
 }

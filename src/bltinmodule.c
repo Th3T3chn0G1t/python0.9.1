@@ -14,7 +14,6 @@
 #include <python/ceval.h>
 #include <python/errors.h>
 
-#include <python/sysmodule.h>
 #include <python/bltinmodule.h>
 
 #include <python/frameobject.h>
@@ -293,26 +292,6 @@ builtin_max(struct py_object* self, struct py_object* v) {
 }
 
 static struct py_object*
-builtin_open(struct py_object* self, struct py_object* v) {
-	struct py_object* name;
-	struct py_object* mode;
-
-	(void) self;
-
-	if(v == NULL || !py_is_tuple(v) || py_tuple_size(v) != 2 ||
-	   !py_is_string(name = py_tuple_get(v, 0)) ||
-	   !py_is_string(mode = py_tuple_get(v, 1))) {
-
-		py_error_set_string(
-				py_type_error, "open() requires 2 string arguments");
-		return NULL;
-	}
-
-	v = py_file_new(py_string_get_value(name), py_string_get_value(mode));
-	return v;
-}
-
-static struct py_object*
 builtin_ord(struct py_object* self, struct py_object* v) {
 	(void) self;
 
@@ -403,38 +382,6 @@ builtin_range(struct py_object* self, struct py_object* v) {
 }
 
 static struct py_object*
-builtin_raw_input(struct py_object* self, struct py_object* v) {
-	FILE* in = py_system_get_file("stdin", stdin);
-	FILE* out = py_system_get_file("stdout", stdout);
-	int err;
-	int n = 1000;
-
-	(void) self;
-
-	if(v != NULL) py_object_print(v, out, PY_PRINT_RAW);
-
-	v = py_string_new_size((char*) NULL, n);
-
-	if(v != NULL) {
-		if((err = py_fgets_intr(py_string_get_value(v), n + 1, in)) !=
-		   PY_RESULT_OK) {
-			py_error_set_input(err);
-			PY_DECREF(v);
-			return NULL;
-		}
-		else {
-			n = strlen(py_string_get_value(v));
-
-			if(n > 0 && py_string_get_value(v)[n - 1] == '\n') n--;
-
-			py_string_resize(&v, n);
-		}
-	}
-
-	return v;
-}
-
-static struct py_object*
 builtin_reload(struct py_object* self, struct py_object* v) {
 	(void) self;
 
@@ -456,21 +403,19 @@ builtin_type(struct py_object* self, struct py_object* v) {
 }
 
 static struct py_methodlist builtin_methods[] = {
-		{ "abs",       builtin_abs },
-		{ "chr",       builtin_chr },
-		{ "dir",       builtin_dir },
-		{ "divmod",    builtin_divmod },
-		{ "float",     builtin_float },
-		{ "int",       builtin_int },
-		{ "len",       builtin_len },
-		{ "max",       builtin_max },
-		{ "min",       builtin_min },
-		{ "open",      builtin_open }, /* XXX move to OS module */
-		{ "ord",       builtin_ord },
-		{ "range",     builtin_range },
-		{ "raw_input", builtin_raw_input },
-		{ "reload",    builtin_reload },
-		{ "type",      builtin_type },
+		{ "abs", builtin_abs },
+		{ "chr", builtin_chr },
+		{ "dir", builtin_dir },
+		{ "divmod", builtin_divmod },
+		{ "float", builtin_float },
+		{ "int", builtin_int },
+		{ "len", builtin_len },
+		{ "max", builtin_max },
+		{ "min", builtin_min },
+		{ "ord", builtin_ord },
+		{ "range", builtin_range },
+		{ "reload", builtin_reload },
+		{ "type", builtin_type },
 		{ NULL, NULL }, };
 
 /* TODO: Centralise all global interpreter state. */

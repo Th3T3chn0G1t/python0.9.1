@@ -37,7 +37,7 @@ extern struct py_type py_string_type;
 
 #define py_is_string(op) ((op)->type == &py_string_type)
 
-struct py_object* py_string_new_size(char*, int);
+struct py_object* py_string_new_size(const char*, int);
 struct py_object* py_string_new(const char*);
 unsigned int py_string_size(struct py_object*);
 char* py_string_get_value(struct py_object*);
