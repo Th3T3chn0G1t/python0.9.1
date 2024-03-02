@@ -40,7 +40,7 @@ struct py_object* py_string_new(const char* str) {
 	return (struct py_object*) op;
 }
 
-char* py_string_get_value(struct py_object* op) {
+char* py_string_get(struct py_object* op) {
 	if(!py_is_string(op)) {
 		py_error_set_badcall();
 		return NULL;
@@ -50,32 +50,6 @@ char* py_string_get_value(struct py_object* op) {
 }
 
 /* Methods */
-
-static void stringprint(op, fp, flags)struct py_string* op;
-									  FILE* fp;
-									  int flags;
-{
-	int i;
-	char c;
-	if(flags & PY_PRINT_RAW) {
-		fwrite(op->value, 1, (int) op->ob.size, fp);
-		return;
-	}
-	fprintf(fp, "'");
-	for(i = 0; i < (int) op->ob.size; i++) {
-		c = op->value[i];
-		if(c == '\'' || c == '\\') {
-			fprintf(fp, "\\%c", c);
-		}
-		else if(c < ' ' || c >= 0177) {
-			fprintf(fp, "\\%03o", c & 0377);
-		}
-		else {
-			putc(c, fp);
-		}
-	}
-	fprintf(fp, "'");
-}
 
 static struct py_object* stringconcat(a, bb)struct py_string* a;
 											struct py_object* bb;
@@ -196,7 +170,6 @@ static struct py_sequencemethods string_as_sequence = {
 struct py_type py_string_type = {
 		{ 1, &py_type_type, 0 }, "string", sizeof(struct py_string),
 		py_object_delete, /* dealloc */
-		stringprint, /* print */
 		0, /* get_attr */
 		0, /* set_attr */
 		stringcompare, /* cmp */
@@ -204,18 +177,6 @@ struct py_type py_string_type = {
 		&string_as_sequence, /* sequencemethods */
 		0, /* mappingmethods */
 };
-
-void py_string_join(pv, w)struct py_object** pv;
-						  struct py_object* w;
-{
-	struct py_object* v;
-	if(*pv == NULL || w == NULL || !py_is_string(*pv)) {
-		return;
-	}
-	v = stringconcat((struct py_string*) *pv, w);
-	py_object_decref(*pv);
-	*pv = v;
-}
 
 /* The following function breaks the notion that strings are immutable:
    it changes the size of a string. We get away with this only if there

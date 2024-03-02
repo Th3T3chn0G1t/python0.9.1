@@ -39,8 +39,7 @@ extern struct py_type py_string_type;
 
 struct py_object* py_string_new_size(const char*, int);
 struct py_object* py_string_new(const char*);
-char* py_string_get_value(struct py_object*);
-void py_string_join(struct py_object**, struct py_object*);
+char* py_string_get(struct py_object*);
 int py_string_resize(struct py_object**, int);
 
 /* Macro, trading safety for speed */

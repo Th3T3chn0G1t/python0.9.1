@@ -108,7 +108,7 @@ static FILE* open_module(name, suffix, namebuf)char* name;
 			if(!py_is_string(v)) {
 				continue;
 			}
-			strcpy(namebuf, py_string_get_value(v));
+			strcpy(namebuf, py_string_get(v));
 			len = py_varobject_size(v);
 			if(len > 0 && namebuf[len - 1] != '/') {
 				namebuf[len++] = '/';

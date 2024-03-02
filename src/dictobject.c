@@ -381,28 +381,6 @@ static void dict_dealloc(dp)dictobject* dp;
 	free(dp);
 }
 
-static void dict_print(dp, fp, flags)dictobject* dp;
-									 FILE* fp;
-									 int flags;
-{
-	int i;
-	int any;
-	dictentry* ep;
-	fprintf(fp, "{");
-	any = 0;
-	for(i = 0, ep = dp->di_table; i < dp->di_size; i++, ep++) {
-		if(ep->de_value != NULL) {
-			if(any++ > 0) {
-				fprintf(fp, "; ");
-			}
-			py_object_print((struct py_object*) ep->de_key, fp, flags);
-			fprintf(fp, ": ");
-			py_object_print(ep->de_value, fp, flags);
-		}
-	}
-	fprintf(fp, "}");
-}
-
 static int dict_length(dp)dictobject* dp;
 {
 	return dp->di_used;
@@ -505,7 +483,6 @@ void py_done_dict(void) {
 struct py_type py_dict_type = {
 		{ 1, &py_type_type, 0 }, "dictionary", sizeof(dictobject),
 		dict_dealloc, /* dealloc */
-		dict_print, /* print */
 		dict_getattr, /* get_attr */
 		0, /* set_attr */
 		0, /* cmp */

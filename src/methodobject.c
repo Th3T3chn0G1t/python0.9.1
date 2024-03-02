@@ -67,26 +67,9 @@ static void meth_dealloc(m)methodobject* m;
 	free(m);
 }
 
-static void meth_print(m, fp, flags)methodobject* m;
-									FILE* fp;
-									int flags;
-{
-	(void) flags;
-
-	if(m->m_self == NULL) {
-		fprintf(fp, "<built-in function '%s'>", m->m_name);
-	}
-	else {
-		fprintf(
-				fp, "<built-in method '%s' of some %s object>", m->m_name,
-				m->m_self->type->name);
-	}
-}
-
 struct py_type py_method_type = {
 		{ 1, &py_type_type, 0 }, "method", sizeof(methodobject),
 		meth_dealloc, /* dealloc */
-		meth_print, /* print */
 		0, /* get_attr */
 		0, /* set_attr */
 		0, /* cmp */

@@ -30,21 +30,6 @@ void* py_object_new(struct py_type* tp) {
 	return op;
 }
 
-
-void py_object_print(struct py_object* op, FILE* fp, enum py_print_mode mode) {
-	if(op == NULL) fprintf(fp, "<nil>");
-	else {
-		if(op->refcount <= 0) {
-			fprintf(fp, "(refcnt %d):", op->refcount);
-		}
-
-		if(op->type->print == NULL) {
-			fprintf(fp, "<%s object at %p>", op->type->name, (void*) op);
-		}
-		else (*op->type->print)(op, fp, mode);
-	}
-}
-
 int py_object_cmp(const struct py_object* v, const struct py_object* w) {
 	struct py_type* tp;
 
@@ -93,20 +78,10 @@ unsigned py_varobject_size(const void* op) {
  * type, so there is exactly one (which is indestructible, by the way).
  */
 
-static void py_none_print(
-		struct py_object* op, FILE* fp, enum py_print_mode mode) {
-
-	(void) op;
-	(void) mode;
-
-	fprintf(fp, "PY_NONE");
-}
-
 /* TODO: Python global state. */
 static struct py_type py_none_type = {
 		{ 1, &py_type_type, 0 }, "None", 0,
 		0, /* dealloc */ /* never called */
-		py_none_print, /* print */
 		0, /* get_attr */
 		0, /* set_attr */
 		0, /* cmp */
@@ -215,7 +190,6 @@ void py_print_refs(FILE* fp) {
 	fprintf(fp, "Remaining objects:\n");
 	for (op = py_refchain.next; op != &py_refchain; op = op->next) {
 		fprintf(fp, "[%d] ", op->refcount);
-		py_object_print(op, fp, PY_PRINT_NORMAL);
 		putc('\n', fp);
 	}
 }

@@ -93,15 +93,6 @@ long py_int_get(op)struct py_object* op;
 
 /* Methods */
 
-static void int_print(v, fp, flags)struct py_int* v;
-								   FILE* fp;
-								   int flags;
-{
-	(void) flags;
-
-	fprintf(fp, "%ld", v->value);
-}
-
 static int int_compare(v, w)struct py_int* v, * w;
 {
 	long i = v->value;
@@ -248,7 +239,6 @@ static struct py_numbermethods int_as_number = {
 struct py_type py_int_type = {
 		{ 1, &py_type_type, 0 }, "int", sizeof(struct py_int),
 		int_dealloc, /* dealloc */
-		int_print, /* print */
 		0, /* get_attr */
 		0, /* set_attr */
 		int_compare, /* cmp */

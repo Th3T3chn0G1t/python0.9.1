@@ -296,7 +296,7 @@ builtin_ord(struct py_object* self, struct py_object* v) {
 		return NULL;
 	}
 
-	return py_int_new((long) (py_string_get_value(v)[0] & 0xff));
+	return py_int_new((long) (py_string_get(v)[0] & 0xff));
 }
 
 static struct py_object*

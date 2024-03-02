@@ -146,22 +146,6 @@ static void list_dealloc(struct py_object* op) {
 	free(op);
 }
 
-static void list_print(
-		struct py_object* op, FILE* fp, enum py_print_mode mode) {
-
-	struct py_list* lp = (struct py_list*) op;
-	unsigned i;
-
-	fprintf(fp, "[");
-
-	for(i = 0; i < lp->ob.size; i++) {
-		if(i > 0) fprintf(fp, ", ");
-		py_object_print(lp->item[i], fp, mode);
-	}
-
-	fprintf(fp, "]");
-}
-
 static int list_compare(const struct py_object* v, const struct py_object* w) {
 	unsigned a = py_varobject_size(v);
 	unsigned b = py_varobject_size(w);
@@ -447,7 +431,6 @@ static struct py_sequencemethods list_as_sequence = {
 struct py_type py_list_type = {
 		{ 1, &py_type_type, 0 }, "list", sizeof(struct py_list),
 		list_dealloc, /* dealloc */
-		list_print, /* print */
 		list_getattr, /* get_attr */
 		0, /* set_attr */
 		list_compare, /* cmp */

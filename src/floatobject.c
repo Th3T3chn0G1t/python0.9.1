@@ -40,46 +40,6 @@ double py_float_get(op)struct py_object* op;
 
 /* Methods */
 
-static void float_buf_repr(buf, v)char* buf;
-								  struct py_float* v;
-{
-	char* cp;
-	/* Subroutine for float_repr and float_print.
-	   We want float numbers to be recognizable as such,
-	   i.e., they should contain a decimal point or an exponent.
-	   However, %g may print the number as an integer;
-	   in such cases, we append ".0" to the string. */
-	sprintf(buf, "%.12g", v->value);
-	cp = buf;
-	if(*cp == '-') {
-		cp++;
-	}
-	for(; *cp != '\0'; cp++) {
-		/* Any non-digit means it's not an integer;
-		   this takes care of NAN and INF as well. */
-		if(!isdigit(*cp)) {
-			break;
-		}
-	}
-	if(*cp == '\0') {
-		*cp++ = '.';
-		*cp++ = '0';
-		*cp++ = '\0';
-	}
-}
-
-static void float_print(v, fp, flags)struct py_float* v;
-									 FILE* fp;
-									 int flags;
-{
-	char buf[100];
-
-	(void) flags;
-
-	float_buf_repr(buf, v);
-	fputs(buf, fp);
-}
-
 static int float_compare(v, w)struct py_float* v, * w;
 {
 	double i = v->value;
@@ -194,7 +154,6 @@ static struct py_numbermethods float_as_number = {
 struct py_type py_float_type = {
 		{ 1, &py_type_type, 0 }, "float", sizeof(struct py_float),
 		py_object_delete, /* dealloc */
-		float_print, /* print */
 		0, /* get_attr */
 		0, /* set_attr */
 		float_compare, /* cmp */

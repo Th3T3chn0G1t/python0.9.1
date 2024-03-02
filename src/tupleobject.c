@@ -82,23 +82,6 @@ static void tupledealloc(struct py_object* op) {
 	free(op);
 }
 
-static void tupleprint(
-		struct py_object* op, FILE* fp, enum py_print_mode flags) {
-
-	int i;
-
-	fprintf(fp, "(");
-	for(i = 0; i < (int) py_varobject_size(op); i++) {
-		if(i > 0) fprintf(fp, ", ");
-
-		py_object_print(((struct py_tuple*) op)->item[i], fp, flags);
-	}
-
-	if(py_varobject_size(op) == 1) fprintf(fp, ",");
-
-	fprintf(fp, ")");
-}
-
 static int tuplecompare(const struct py_object* v, const struct py_object* w) {
 	unsigned a, b;
 	unsigned len;
@@ -211,7 +194,6 @@ struct py_type py_tuple_type = {
 		{ 1, &py_type_type, 0 }, "tuple",
 		sizeof(struct py_tuple) - sizeof(struct py_object*),
 		tupledealloc, /* dealloc */
-		tupleprint, /* print */
 		0, /* get_attr */
 		0, /* set_attr */
 		tuplecompare,  /* cmp*/

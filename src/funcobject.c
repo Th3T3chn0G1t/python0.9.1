@@ -75,7 +75,6 @@ static void func_dealloc(op)funcobject* op;
 struct py_type py_func_type = {
 		{ 1, &py_type_type, 0 }, "function", sizeof(funcobject),
 		func_dealloc, /* dealloc */
-		0, /* print */
 		func_getattr, /* get_attr */
 		0, /* set_attr */
 		0, /* cmp */

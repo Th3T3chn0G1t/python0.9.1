@@ -140,10 +140,8 @@ struct py_type {
 	unsigned size; /* For allocation */
 
 	/* Methods to implement standard operations */
-
 	void (*dealloc)(struct py_object*);
-	/* TODO: Unbake print. */
-	void (*print)(struct py_object*, FILE*, enum py_print_mode);
+
 	struct py_object* (*get_attr)(struct py_object*, const char*);
 	int (*set_attr)(struct py_object*, const char*, struct py_object*);
 	int (*cmp)(const struct py_object*, const struct py_object*);
@@ -169,8 +167,6 @@ extern struct py_type py_type_type; /* The type of type objects */
  */
 void* py_object_new(struct py_type*); /* `void*' for convenience's sake. */
 void py_object_delete(struct py_object* p);
-void py_object_print(struct py_object*, FILE*, enum py_print_mode);
-struct py_object* py_object_repr(struct py_object*);
 int py_object_cmp(const struct py_object*, const struct py_object*);
 struct py_object* py_object_get_attr(struct py_object*, const char*);
 int py_object_set_attr(struct py_object*, const char*, struct py_object*);

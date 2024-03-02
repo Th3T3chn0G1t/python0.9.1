@@ -29,22 +29,6 @@
 
 struct py_frame* py_frame_current;
 
-#ifndef NDEBUG
-# define TRACE
-#endif
-
-#ifdef TRACE
-static int prtrace(struct py_object* v, char* str, int trace) {
-	if(!trace) return 0;
-
-	printf("%s ", str);
-	py_object_print(v, stdout, PY_PRINT_NORMAL);
-	printf("\n");
-
-	return 0;
-}
-#endif
-
 struct py_object* py_get_locals(void) {
 	if(py_frame_current == NULL) return NULL;
 	else return py_frame_current->locals;
@@ -431,8 +415,8 @@ static int cmp_member(struct py_object* v, struct py_object* w) {
 			return -1;
 		}
 
-		c = py_string_get_value(v)[0];
-		s = py_string_get_value(w);
+		c = py_string_get(v)[0];
+		s = py_string_get(w);
 		end = s + py_varobject_size(w);
 
 		while(s < end) {
@@ -603,7 +587,7 @@ enum why_code {
 };
 
 char* getname(struct py_frame* f, int i) {
-	return py_string_get_value(py_list_get(f->code->names, i));
+	return py_string_get(py_list_get(f->code->names, i));
 }
 
 /* Interpreter main loop */
@@ -628,10 +612,6 @@ struct py_object* py_code_eval(
 	struct py_object* retval; /* Return value iff why == WHY_RETURN */
 	char* name; /* Name used by some instructions */
 
-#ifdef TRACE
-	int trace = py_dict_lookup(globals, "__trace__") != NULL;
-#endif
-
 	/* Code access macros */
 
 #define GETNAME(i) getname(f, i)
@@ -652,13 +632,8 @@ struct py_object* py_code_eval(
 #define BASIC_PUSH(v) (*stack_pointer++ = (v))
 #define BASIC_POP() (*--stack_pointer)
 
-#ifdef TRACE
-# define PUSH(v) (BASIC_PUSH(v), prtrace(TOP(), "push", trace))
-# define POP() (prtrace(TOP(), "pop", trace), BASIC_POP())
-#else
-# define PUSH(v) BASIC_PUSH(v)
-# define POP() BASIC_POP()
-#endif
+#define PUSH(v) BASIC_PUSH(v)
+#define POP() BASIC_POP()
 
 	f = py_frame_new(
 			py_frame_current, /* back */
@@ -688,21 +663,6 @@ struct py_object* py_code_eval(
 
 		opcode = NEXTOP();
 		if(opcode >= PY_OP_HAVE_ARGUMENT) oparg = NEXTARG();
-
-#ifdef TRACE
-		/* Instruction tracing */
-
-		if(trace) {
-			if(opcode >= PY_OP_HAVE_ARGUMENT) {
-				printf(
-						"%d: %d, %d\n", (int) (INSTR_OFFSET() - 3), opcode,
-						oparg);
-			}
-			else {
-				printf("%d: %d\n", (int) (INSTR_OFFSET() - 1), opcode);
-			}
-		}
-#endif
 
 		/* Main switch on opcode */
 
@@ -1352,11 +1312,6 @@ struct py_object* py_code_eval(
 				break;
 
 			case PY_OP_SET_LINENO:
-#ifdef TRACE
-				if(trace) {
-					printf("--- Line %d ---\n", oparg);
-				}
-#endif
 				lineno = oparg;
 				break;
 

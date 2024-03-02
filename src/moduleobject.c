@@ -49,7 +49,7 @@ char* py_module_get_name(m)struct py_object* m;
 		py_error_set_badarg();
 		return NULL;
 	}
-	return py_string_get_value(((moduleobject*) m)->md_name);
+	return py_string_get(((moduleobject*) m)->md_name);
 }
 
 /* Methods */
@@ -61,14 +61,6 @@ static void module_dealloc(m)moduleobject* m;
 	if(m->md_dict != NULL)
 		py_object_decref(m->md_dict);
 	free(m);
-}
-
-static void module_print(m, fp, flags)moduleobject* m;
-									  FILE* fp;
-									  int flags;
-{
-	(void) flags;
-	fprintf(fp, "<module '%s'>", py_string_get_value(m->md_name));
 }
 
 static struct py_object* module_getattr(m, name)moduleobject* m;
@@ -114,7 +106,6 @@ struct py_type py_module_type = {
 		"module", /* name */
 		sizeof(moduleobject), /* tp_size */
 		module_dealloc, /* dealloc */
-		module_print, /* print */
 		module_getattr, /* get_attr */
 		module_setattr, /* set_attr */
 		0, /* cmp */

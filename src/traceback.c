@@ -45,7 +45,6 @@ static void tb_dealloc(tb)tracebackobject* tb;
 static struct py_type Tracebacktype = {
 		{ 1, &py_type_type, 0 }, "traceback", sizeof(tracebackobject),
 		tb_dealloc, /* dealloc */
-		0, /* print */
 		tb_getattr, /* get_attr */
 		0, /* set_attr */
 		0, /* cmp */
@@ -147,16 +146,16 @@ static void tb_displayline(fp, filename, lineno)FILE* fp;
 	pyclose(xfp);
 }
 
-static void tb_printinternal(tb, fp)tracebackobject* tb;
-									FILE* fp;
-{
+static void tb_printinternal(tracebackobject* tb, FILE* fp) {
 	while(tb != NULL) {
-		fprintf(fp, "  File \"");
-		py_object_print(tb->tb_frame->code->filename, fp, PY_PRINT_RAW);
-		fprintf(fp, "\", line %d\n", tb->tb_lineno);
+		fprintf(
+				fp, "  File \"%s\", line %d\n",
+				py_string_get(tb->tb_frame->code->filename), tb->tb_lineno);
+
 		tb_displayline(
-				fp, py_string_get_value(tb->tb_frame->code->filename),
+				fp, py_string_get(tb->tb_frame->code->filename),
 				tb->tb_lineno);
+
 		tb = tb->tb_next;
 	}
 }

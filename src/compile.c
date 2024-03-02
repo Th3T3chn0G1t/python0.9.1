@@ -52,7 +52,6 @@ static void code_dealloc(co)struct py_code* co;
 struct py_type py_code_type = {
 		{ 1, &py_type_type, 0 }, "code", sizeof(struct py_code),
 		code_dealloc, /* dealloc */
-		0, /* print */
 		code_getattr, /* get_attr */
 		0, /* set_attr */
 		0, /* cmp */
@@ -195,7 +194,7 @@ static void com_addbyte(c, byte)struct compiling* c;
 			return;
 		}
 	}
-	py_string_get_value(c->c_code)[c->c_nexti++] = byte;
+	py_string_get(c->c_code)[c->c_nexti++] = byte;
 }
 
 static void com_addint(c, x)struct compiling* c;
@@ -230,7 +229,7 @@ static void com_addfwref(c, op, p_anchor)struct compiling* c;
 static void com_backpatch(c, anchor)struct compiling* c;
 									int anchor; /* Must be nonzero */
 {
-	unsigned char* code = (unsigned char*) py_string_get_value(c->c_code);
+	unsigned char* code = (unsigned char*) py_string_get(c->c_code);
 	int target = c->c_nexti;
 	int dist;
 	int prev;
@@ -340,7 +339,7 @@ static struct py_object* parsestr(s)char* s;
 		return py_string_new_size(s, len);
 	}
 	v = py_string_new_size(NULL, len);
-	p = buf = py_string_get_value(v);
+	p = buf = py_string_get(v);
 	while(*s != '\0' && *s != '\'') {
 		if(*s != '\\') {
 			*p++ = *s++;
