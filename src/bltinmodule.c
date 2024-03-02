@@ -10,13 +10,11 @@
 #include <python/import.h>
 #include <python/modsupport.h>
 #include <python/result.h>
-#include <python/fgetsintr.h>
 #include <python/ceval.h>
 #include <python/errors.h>
 
 #include <python/bltinmodule.h>
 
-#include <python/frameobject.h>
 #include <python/intobject.h>
 #include <python/floatobject.h>
 #include <python/stringobject.h>
@@ -63,7 +61,7 @@ builtin_abs(struct py_object* self, struct py_object* v) {
 static struct py_object*
 builtin_chr(struct py_object* self, struct py_object* v) {
 	long x;
-	char s[1];
+	char s;
 
 	(void) self;
 
@@ -79,8 +77,8 @@ builtin_chr(struct py_object* self, struct py_object* v) {
 		return NULL;
 	}
 
-	s[0] = x;
-	return py_string_new_size(s, 1);
+	s = (char) x;
+	return py_string_new_size(&s, 1);
 }
 
 static struct py_object*

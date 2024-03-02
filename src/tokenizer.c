@@ -12,7 +12,6 @@
 /* XXX Should use editor resource to fetch true tab size on Macintosh */
 
 #include <python/std.h>
-#include <python/fgetsintr.h>
 #include <python/tokenizer.h>
 #include <python/result.h>
 #include <python/token.h>
@@ -127,13 +126,17 @@ static int tok_nextc(tok)struct py_tokenizer* tok;
 			tok->end = tok->inp + n;
 		}
 		{
+			char* res;
+
 			tok->cur = tok->inp;
 			if(tok->prompt != NULL && tok->inp == tok->buf) {
 				fprintf(stderr, "%s", tok->prompt);
 				tok->prompt = tok->nextprompt;
 			}
-			tok->done = py_fgets_intr(
-					tok->inp, (int) (tok->end - tok->inp), tok->fp);
+
+			/* TODO: `ferror'/`feof' */
+			res = fgets(tok->inp, (int) (tok->end - tok->inp), tok->fp);
+			tok->done = res ? PY_RESULT_OK : PY_RESULT_EOF;
 		}
 		if(tok->done != PY_RESULT_OK) {
 			if(tok->prompt != NULL) {

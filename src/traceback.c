@@ -10,7 +10,6 @@
 #include <python/frameobject.h>
 #include <python/traceback.h>
 #include <python/structmember.h>
-#include <python/fgetsintr.h>
 #include <python/errors.h>
 #include <python/env.h>
 
@@ -154,10 +153,6 @@ static void tb_printinternal(tb, fp)tracebackobject* tb;
 									FILE* fp;
 {
 	while(tb != NULL) {
-		if(py_intrcheck()) {
-			fprintf(fp, "[interrupted]\n");
-			break;
-		}
 		fprintf(fp, "  File \"");
 		py_object_print(tb->tb_frame->code->filename, fp, PY_PRINT_RAW);
 		fprintf(fp, "\", line %d\n", tb->tb_lineno);

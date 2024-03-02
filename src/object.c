@@ -6,7 +6,6 @@
 /* Generic object operations; and implementation of PY_NONE (py_none_object) */
 
 #include <python/std.h>
-#include <python/fgetsintr.h>
 #include <python/errors.h>
 
 #include <python/object.h>
@@ -38,13 +37,9 @@ void* py_object_new(struct py_type* tp) {
 
 void py_object_print(struct py_object* op, FILE* fp, enum py_print_mode mode) {
 	/* Hacks to make printing a long or recursive object interruptible */
+	/* TODO: This might not be needed anymore. */
 	/* XXX Interrupts should leave a more permanent error */
 	py_print_nesting++;
-
-	if(!py_stop_print && py_intrcheck()) {
-		fprintf(fp, "\n[print interrupted]\n");
-		py_stop_print = 1;
-	}
 
 	if(!py_stop_print) {
 		if(op == NULL) fprintf(fp, "<nil>");
@@ -69,11 +64,6 @@ struct py_object* py_object_repr(struct py_object* v) {
 
 	/* Hacks to make converting a long or recursive object interruptible */
 	py_print_nesting++;
-
-	if(!py_stop_print && py_intrcheck()) {
-		py_stop_print = 1;
-		py_error_set(py_interrupt_error);
-	}
 
 	if(!py_stop_print) {
 		if(v == NULL) w = py_string_new("<NULL>");

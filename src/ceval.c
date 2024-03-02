@@ -10,7 +10,6 @@
 #include <python/import.h>
 #include <python/opcode.h>
 #include <python/traceback.h>
-#include <python/fgetsintr.h>
 #include <python/compile.h>
 #include <python/ceval.h>
 #include <python/errors.h>
@@ -685,21 +684,6 @@ struct py_object* py_code_eval(
 	lineno = -1;
 
 	for(;;) {
-		static int ticker;
-
-		/* Do periodic things */
-
-		if(--ticker < 0) {
-			ticker = 100;
-
-			if(py_intrcheck()) {
-				py_error_set(py_interrupt_error);
-				why = WHY_EXCEPTION;
-				py_traceback_new(f, INSTR_OFFSET(), lineno);
-				break;
-			}
-		}
-
 		/* Extract opcode and argument */
 
 		opcode = NEXTOP();
