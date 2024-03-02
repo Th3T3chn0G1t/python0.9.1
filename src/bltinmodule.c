@@ -24,7 +24,6 @@
 #include <python/listobject.h>
 #include <python/dictobject.h>
 #include <python/tupleobject.h>
-#include <python/fileobject.h>
 
 /* Predefined exceptions */
 
