@@ -162,32 +162,6 @@ static void list_print(
 	fprintf(fp, "]");
 }
 
-struct py_object* list_repr(struct py_object* op) {
-	struct py_list* lp = (struct py_list*) op;
-	struct py_object* s;
-	struct py_object* t;
-	struct py_object* comma;
-	unsigned i;
-
-	s = py_string_new("[");
-	comma = py_string_new(", ");
-	for(i = 0; i < lp->ob.size && s != NULL; i++) {
-		if(i > 0) py_string_join(&s, comma);
-
-		t = py_object_repr(lp->item[i]);
-		py_string_join(&s, t);
-		py_object_decref(t);
-	}
-
-	py_object_decref(comma);
-
-	t = py_string_new("]");
-	py_string_join(&s, t);
-	py_object_decref(t);
-
-	return s;
-}
-
 static int list_compare(const struct py_object* v, const struct py_object* w) {
 	unsigned a = py_varobject_size(v);
 	unsigned b = py_varobject_size(w);
@@ -471,13 +445,12 @@ static struct py_sequencemethods list_as_sequence = {
 };
 
 struct py_type py_list_type = {
-		{ 1, &py_type_type, 0 }, "list", sizeof(struct py_list), 0,
+		{ 1, &py_type_type, 0 }, "list", sizeof(struct py_list),
 		list_dealloc, /* dealloc */
 		list_print, /* print */
 		list_getattr, /* get_attr */
 		0, /* set_attr */
 		list_compare, /* cmp */
-		list_repr, /* repr */
 		0, /* numbermethods */
 		&list_as_sequence, /* sequencemethods */
 		0, /* mappingmethods */

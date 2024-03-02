@@ -44,12 +44,11 @@ static void tb_dealloc(tb)tracebackobject* tb;
 
 static struct py_type Tracebacktype = {
 		{ 1, &py_type_type, 0 }, "traceback", sizeof(tracebackobject),
-		0, tb_dealloc, /* dealloc */
+		tb_dealloc, /* dealloc */
 		0, /* print */
 		tb_getattr, /* get_attr */
 		0, /* set_attr */
 		0, /* cmp */
-		0, /* repr */
 		0, /* numbermethods */
 		0, /* sequencemethods */
 		0, /* mappingmethods */

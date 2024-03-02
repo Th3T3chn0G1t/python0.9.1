@@ -71,13 +71,6 @@ static void module_print(m, fp, flags)moduleobject* m;
 	fprintf(fp, "<module '%s'>", py_string_get_value(m->md_name));
 }
 
-static struct py_object* module_repr(m)moduleobject* m;
-{
-	char buf[100];
-	sprintf(buf, "<module '%.80s'>", py_string_get_value(m->md_name));
-	return py_string_new(buf);
-}
-
 static struct py_object* module_getattr(m, name)moduleobject* m;
 												char* name;
 {
@@ -120,11 +113,9 @@ struct py_type py_module_type = {
 		{ 1, &py_type_type, 0 }, /* size */
 		"module", /* name */
 		sizeof(moduleobject), /* tp_size */
-		0, /* itemsize */
 		module_dealloc, /* dealloc */
 		module_print, /* print */
 		module_getattr, /* get_attr */
 		module_setattr, /* set_attr */
 		0, /* cmp */
-		module_repr, /* repr */
 		0, 0, 0 };

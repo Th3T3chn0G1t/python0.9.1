@@ -81,13 +81,12 @@ static struct py_object* py_class_get_attr(
 }
 
 struct py_type py_class_type = {
-		{ 1, &py_type_type, 0 }, "class", sizeof(struct py_class), 0,
+		{ 1, &py_type_type, 0 }, "class", sizeof(struct py_class),
 		py_class_dealloc, /* dealloc */
 		0, /* print */
 		py_class_get_attr, /* get_attr */
 		0, /* set_attr */
 		0, /* cmp */
-		0, /* repr */
 		0, /* numbermethods */
 		0, /* sequencemethods */
 		0, /* mappingmethods */
@@ -167,12 +166,11 @@ static int classmember_setattr(cm, name, v)classmemberobject* cm;
 
 struct py_type py_class_member_type = {
 		{ 1, &py_type_type, 0 }, "class member",
-		sizeof(classmemberobject), 0, classmember_dealloc, /* dealloc */
+		sizeof(classmemberobject), classmember_dealloc, /* dealloc */
 		0, /* print */
 		classmember_getattr, /* get_attr */
 		classmember_setattr, /* set_attr */
 		0, /* cmp */
-		0, /* repr */
 		0, /* numbermethods */
 		0, /* sequencemethods */
 		0, /* mappingmethods */
@@ -251,12 +249,11 @@ static void classmethod_dealloc(cm)classmethodobject* cm;
 
 struct py_type py_class_method_type = {
 		{ 1, &py_type_type, 0 }, "class method",
-		sizeof(classmethodobject), 0, classmethod_dealloc, /* dealloc */
+		sizeof(classmethodobject), classmethod_dealloc, /* dealloc */
 		0, /* print */
 		classmethod_getattr, /* get_attr */
 		0, /* set_attr */
 		0, /* cmp */
-		0, /* repr */
 		0, /* numbermethods */
 		0, /* sequencemethods */
 		0, /* mappingmethods */

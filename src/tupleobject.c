@@ -99,33 +99,6 @@ static void tupleprint(
 	fprintf(fp, ")");
 }
 
-struct py_object* tuplerepr(v)struct py_tuple* v;
-{
-	struct py_object* s, * t, * comma;
-	int i;
-	s = py_string_new("(");
-	comma = py_string_new(", ");
-	for(i = 0; i < (int) ((struct py_varobject*) v)->size && s != NULL; i++) {
-		if(i > 0) {
-			py_string_join(&s, comma);
-		}
-		t = py_object_repr(v->item[i]);
-		py_string_join(&s, t);
-		if(t != NULL)
-			py_object_decref(t);
-	}
-	py_object_decref(comma);
-	if(((struct py_varobject*) v)->size == 1) {
-		t = py_string_new(",");
-		py_string_join(&s, t);
-		py_object_decref(t);
-	}
-	t = py_string_new(")");
-	py_string_join(&s, t);
-	py_object_decref(t);
-	return s;
-}
-
 static int tuplecompare(const struct py_object* v, const struct py_object* w) {
 	unsigned a, b;
 	unsigned len;
@@ -237,12 +210,11 @@ static struct py_sequencemethods tuple_as_sequence = {
 struct py_type py_tuple_type = {
 		{ 1, &py_type_type, 0 }, "tuple",
 		sizeof(struct py_tuple) - sizeof(struct py_object*),
-		sizeof(struct py_object*), tupledealloc,   /* dealloc */
+		tupledealloc, /* dealloc */
 		tupleprint, /* print */
 		0, /* get_attr */
 		0, /* set_attr */
 		tuplecompare,  /* cmp*/
-		tuplerepr, /* repr */
 		0, /* numbermethods */
 		&tuple_as_sequence, /* sequencemethods */
 		0, /* mappingmethods */

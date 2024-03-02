@@ -102,13 +102,6 @@ static void int_print(v, fp, flags)struct py_int* v;
 	fprintf(fp, "%ld", v->value);
 }
 
-static struct py_object* int_repr(v)struct py_int* v;
-{
-	char buf[20];
-	sprintf(buf, "%ld", v->value);
-	return py_string_new(buf);
-}
-
 static int int_compare(v, w)struct py_int* v, * w;
 {
 	long i = v->value;
@@ -253,13 +246,12 @@ static struct py_numbermethods int_as_number = {
 };
 
 struct py_type py_int_type = {
-		{ 1, &py_type_type, 0 }, "int", sizeof(struct py_int), 0,
+		{ 1, &py_type_type, 0 }, "int", sizeof(struct py_int),
 		int_dealloc, /* dealloc */
 		int_print, /* print */
 		0, /* get_attr */
 		0, /* set_attr */
 		int_compare, /* cmp */
-		int_repr, /* repr */
 		&int_as_number, /* numbermethods */
 		0, /* sequencemethods */
 		0, /* mappingmethods */

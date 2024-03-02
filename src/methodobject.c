@@ -83,28 +83,13 @@ static void meth_print(m, fp, flags)methodobject* m;
 	}
 }
 
-static struct py_object* meth_repr(m)methodobject* m;
-{
-	char buf[200];
-	if(m->m_self == NULL) {
-		sprintf(buf, "<built-in function '%.80s'>", m->m_name);
-	}
-	else {
-		sprintf(
-				buf, "<built-in method '%.80s' of some %.80s object>",
-				m->m_name, m->m_self->type->name);
-	}
-	return py_string_new(buf);
-}
-
 struct py_type py_method_type = {
-		{ 1, &py_type_type, 0 }, "method", sizeof(methodobject), 0,
+		{ 1, &py_type_type, 0 }, "method", sizeof(methodobject),
 		meth_dealloc, /* dealloc */
 		meth_print, /* print */
 		0, /* get_attr */
 		0, /* set_attr */
 		0, /* cmp */
-		meth_repr, /* repr */
 		0, /* numbermethods */
 		0, /* sequencemethods */
 		0, /* mappingmethods */

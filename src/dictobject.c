@@ -403,44 +403,6 @@ static void dict_print(dp, fp, flags)dictobject* dp;
 	fprintf(fp, "}");
 }
 
-static void js(pv, w)struct py_object** pv;
-					 struct py_object* w;
-{
-	py_string_join(pv, w);
-	if(w != NULL)
-		py_object_decref(w);
-}
-
-static struct py_object* dict_repr(dp)dictobject* dp;
-{
-	auto struct py_object* v;
-	struct py_object* w;
-	struct py_object* semi, * colon;
-	int i;
-	int any;
-	dictentry* ep;
-	v = py_string_new("{");
-	semi = py_string_new("; ");
-	colon = py_string_new(": ");
-	any = 0;
-	for(i = 0, ep = dp->di_table; i < dp->di_size; i++, ep++) {
-		if(ep->de_value != NULL) {
-			if(any++) {
-				py_string_join(&v, semi);
-			}
-			js(&v, w = py_object_repr((struct py_object*) ep->de_key));
-			py_string_join(&v, colon);
-			js(&v, w = py_object_repr(ep->de_value));
-		}
-	}
-	js(&v, w = py_string_new("}"));
-	if(semi != NULL)
-		py_object_decref(semi);
-	if(colon != NULL)
-		py_object_decref(colon);
-	return v;
-}
-
 static int dict_length(dp)dictobject* dp;
 {
 	return dp->di_used;
@@ -541,13 +503,12 @@ void py_done_dict(void) {
 }
 
 struct py_type py_dict_type = {
-		{ 1, &py_type_type, 0 }, "dictionary", sizeof(dictobject), 0,
+		{ 1, &py_type_type, 0 }, "dictionary", sizeof(dictobject),
 		dict_dealloc, /* dealloc */
 		dict_print, /* print */
 		dict_getattr, /* get_attr */
 		0, /* set_attr */
 		0, /* cmp */
-		dict_repr, /* repr */
 		0, /* numbermethods */
 		0, /* sequencemethods */
 		&dict_as_mapping, /* mappingmethods */

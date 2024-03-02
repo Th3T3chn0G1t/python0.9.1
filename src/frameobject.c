@@ -42,13 +42,12 @@ static void frame_dealloc(f)struct py_frame* f;
 }
 
 struct py_type py_frame_type = {
-		{ 1, &py_type_type, 0 }, "frame", sizeof(struct py_frame), 0,
+		{ 1, &py_type_type, 0 }, "frame", sizeof(struct py_frame),
 		frame_dealloc, /* dealloc */
 		0, /* print */
 		frame_getattr, /* get_attr */
 		0, /* set_attr */
 		0, /* cmp */
-		0, /* repr */
 		0, /* numbermethods */
 		0, /* sequencemethods */
 		0, /* mappingmethods */

@@ -34,7 +34,6 @@
 #define PY_EQUAL (22)
 #define PY_DOT (23)
 #define PY_PERCENT (24)
-#define PY_BACKQUOTE (25)
 #define PY_LBRACE (26)
 #define PY_RBRACE (27)
 #define PY_OP (28)

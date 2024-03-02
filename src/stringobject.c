@@ -77,45 +77,6 @@ static void stringprint(op, fp, flags)struct py_string* op;
 	fprintf(fp, "'");
 }
 
-static struct py_object* stringrepr(op)struct py_string* op;
-{
-	/* XXX overflow? */
-	int newsize = 2 + 4 * op->ob.size * sizeof(char);
-	struct py_object* v = py_string_new_size(NULL, newsize);
-	if(v == NULL) {
-		return py_error_set_nomem();
-	}
-	else {
-		int i;
-		char c;
-		char* p;
-		py_object_newref(v);
-		v->type = &py_string_type;
-		((struct py_varobject*) v)->size = newsize;
-		p = ((struct py_string*) v)->value;
-		*p++ = '\'';
-		for(i = 0; i < (int) op->ob.size; i++) {
-			c = op->value[i];
-			if(c == '\'' || c == '\\') {
-				*p++ = '\\', *p++ = c;
-			}
-			else if(c < ' ' || c >= 0177) {
-				sprintf(p, "\\%03o", c & 0377);
-				while(*p != '\0')
-					p++;
-
-			}
-			else {
-				*p++ = c;
-			}
-		}
-		*p++ = '\'';
-		*p = '\0';
-		py_string_resize(&v, (int) (p - ((struct py_string*) v)->value));
-		return v;
-	}
-}
-
 static struct py_object* stringconcat(a, bb)struct py_string* a;
 											struct py_object* bb;
 {
@@ -234,15 +195,14 @@ static struct py_sequencemethods string_as_sequence = {
 
 struct py_type py_string_type = {
 		{ 1, &py_type_type, 0 }, "string", sizeof(struct py_string),
-		sizeof(char), py_object_delete,  /*dealloc*/
-		stringprint,    /*print*/
-		0,              /*get_attr*/
-		0,              /*set_attr*/
-		stringcompare,  /*cmp*/
-		stringrepr,     /*repr*/
-		0,              /*numbermethods*/
-		&string_as_sequence,        /*sequencemethods*/
-		0,              /*mappingmethods*/
+		py_object_delete, /* dealloc */
+		stringprint, /* print */
+		0, /* get_attr */
+		0, /* set_attr */
+		stringcompare, /* cmp */
+		0, /* numbermethods */
+		&string_as_sequence, /* sequencemethods */
+		0, /* mappingmethods */
 };
 
 void py_string_join(pv, w)struct py_object** pv;

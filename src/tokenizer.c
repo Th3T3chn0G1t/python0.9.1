@@ -34,7 +34,7 @@ char* py_token_names[] = {
 		"PY_INDENT", "PY_DEDENT", "PY_LPAR", "PY_RPAR", "PY_LSQB", "PY_RSQB",
 		"PY_COLON", "PY_COMMA", "PY_SEMI", "PY_PLUS", "PY_MINUS", "PY_STAR",
 		"PY_SLASH", "PY_VBAR", "PY_AMPER", "PY_LESS", "PY_GREATER", "PY_EQUAL",
-		"PY_DOT", "PY_PERCENT", "PY_BACKQUOTE", "PY_LBRACE", "PY_RBRACE",
+		"PY_DOT", "PY_PERCENT", "PY_LBRACE", "PY_RBRACE",
 		"PY_OP", "<PY_ERRORTOKEN>", "<PY_N_TOKENS>" };
 
 
@@ -189,7 +189,6 @@ int py_token_char(c)int c;
 		case '=': return PY_EQUAL;
 		case '.': return PY_DOT;
 		case '%': return PY_PERCENT;
-		case '`': return PY_BACKQUOTE;
 		case '{': return PY_LBRACE;
 		case '}': return PY_RBRACE;
 		default: return PY_OP;

@@ -778,15 +778,6 @@ struct py_object* py_code_eval(
 				break;
 			}
 
-			case PY_OP_UNARY_CONVERT: {
-				v = POP();
-				x = py_object_repr(v);
-				py_object_decref(v);
-				PUSH(x);
-
-				break;
-			}
-
 			case PY_OP_UNARY_CALL: {
 				v = POP();
 

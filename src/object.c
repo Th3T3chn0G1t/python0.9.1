@@ -21,7 +21,7 @@ long py_ref_total;
  * Do not call them otherwise, they do not initialize the object!
  */
 void* py_object_new(struct py_type* tp) {
-	struct py_object* op = malloc(tp->basicsize);
+	struct py_object* op = malloc(tp->size);
 	if(op == NULL) return py_error_set_nomem();
 
 	py_object_newref(op);
@@ -43,20 +43,6 @@ void py_object_print(struct py_object* op, FILE* fp, enum py_print_mode mode) {
 		}
 		else (*op->type->print)(op, fp, mode);
 	}
-}
-
-struct py_object* py_object_repr(struct py_object* v) {
-	struct py_object* w = NULL;
-
-	if(v == NULL) w = py_string_new("<NULL>");
-	else if(v->type->repr == NULL) {
-		char buf[100];
-		sprintf(buf, "<%.80s object at %p>", v->type->name, (void*) v);
-		w = py_string_new(buf);
-	}
-	else w = (*v->type->repr)(v);
-
-	return w;
 }
 
 int py_object_cmp(const struct py_object* v, const struct py_object* w) {
@@ -116,21 +102,14 @@ static void py_none_print(
 	fprintf(fp, "PY_NONE");
 }
 
-static struct py_object* py_none_repr(struct py_object* op) {
-	(void) op;
-
-	return py_string_new("PY_NONE");
-}
-
 /* TODO: Python global state. */
 static struct py_type py_none_type = {
-		{ 1, &py_type_type, 0 }, "None", 0, 0,
+		{ 1, &py_type_type, 0 }, "None", 0,
 		0, /* dealloc */ /* never called */
 		py_none_print, /* print */
 		0, /* get_attr */
 		0, /* set_attr */
 		0, /* cmp */
-		py_none_repr, /* repr */
 		0, /* numbermethods */
 		0, /* sequencemethods */
 		0, /* mappingmethods */

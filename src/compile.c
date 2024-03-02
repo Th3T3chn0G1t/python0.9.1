@@ -50,13 +50,12 @@ static void code_dealloc(co)struct py_code* co;
 }
 
 struct py_type py_code_type = {
-		{ 1, &py_type_type, 0 }, "code", sizeof(struct py_code), 0,
+		{ 1, &py_type_type, 0 }, "code", sizeof(struct py_code),
 		code_dealloc, /* dealloc */
 		0, /* print */
 		code_getattr, /* get_attr */
 		0, /* set_attr */
 		0, /* cmp */
-		0, /* repr */
 		0, /* numbermethods */
 		0, /* sequencemethods */
 		0, /* mappingmethods */
@@ -445,9 +444,6 @@ static void com_atom(c, n)struct compiling* c;
 			}
 			break;
 		case PY_LBRACE:com_addoparg(c, PY_OP_BUILD_MAP, 0);
-			break;
-		case PY_BACKQUOTE:com_node(c, &n->children[1]);
-			com_addbyte(c, PY_OP_UNARY_CONVERT);
 			break;
 		case PY_NUMBER:
 			if((v = parsenumber(ch->str)) == NULL) {

@@ -137,8 +137,7 @@ struct py_type {
 	struct py_varobject ob;
 
 	const char* name; /* For printing */
-
-	unsigned basicsize, itemsize; /* For allocation */
+	unsigned size; /* For allocation */
 
 	/* Methods to implement standard operations */
 
@@ -148,7 +147,6 @@ struct py_type {
 	struct py_object* (*get_attr)(struct py_object*, const char*);
 	int (*set_attr)(struct py_object*, const char*, struct py_object*);
 	int (*cmp)(const struct py_object*, const struct py_object*);
-	struct py_object* (*repr)(struct py_object*);
 
 	/* Method suites for standard classes */
 	struct py_numbermethods* numbermethods;
@@ -166,7 +164,7 @@ extern struct py_type py_type_type; /* The type of type objects */
  * object and 'typeobj' the address of the corresponding type object.
  * Reference count and type pointer are filled in; the rest of the bytes of
  * the object are *undefined*!  The resulting expression type is 'type *'.
- * The size of the object is actually determined by the basicsize field
+ * The size of the object is actually determined by the size field
  * of the type object.
  */
 void* py_object_new(struct py_type*); /* `void*' for convenience's sake. */

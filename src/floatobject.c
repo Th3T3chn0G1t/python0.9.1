@@ -80,13 +80,6 @@ static void float_print(v, fp, flags)struct py_float* v;
 	fputs(buf, fp);
 }
 
-static struct py_object* float_repr(v)struct py_float* v;
-{
-	char buf[100];
-	float_buf_repr(buf, v);
-	return py_string_new(buf);
-}
-
 static int float_compare(v, w)struct py_float* v, * w;
 {
 	double i = v->value;
@@ -199,13 +192,12 @@ static struct py_numbermethods float_as_number = {
 };
 
 struct py_type py_float_type = {
-		{ 1, &py_type_type, 0 }, "float", sizeof(struct py_float), 0,
+		{ 1, &py_type_type, 0 }, "float", sizeof(struct py_float),
 		py_object_delete, /* dealloc */
 		float_print, /* print */
 		0, /* get_attr */
 		0, /* set_attr */
 		float_compare, /* cmp */
-		float_repr, /* repr */
 		&float_as_number, /* numbermethods */
 		0, /* sequencemethods */
 		0, /* mappingmethods */
