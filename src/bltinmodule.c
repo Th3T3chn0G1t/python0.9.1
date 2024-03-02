@@ -217,7 +217,7 @@ builtin_len(struct py_object* self, struct py_object* v) {
 	tp = v->type;
 
 	if(tp->sequencemethods != NULL) len = py_varobject_size(v);
-	else if(tp->mappingmethods != NULL) len = (*tp->mappingmethods->len)(v);
+	else if(py_is_dict(v)) len = ((struct py_dict*) v)->di_used;
 	else {
 		py_error_set_string(py_type_error, "len() of unsized object");
 		return NULL;

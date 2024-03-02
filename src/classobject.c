@@ -88,7 +88,6 @@ struct py_type py_class_type = {
 		0, /* cmp */
 		0, /* numbermethods */
 		0, /* sequencemethods */
-		0, /* mappingmethods */
 };
 
 /* We're not done yet: next, we define class member objects... */
@@ -171,7 +170,6 @@ struct py_type py_class_member_type = {
 		0, /* cmp */
 		0, /* numbermethods */
 		0, /* sequencemethods */
-		0, /* mappingmethods */
 };
 
 
@@ -253,5 +251,4 @@ struct py_type py_class_method_type = {
 		0, /* cmp */
 		0, /* numbermethods */
 		0, /* sequencemethods */
-		0, /* mappingmethods */
 };

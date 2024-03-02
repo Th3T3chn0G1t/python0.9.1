@@ -121,12 +121,6 @@ struct py_sequencemethods {
 	int (*assign_slice)(struct py_object*, int, int, struct py_object*);
 };
 
-struct py_mappingmethods {
-	int (*len)(struct py_object*);
-	struct py_object* (*ind)(struct py_object*, struct py_object*);
-	int (*assign)(struct py_object*, struct py_object*, struct py_object*);
-};
-
 enum py_print_mode {
 	PY_PRINT_NORMAL,
 	PY_PRINT_RAW
@@ -148,7 +142,6 @@ struct py_type {
 	/* Method suites for standard classes */
 	struct py_numbermethods* numbermethods;
 	struct py_sequencemethods* sequencemethods;
-	struct py_mappingmethods* mappingmethods;
 };
 
 /* TODO: Python global state. */

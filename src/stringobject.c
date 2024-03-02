@@ -175,7 +175,6 @@ struct py_type py_string_type = {
 		stringcompare, /* cmp */
 		0, /* numbermethods */
 		&string_as_sequence, /* sequencemethods */
-		0, /* mappingmethods */
 };
 
 /* The following function breaks the notion that strings are immutable:

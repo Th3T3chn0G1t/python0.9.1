@@ -57,7 +57,6 @@ struct py_type py_code_type = {
 		0, /* cmp */
 		0, /* numbermethods */
 		0, /* sequencemethods */
-		0, /* mappingmethods */
 };
 
 static struct py_code* newcodeobject(

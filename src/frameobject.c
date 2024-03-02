@@ -49,7 +49,6 @@ struct py_type py_frame_type = {
 		0, /* cmp */
 		0, /* numbermethods */
 		0, /* sequencemethods */
-		0, /* mappingmethods */
 };
 
 struct py_frame* py_frame_new(back, code, globals, locals, nvalues, nblocks)

@@ -21,8 +21,8 @@ struct py_frame {
 
 	struct py_frame* back; /* previous frame, or NULL */
 	struct py_code* code; /* code segment */
-	struct py_object* globals; /* global symbol table (dictobject) */
-	struct py_object* locals; /* local symbol table (dictobject) */
+	struct py_object* globals; /* global symbol table (struct py_dict) */
+	struct py_object* locals; /* local symbol table (struct py_dict) */
 	struct py_object** valuestack; /* malloc'ed array */
 	struct py_block* blockstack; /* malloc'ed array */
 	int nvalues; /* size of valuestack */

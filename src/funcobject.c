@@ -78,4 +78,4 @@ struct py_type py_func_type = {
 		func_getattr, /* get_attr */
 		0, /* set_attr */
 		0, /* cmp */
-		0, 0, 0 };
+		0, 0 };

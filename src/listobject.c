@@ -436,5 +436,4 @@ struct py_type py_list_type = {
 		list_compare, /* cmp */
 		0, /* numbermethods */
 		&list_as_sequence, /* sequencemethods */
-		0, /* mappingmethods */
 };

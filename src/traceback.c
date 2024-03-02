@@ -50,7 +50,6 @@ static struct py_type Tracebacktype = {
 		0, /* cmp */
 		0, /* numbermethods */
 		0, /* sequencemethods */
-		0, /* mappingmethods */
 };
 
 #define is_tracebackobject(v) \

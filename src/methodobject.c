@@ -75,7 +75,6 @@ struct py_type py_method_type = {
 		0, /* cmp */
 		0, /* numbermethods */
 		0, /* sequencemethods */
-		0, /* mappingmethods */
 };
 
 /* Find a method in a module's method table.

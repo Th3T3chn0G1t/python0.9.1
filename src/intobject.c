@@ -214,5 +214,4 @@ struct py_type py_int_type = {
 		int_compare, /* cmp */
 		&int_as_number, /* numbermethods */
 		0, /* sequencemethods */
-		0, /* mappingmethods */
 };

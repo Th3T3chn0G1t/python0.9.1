@@ -135,7 +135,6 @@ struct py_type py_float_type = {
 		float_compare, /* cmp */
 		&float_as_number, /* numbermethods */
 		0, /* sequencemethods */
-		0, /* mappingmethods */
 };
 
 /*

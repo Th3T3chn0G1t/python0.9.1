@@ -109,4 +109,4 @@ struct py_type py_module_type = {
 		module_getattr, /* get_attr */
 		module_setattr, /* set_attr */
 		0, /* cmp */
-		0, 0, 0 };
+		0, 0 };

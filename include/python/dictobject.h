@@ -17,6 +17,25 @@
 
 #include <python/object.h>
 
+/*
+ * Invariant for entries: when in use, de_value is not NULL and de_key is
+ * not NULL and not dummy; when not in use, de_value is NULL and de_key
+ * is either NULL or dummy. A dummy key value cannot be replaced by NULL,
+ * since otherwise other keys may be lost.
+ */
+struct py_dictentry {
+	struct py_string* de_key;
+	struct py_object* de_value;
+};
+
+struct py_dict {
+	struct py_object ob;
+	int di_fill;
+	int di_used;
+	int di_size;
+	struct py_dictentry* di_table;
+};
+
 /* TODO: Python global state. */
 extern struct py_type py_dict_type;
 
@@ -24,12 +43,14 @@ extern struct py_type py_dict_type;
 
 struct py_object* py_dict_new(void);
 
-struct py_object* py_dict_lookup(struct py_object* dp, const char* key);
-int py_dict_insert(struct py_object* dp, const char* key, struct py_object* item);
-int py_dict_remove(struct py_object* dp, const char* key);
-int py_dict_size(struct py_object* dp);
-char* py_dict_get_key(struct py_object* dp, int i);
-struct py_object* py_dict_get_keys(struct py_object* dp);
+struct py_object* py_dict_lookup(struct py_object*, const char*);
+struct py_object* py_dict_lookup_object(struct py_object*, struct py_object*);
+int py_dict_assign(struct py_object*, struct py_object*, struct py_object*);
+int py_dict_insert(struct py_object*, const char*, struct py_object*);
+int py_dict_remove(struct py_object*, const char*);
+int py_dict_size(struct py_object*);
+char* py_dict_get_key(struct py_object*, int);
+struct py_object* py_dict_get_keys(struct py_object*);
 
 void py_done_dict(void);
 

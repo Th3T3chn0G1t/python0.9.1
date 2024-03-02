@@ -43,34 +43,16 @@ static unsigned primes[] = {
 static struct py_string* dummy; /* Initialized by first call to py_dict_new() */
 
 /*
-Invariant for entries: when in use, de_value is not NULL and de_key is
-not NULL and not dummy; when not in use, de_value is NULL and de_key
-is either NULL or dummy. A dummy key value cannot be replaced by NULL,
-since otherwise other keys may be lost.
-*/
-typedef struct {
-	struct py_string* de_key;
-	struct py_object* de_value;
-} dictentry;
-
-/*
-To ensure the lookup algorithm terminates, the table size must be a
-prime number and there must be at least one NULL key in the table.
-The value di_fill is the number of non-NULL keys; di_used is the number
-of non-NULL, non-dummy keys.
-To avoid slowing down lookups on a near-full table, we resize the table
-when it is more than half filled.
-*/
-typedef struct {
-	struct py_object ob;
-	int di_fill;
-	int di_used;
-	int di_size;
-	dictentry* di_table;
-} dictobject;
+ * To ensure the lookup algorithm terminates, the table size must be a
+ * prime number and there must be at least one NULL key in the table.
+ * The value di_fill is the number of non-NULL keys; di_used is the number
+ * of non-NULL, non-dummy keys.
+ * To avoid slowing down lookups on a near-full table, we resize the table
+ * when it is more than half filled.
+ */
 
 struct py_object* py_dict_new() {
-	dictobject* dp;
+	struct py_dict* dp;
 	if(dummy == NULL) { /* Auto-initialize dummy */
 		dummy = (struct py_string*) py_string_new("");
 		if(dummy == NULL) {
@@ -82,7 +64,7 @@ struct py_object* py_dict_new() {
 		return NULL;
 	}
 	dp->di_size = primes[0];
-	dp->di_table = (dictentry*) calloc(sizeof(dictentry), dp->di_size);
+	dp->di_table = (struct py_dictentry*) calloc(sizeof(struct py_dictentry), dp->di_size);
 	if(dp->di_table == NULL) {
 		free(dp);
 		return py_error_set_nomem();
@@ -110,11 +92,11 @@ relative prime to the table size (i.e., 1 <= incr < size, since the size
 is a prime number). My choice for incr is somewhat arbitrary.
 */
 
-static dictentry* lookdict(dp, key)dictobject* dp;
+static struct py_dictentry* lookdict(dp, key)struct py_dict* dp;
 								   const char* key;
 {
 	int i, incr;
-	dictentry* freeslot = NULL;
+	struct py_dictentry* freeslot = NULL;
 	unsigned char* p = (unsigned char*) key;
 	unsigned long sum = *p << 7;
 	while(*p != '\0')
@@ -125,7 +107,7 @@ static dictentry* lookdict(dp, key)dictobject* dp;
 		incr = sum % dp->di_size;
 	} while(incr == 0);
 	for(;;) {
-		dictentry* ep = &dp->di_table[i];
+		struct py_dictentry* ep = &dp->di_table[i];
 		if(ep->de_key == NULL) {
 			if(freeslot != NULL) {
 				return freeslot;
@@ -154,8 +136,8 @@ Used both by the internal resize routine and by the public insert routine.
 Eats a reference to key and one to value.
 */
 static void
-insertdict(dictobject* dp, struct py_string* key, struct py_object* value) {
-	dictentry* ep;
+insertdict(struct py_dict* dp, struct py_string* key, struct py_object* value) {
+	struct py_dictentry* ep;
 	ep = lookdict(dp, GETSTRINGVALUE(key));
 	if(ep->de_value != NULL) {
 		py_object_decref(ep->de_value);
@@ -178,12 +160,12 @@ items again. When entries have been deleted, the new table may
 actually be smaller than the old one.
 */
 
-static int dictresize(dictobject* dp) {
+static int dictresize(struct py_dict* dp) {
 	int oldsize = dp->di_size;
 	int newsize;
-	dictentry* oldtable = dp->di_table;
-	dictentry* newtable;
-	dictentry* ep;
+	struct py_dictentry* oldtable = dp->di_table;
+	struct py_dictentry* newtable;
+	struct py_dictentry* ep;
 	int i;
 	newsize = dp->di_size;
 	for(i = 0;; i++) {
@@ -192,7 +174,7 @@ static int dictresize(dictobject* dp) {
 			break;
 		}
 	}
-	newtable = (dictentry*) calloc(sizeof(dictentry), newsize);
+	newtable = (struct py_dictentry*) calloc(sizeof(struct py_dictentry), newsize);
 	if(newtable == NULL) {
 		py_error_set_nomem();
 		return -1;
@@ -216,7 +198,7 @@ struct py_object* py_dict_lookup(struct py_object* op, const char* key) {
 	if(!py_is_dict(op)) {
 		py_fatal("py_dict_lookup on non-dictionary");
 	}
-	return lookdict((dictobject*) op, key)->de_value;
+	return lookdict((struct py_dict*) op, key)->de_value;
 }
 
 #ifdef NOT_USED
@@ -234,7 +216,7 @@ dict2lookup(op, key)
 			   py_error_set_badarg();
 			   return NULL;
 	   }
-	   res = lookdict((dictobject *)op, ((struct py_string *)key)->value)
+	   res = lookdict((struct py_dict *)op, ((struct py_string *)key)->value)
 															   -> de_value;
 	   if (res == NULL)
 			   py_error_set_string(PY_KEY_ERROR, "key not in dictionary");
@@ -246,13 +228,13 @@ static int dict2insert(op, key, value)struct py_object* op;
 									  struct py_object* key;
 									  struct py_object* value;
 {
-	dictobject* dp;
+	struct py_dict* dp;
 	struct py_string* keyobj;
 	if(!py_is_dict(op)) {
 		py_error_set_badcall();
 		return -1;
 	}
-	dp = (dictobject*) op;
+	dp = (struct py_dict*) op;
 	if(!py_is_string(key)) {
 		py_error_set_badarg();
 		return -1;
@@ -291,13 +273,13 @@ int py_dict_insert(op, key, value)struct py_object* op;
 int py_dict_remove(op, key)struct py_object* op;
 						   const char* key;
 {
-	dictobject* dp;
-	dictentry* ep;
+	struct py_dict* dp;
+	struct py_dictentry* ep;
 	if(!py_is_dict(op)) {
 		py_error_set_badcall();
 		return -1;
 	}
-	dp = (dictobject*) op;
+	dp = (struct py_dict*) op;
 	ep = lookdict(dp, key);
 	if(ep->de_value == NULL) {
 		py_error_set_string(PY_KEY_ERROR, "key not in dictionary");
@@ -328,7 +310,7 @@ int py_dict_size(op)struct py_object* op;
 		py_error_set_badcall();
 		return -1;
 	}
-	return ((dictobject*) op)->di_size;
+	return ((struct py_dict*) op)->di_size;
 }
 
 static struct py_object* getdict2key(op, i)struct py_object* op;
@@ -336,12 +318,12 @@ static struct py_object* getdict2key(op, i)struct py_object* op;
 {
 	/* XXX This can't return errors since its callers assume
 	   that NULL means there was no key at that point */
-	dictobject* dp;
+	struct py_dict* dp;
 	if(!py_is_dict(op)) {
 		/* py_error_set_badcall(); */
 		return NULL;
 	}
-	dp = (dictobject*) op;
+	dp = (struct py_dict*) op;
 	if(i < 0 || i >= dp->di_size) {
 		/* py_error_set_badarg(); */
 		return NULL;
@@ -365,10 +347,10 @@ char* py_dict_get_key(op, i)struct py_object* op;
 
 /* Methods */
 
-static void dict_dealloc(dp)dictobject* dp;
+static void dict_dealloc(dp)struct py_dict* dp;
 {
 	int i;
-	dictentry* ep;
+	struct py_dictentry* ep;
 	for(i = 0, ep = dp->di_table; i < dp->di_size; i++, ep++) {
 		if(ep->de_key != NULL)
 			py_object_decref(ep->de_key);
@@ -381,45 +363,30 @@ static void dict_dealloc(dp)dictobject* dp;
 	free(dp);
 }
 
-static int dict_length(dp)dictobject* dp;
-{
-	return dp->di_used;
-}
+struct py_object* py_dict_lookup_object(
+		struct py_object* dp, struct py_object* v) {
 
-static struct py_object* dict_subscript(dp, v)dictobject* dp;
-											  struct py_object* v;
-{
 	if(!py_is_string(v)) {
 		py_error_set_badarg();
 		return NULL;
 	}
-	v = lookdict(dp, GETSTRINGVALUE((struct py_string*) v))->de_value;
-	if(v == NULL) {
-		py_error_set_string(PY_KEY_ERROR, "key not in dictionary");
-	}
-	else
-		py_object_incref(v);
+
+	v = lookdict((struct py_dict*) dp, py_string_get(v))->de_value;
+
+	if(v == NULL) py_error_set_string(PY_KEY_ERROR, "key not in dictionary");
+	else py_object_incref(v);
+
 	return v;
 }
 
-static int dict_ass_sub(dp, v, w)dictobject* dp;
-								 struct py_object* v, * w;
-{
-	if(w == NULL) {
-		return dict2remove((struct py_object*) dp, v);
-	}
-	else {
-		return dict2insert((struct py_object*) dp, v, w);
-	}
+int py_dict_assign(
+		struct py_object* dp, struct py_object* v, struct py_object* w) {
+
+	if(w == NULL) return dict2remove((struct py_object*) dp, v);
+	else return dict2insert((struct py_object*) dp, v, w);
 }
 
-static struct py_mappingmethods dict_as_mapping = {
-		dict_length,    /*len*/
-		dict_subscript, /*ind*/
-		dict_ass_sub,   /*assign*/
-};
-
-static struct py_object* dict_keys(dp, args)dictobject* dp;
+static struct py_object* dict_keys(dp, args)struct py_dict* dp;
 											struct py_object* args;
 {
 	struct py_object* v;
@@ -448,10 +415,10 @@ struct py_object* py_dict_get_keys(dp)struct py_object* dp;
 		py_error_set_badcall();
 		return NULL;
 	}
-	return dict_keys((dictobject*) dp, (struct py_object*) NULL);
+	return dict_keys((struct py_dict*) dp, (struct py_object*) NULL);
 }
 
-static struct py_object* dict_has_key(dp, args)dictobject* dp;
+static struct py_object* dict_has_key(dp, args)struct py_dict* dp;
 											   struct py_object* args;
 {
 	struct py_object* key;
@@ -470,7 +437,7 @@ static struct py_methodlist dict_methods[] = {
 		{ NULL, NULL }           /* sentinel */
 };
 
-static struct py_object* dict_getattr(dp, name)dictobject* dp;
+static struct py_object* dict_getattr(dp, name)struct py_dict* dp;
 											   char* name;
 {
 	return py_methodlist_find(dict_methods, (struct py_object*) dp, name);
@@ -481,12 +448,11 @@ void py_done_dict(void) {
 }
 
 struct py_type py_dict_type = {
-		{ 1, &py_type_type, 0 }, "dictionary", sizeof(dictobject),
+		{ 1, &py_type_type, 0 }, "dictionary", sizeof(struct py_dict),
 		dict_dealloc, /* dealloc */
 		dict_getattr, /* get_attr */
 		0, /* set_attr */
 		0, /* cmp */
 		0, /* numbermethods */
 		0, /* sequencemethods */
-		&dict_as_mapping, /* mappingmethods */
 };

@@ -199,5 +199,4 @@ struct py_type py_tuple_type = {
 		tuplecompare,  /* cmp*/
 		0, /* numbermethods */
 		&tuple_as_sequence, /* sequencemethods */
-		0, /* mappingmethods */
 };

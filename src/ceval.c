@@ -49,9 +49,7 @@ static int py_object_truthy(struct py_object* v) {
 		return py_varobject_size(v) != 0;
 	}
 
-	if(v->type->mappingmethods != NULL) {
-		return (*v->type->mappingmethods->len)(v) != 0;
-	}
+	if(py_is_dict(v)) return ((struct py_dict*) v)->di_used != 0;
 
 	if(v == PY_NONE) return 0;
 
@@ -254,7 +252,7 @@ static struct py_object*
 py_object_ind(struct py_object* v, struct py_object* w) {
 	struct py_type* tp = v->type;
 
-	if(tp->sequencemethods == NULL && tp->mappingmethods == NULL) {
+	if(tp->sequencemethods == NULL && !py_is_dict(v)) {
 		py_error_set_string(py_type_error, "unsubscriptable object");
 		return NULL;
 	}
@@ -271,7 +269,7 @@ py_object_ind(struct py_object* v, struct py_object* w) {
 		return (*tp->sequencemethods->ind)(v, i);
 	}
 
-	return (*tp->mappingmethods->ind)(v, w);
+	return py_dict_lookup_object(v, w);
 }
 
 static struct py_object*
@@ -329,26 +327,19 @@ apply_slice(struct py_object* u, struct py_object* v, struct py_object* w) {
 /* w[key] = v */
 static int assign_subscript(
 		struct py_object* w, struct py_object* key, struct py_object* v) {
-	struct py_type* tp = w->type;
-	struct py_sequencemethods* sq;
-	struct py_mappingmethods* mp;
-	int (* func)();
 
-	sq = tp->sequencemethods;
-	mp = tp->mappingmethods;
+	struct py_sequencemethods* sq = w->type->sequencemethods;
 
-	if(sq != NULL && (func = sq->assign_item) != NULL) {
+	if(sq != NULL && sq->assign_item != NULL) {
 		if(!py_is_int(key)) {
 			py_error_set_string(
 					py_type_error, "sequence subscript must be integer");
 			return -1;
 		}
 
-		else { return (*func)(w, (int) py_int_get(key), v); }
+		return sq->assign_item(w, (int) py_int_get(key), v);
 	}
-	else if(mp != NULL && (func = mp->assign) != NULL) {
-		return (*func)(w, key, v);
-	}
+	else if(py_is_dict(w)) return py_dict_assign(w, key, v);
 	else {
 		py_error_set_string(
 				py_type_error, "can't assign to this subscripted object");
