@@ -19,7 +19,6 @@ extern struct py_object* py_type_error;
 extern struct py_object* py_memory_error;
 extern struct py_object* py_name_error;
 extern struct py_object* py_system_error;
-extern struct py_object* py_interrupt_error;
 
 /* Some more planned for the future */
 

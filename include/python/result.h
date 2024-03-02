@@ -11,9 +11,9 @@
 #ifndef PY_RESULT_H
 #define PY_RESULT_H
 
+/* TODO: Enum. */
 #define PY_RESULT_OK (10) /* No error */
 #define PY_RESULT_EOF (11) /* (Unexpected) EOF read */
-#define PY_RESULT_INTERRUPT (12) /* Interrupted */
 #define PY_RESULT_TOKEN (13) /* Bad token */
 #define PY_RESULT_SYNTAX (14) /* Syntax error */
 #define PY_RESULT_OOM (15) /* Ran out of memory */

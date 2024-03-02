@@ -154,7 +154,6 @@ struct py_type {
 
 /* TODO: Python global state. */
 extern struct py_type py_type_type; /* The type of type objects */
-extern int py_stop_print; /* Set when printing is interrupted */
 
 /* Generic operations on objects */
 /*

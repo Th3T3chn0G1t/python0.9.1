@@ -31,7 +31,6 @@ struct py_object* py_type_error;
 struct py_object* py_memory_error;
 struct py_object* py_name_error;
 struct py_object* py_system_error;
-struct py_object* py_interrupt_error;
 
 static struct py_object*
 builtin_abs(struct py_object* self, struct py_object* v) {
@@ -439,8 +438,6 @@ static void initerrors(void) {
 	py_memory_error = newstdexception("py_memory_error", "out of memory");
 	py_name_error = newstdexception("py_name_error", "undefined name");
 	py_system_error = newstdexception("py_system_error", "system error");
-	py_interrupt_error = newstdexception(
-			"py_interrupt_error", "keyboard interrupt");
 }
 
 void py_errors_done(void) {
@@ -450,7 +447,6 @@ void py_errors_done(void) {
 	PY_DECREF(py_memory_error);
 	PY_DECREF(py_name_error);
 	PY_DECREF(py_system_error);
-	PY_DECREF(py_interrupt_error);
 }
 
 void py_builtin_init(void) {

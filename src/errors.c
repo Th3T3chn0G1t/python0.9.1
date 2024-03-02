@@ -141,8 +141,6 @@ void py_error_set_input(err)int err;
 			py_error_set_string(
 					py_runtime_error, "illegal token");
 			break;
-		case PY_RESULT_INTERRUPT:py_error_set(py_interrupt_error);
-			break;
 		case PY_RESULT_OOM:py_error_set_nomem();
 			break;
 		case PY_RESULT_EOF:py_error_set(py_eof_error);

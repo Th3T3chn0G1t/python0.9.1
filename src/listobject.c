@@ -171,7 +171,7 @@ static void list_print(op, fp, flags)struct py_list* op;
 {
 	int i;
 	fprintf(fp, "[");
-	for(i = 0; i < (int) op->size && !py_stop_print; i++) {
+	for(i = 0; i < (int) op->size; i++) {
 		if(i > 0) {
 			fprintf(fp, ", ");
 		}

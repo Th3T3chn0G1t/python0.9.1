@@ -6,6 +6,3 @@
 
 - introduce macros to set/inspect errno for syscalls, to support things
   like getoserr()
-
-- fix interrupt handling (interruptable system calls should call
-  py_intrcheck() to clear the interrupt status)

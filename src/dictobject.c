@@ -390,8 +390,7 @@ static void dict_print(dp, fp, flags)dictobject* dp;
 	dictentry* ep;
 	fprintf(fp, "{");
 	any = 0;
-	for(i = 0, ep = dp->di_table; i < dp->di_size && !py_stop_print;
-			i++, ep++) {
+	for(i = 0, ep = dp->di_table; i < dp->di_size; i++, ep++) {
 		if(ep->de_value != NULL) {
 			if(any++ > 0) {
 				fprintf(fp, "; ");
@@ -424,8 +423,7 @@ static struct py_object* dict_repr(dp)dictobject* dp;
 	semi = py_string_new("; ");
 	colon = py_string_new(": ");
 	any = 0;
-	for(i = 0, ep = dp->di_table; i < dp->di_size && !py_stop_print;
-			i++, ep++) {
+	for(i = 0, ep = dp->di_table; i < dp->di_size; i++, ep++) {
 		if(ep->de_value != NULL) {
 			if(any++) {
 				py_string_join(&v, semi);

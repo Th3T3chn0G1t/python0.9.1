@@ -14,10 +14,6 @@
 #ifdef PY_REF_DEBUG
 long py_ref_total;
 #endif
-int py_stop_print; /* Flag to indicate printing must be stopped */
-
-/* TODO: Python global state. */
-static int py_print_nesting;
 
 /*
  * Object allocation routines used by the NEWOBJ macro.
@@ -36,52 +32,29 @@ void* py_object_new(struct py_type* tp) {
 
 
 void py_object_print(struct py_object* op, FILE* fp, enum py_print_mode mode) {
-	/* Hacks to make printing a long or recursive object interruptible */
-	/* TODO: This might not be needed anymore. */
-	/* XXX Interrupts should leave a more permanent error */
-	py_print_nesting++;
-
-	if(!py_stop_print) {
-		if(op == NULL) fprintf(fp, "<nil>");
-		else {
-			if(op->refcount <= 0) {
-				fprintf(fp, "(refcnt %d):", op->refcount);
-			}
-
-			if(op->type->print == NULL) {
-				fprintf(fp, "<%s object at %p>", op->type->name, (void*) op);
-			}
-			else (*op->type->print)(op, fp, mode);
+	if(op == NULL) fprintf(fp, "<nil>");
+	else {
+		if(op->refcount <= 0) {
+			fprintf(fp, "(refcnt %d):", op->refcount);
 		}
-	}
 
-	py_print_nesting--;
-	if(py_print_nesting == 0) py_stop_print = 0;
+		if(op->type->print == NULL) {
+			fprintf(fp, "<%s object at %p>", op->type->name, (void*) op);
+		}
+		else (*op->type->print)(op, fp, mode);
+	}
 }
 
 struct py_object* py_object_repr(struct py_object* v) {
 	struct py_object* w = NULL;
 
-	/* Hacks to make converting a long or recursive object interruptible */
-	py_print_nesting++;
-
-	if(!py_stop_print) {
-		if(v == NULL) w = py_string_new("<NULL>");
-		else if(v->type->repr == NULL) {
-			char buf[100];
-			sprintf(buf, "<%.80s object at %p>", v->type->name, (void*) v);
-			w = py_string_new(buf);
-		}
-		else w = (*v->type->repr)(v);
-
-		if(py_stop_print) {
-			PY_XDECREF(w);
-			w = NULL;
-		}
+	if(v == NULL) w = py_string_new("<NULL>");
+	else if(v->type->repr == NULL) {
+		char buf[100];
+		sprintf(buf, "<%.80s object at %p>", v->type->name, (void*) v);
+		w = py_string_new(buf);
 	}
-
-	py_print_nesting--;
-	if(py_print_nesting == 0) py_stop_print = 0;
+	else w = (*v->type->repr)(v);
 
 	return w;
 }
