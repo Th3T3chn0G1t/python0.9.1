@@ -57,7 +57,7 @@
 #ifndef NDEBUG
 /* Turn on heavy reference debugging */
 /* TODO: Fix this */
-/* # define PY_TRACE_REFS */
+/* # define PY_REF_TRACE */
 /* Turn on reference counting */
 # define PY_REF_DEBUG
 #endif
@@ -70,7 +70,7 @@ struct py_object {
 	unsigned refcount;
 	struct py_type* type;
 
-#ifdef PY_TRACE_REFS
+#ifdef PY_REF_TRACE
 	struct py_object* next;
 	struct py_object* prev;
 #endif
@@ -82,7 +82,7 @@ struct py_varobject {
 
 	unsigned size;
 
-#ifdef PY_TRACE_REFS
+#ifdef PY_REF_TRACE
 	struct py_object* next;
 	struct py_object* prev;
 #endif
@@ -180,12 +180,12 @@ int py_object_set_attr(struct py_object*, const char*, struct py_object*);
 unsigned py_varobject_size(const void*);
 
 /*
- * The macros py_object_incref(op) and py_object_decref(op) are used to increment or decrement
- * reference counts. py_object_decref calls the object's deallocator function; for
- * objects that don't contain references to other objects or heap memory
+ * py_object_incref and py_object_decref are used to increment or decrement
+ * reference counts. py_object_decref calls the object's deallocator function;
+ * for objects that don't contain references to other objects or heap memory
  * this can be the standard function free(). Both macros can be used
  * wherever a void expression is allowed. The argument shouldn't be a
- * NIL pointer. The macro py_object_newref(op) is used only to initialize reference
+ * NIL pointer. py_object_newref is used only to initialize reference
  * counts to 1; it is defined here for convenience.
  *
  * We assume that the reference count field can never overflow; this can
@@ -199,15 +199,17 @@ unsigned py_varobject_size(const void*);
  * decision that's up to the implementer of each new type so if you want,
  * you can count such references to the type object.)
  *
- * *** WARNING*** The py_object_decref macro must have a side-effect-free argument
+ * *** WARNING*** py_object_decref must have a side-effect-free argument
  * since it may evaluate its argument multiple times. (The alternative
  * would be to mace it a proper function or assign it to a global temporary
  * variable first, both of which are slower; and in a multi-threaded
  * environment the global variable trick is not safe.)
  */
 
+#ifdef PY_REF_DEBUG
 /* TODO: Python global state. */
 extern long py_ref_total;
+#endif
 
 void* py_object_incref(void*);
 void* py_object_decref(void*);
@@ -215,7 +217,7 @@ void* py_object_decref(void*);
 void* py_object_newref(void*);
 void py_object_unref(void*);
 
-#ifdef PY_TRACE_REFS
+#ifdef PY_REF_TRACE
 void py_print_refs(FILE*);
 #endif
 

@@ -31,6 +31,6 @@ extern struct py_type py_code_type;
 
 #define py_is_code(op) (((struct py_object*) (op))->type == &py_code_type)
 
-struct py_code* py_compile(struct py_node*, char *);
+struct py_code* py_compile(struct py_node*, const char*);
 
 #endif

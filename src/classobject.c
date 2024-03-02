@@ -230,7 +230,7 @@ struct py_object* py_classmethod_get_self(cm)struct py_object* cm;
 
 #define OFF(x) offsetof(classmethodobject, x)
 
-static struct py_memberlist classmethod_memberlist[] = {
+static struct py_structmember classmethod_memberlist[] = {
 		{ "cm_func", PY_TYPE_OBJECT, OFF(cm_func), PY_READWRITE },
 		{ "cm_self", PY_TYPE_OBJECT, OFF(cm_self), PY_READWRITE },
 		{ NULL,      0, 0,                         0 }  /* Sentinel */
@@ -239,7 +239,7 @@ static struct py_memberlist classmethod_memberlist[] = {
 static struct py_object* classmethod_getattr(cm, name)classmethodobject* cm;
 													  char* name;
 {
-	return py_memberlist_get((char*) cm, classmethod_memberlist, name);
+	return py_struct_get(cm, classmethod_memberlist, name);
 }
 
 static void classmethod_dealloc(cm)classmethodobject* cm;

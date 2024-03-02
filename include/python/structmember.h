@@ -13,10 +13,12 @@
 /*
  * An array of memberlist structures defines the name, type and offset
  * of selected members of a C structure. These can be read by
- * py_memberlist_get() and set by py_memberlist_set() (except if their PY_READONLY flag
+ * py_struct_get() and set by py_struct_set() (except if their PY_READONLY flag
  * is set). The array must be terminated with an entry whose name
  * pointer is NULL.
  */
+
+/* TODO: We can remove this for our purposes. */
 
 /* Types */
 enum py_structtype {
@@ -34,14 +36,14 @@ enum py_readonly {
 	PY_READONLY
 };
 
-struct py_memberlist {
+struct py_structmember {
 	char* name;
 	enum py_structtype type;
 	int offset;
 	enum py_readonly readonly;
 };
 
-struct py_object* py_memberlist_get(char*, struct py_memberlist*, const char*);
-int py_memberlist_set(char*, struct py_memberlist*, char*, struct py_object*);
+struct py_object* py_struct_get(void*, struct py_structmember*, const char*);
+int py_struct_set(char*, struct py_structmember*, char*, struct py_object*);
 
 #endif

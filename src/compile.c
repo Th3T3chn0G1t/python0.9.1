@@ -26,7 +26,7 @@
 
 #define OFF(x) offsetof(struct py_code, x)
 
-static struct py_memberlist code_memberlist[] = {
+static struct py_structmember code_memberlist[] = {
 		{ "code",     PY_TYPE_OBJECT, OFF(code),     PY_READWRITE },
 		{ "consts",   PY_TYPE_OBJECT, OFF(consts),   PY_READWRITE },
 		{ "names",    PY_TYPE_OBJECT, OFF(names),    PY_READWRITE },
@@ -37,7 +37,7 @@ static struct py_memberlist code_memberlist[] = {
 static struct py_object* code_getattr(co, name)struct py_code* co;
 											   char* name;
 {
-	return py_memberlist_get((char*) co, code_memberlist, name);
+	return py_struct_get(co, code_memberlist, name);
 }
 
 static void code_dealloc(co)struct py_code* co;
@@ -62,23 +62,20 @@ struct py_type py_code_type = {
 		0, /* mappingmethods */
 };
 
-static struct py_code*
-newcodeobject(struct py_object*, struct py_object*, struct py_object*, char*);
+static struct py_code* newcodeobject(
+		struct py_object* code, struct py_object* consts,
+		struct py_object* names, const char* filename) {
 
-static struct py_code* newcodeobject(code, consts, names, filename)
-		struct py_object* code;
-		struct py_object* consts;
-		struct py_object* names;
-		char* filename;
-{
 	struct py_code* co;
 	int i;
+
 	/* Check argument types */
 	if(code == NULL || !py_is_string(code) || consts == NULL ||
 	   !py_is_list(consts) || names == NULL || !py_is_list(names)) {
 		py_error_set_badcall();
 		return NULL;
 	}
+
 	/* Make sure the list of names contains only strings */
 	for(i = py_varobject_size(names); --i >= 0;) {
 		struct py_object* v = py_list_get(names, i);
@@ -106,18 +103,18 @@ static struct py_code* newcodeobject(code, consts, names, filename)
 
 /* Data structure used internally */
 struct compiling {
-	struct py_object* c_code;         /* string */
-	struct py_object* c_consts;       /* list of objects */
-	struct py_object* c_names;        /* list of strings (names) */
-	int c_nexti;            /* index into c_code */
-	int c_errors;           /* counts errors occurred */
-	int c_infunction;       /* set when compiling a function */
-	int c_loops;            /* counts nested loops */
-	char* c_filename;       /* filename of current node */
+	struct py_object* c_code; /* string */
+	struct py_object* c_consts; /* list of objects */
+	struct py_object* c_names; /* list of strings (names) */
+	int c_nexti; /* index into c_code */
+	int c_errors; /* counts errors occurred */
+	int c_infunction; /* set when compiling a function */
+	int c_loops; /* counts nested loops */
+	const char* c_filename; /* filename of current node */
 };
 
 /* Prototypes */
-static int com_init(struct compiling*, char*);
+static int com_init(struct compiling*, const char*);
 
 static void com_free(struct compiling*);
 
@@ -143,18 +140,13 @@ static int com_addname(struct compiling*, struct py_object*);
 
 static void com_addopname(struct compiling*, int, struct py_node*);
 
-static int com_init(c, filename)struct compiling* c;
-								char* filename;
-{
-	if((c->c_code = py_string_new_size((char*) NULL, 0)) == NULL) {
-		goto fail_3;
-	}
-	if((c->c_consts = py_list_new(0)) == NULL) {
-		goto fail_2;
-	}
-	if((c->c_names = py_list_new(0)) == NULL) {
-		goto fail_1;
-	}
+static int com_init(struct compiling* c, const char* filename) {
+	if((c->c_code = py_string_new_size(NULL, 0)) == NULL) goto fail_3;
+
+	if((c->c_consts = py_list_new(0)) == NULL) goto fail_2;
+
+	if((c->c_names = py_list_new(0)) == NULL) goto fail_1;
+
 	c->c_nexti = 0;
 	c->c_errors = 0;
 	c->c_infunction = 0;
@@ -348,7 +340,7 @@ static struct py_object* parsestr(s)char* s;
 	if(strchr(s, '\\') == NULL) {
 		return py_string_new_size(s, len);
 	}
-	v = py_string_new_size((char*) NULL, len);
+	v = py_string_new_size(NULL, len);
 	p = buf = py_string_get_value(v);
 	while(*s != '\0' && *s != '\'') {
 		if(*s != '\\') {
@@ -1654,22 +1646,19 @@ static void compile_node(c, n)struct compiling* c;
 	}
 }
 
-struct py_code* py_compile(n, filename)struct py_node* n;
-									   char* filename;
-{
+struct py_code* py_compile(struct py_node* n, const char* filename) {
 	struct compiling sc;
 	struct py_code* co;
-	if(!com_init(&sc, filename)) {
-		return NULL;
-	}
+
+	if(!com_init(&sc, filename)) return NULL;
+
 	compile_node(&sc, n);
 	com_done(&sc);
 	if(sc.c_errors == 0) {
 		co = newcodeobject(sc.c_code, sc.c_consts, sc.c_names, filename);
 	}
-	else {
-		co = NULL;
-	}
+	else co = NULL;
+
 	com_free(&sc);
 	return co;
 }

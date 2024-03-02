@@ -13,45 +13,61 @@
 #include <python/floatobject.h>
 #include <python/stringobject.h>
 
-struct py_object*
-py_memberlist_get(char* addr, struct py_memberlist* mlist, const char* name) {
-	struct py_memberlist* l;
+struct py_object* py_struct_get(
+		void* addr, struct py_structmember* mlist, const char* name) {
+
+	struct py_structmember* l;
+	char* p = addr;
 
 	for(l = mlist; l->name != NULL; l++) {
 		if(strcmp(l->name, name) == 0) {
 			struct py_object* v;
-			addr += l->offset;
+			p += l->offset;
 			switch(l->type) {
-				case PY_TYPE_SHORT: v = py_int_new((long) *(short*) addr);
+				case PY_TYPE_SHORT: {
+					v = py_int_new((long) *(short*) p);
 					break;
-				case PY_TYPE_INT: v = py_int_new((long) *(int*) addr);
+				}
+				case PY_TYPE_INT: {
+					v = py_int_new((long) *(int*) p);
 					break;
-				case PY_TYPE_LONG: v = py_int_new(*(long*) addr);
+				}
+				case PY_TYPE_LONG: {
+					v = py_int_new(*(long*) p);
 					break;
-				case PY_TYPE_FLOAT: v = py_float_new((double) *(float*) addr);
+				}
+				case PY_TYPE_FLOAT: {
+					v = py_float_new((double) *(float*) p);
 					break;
-				case PY_TYPE_DOUBLE: v = py_float_new(*(double*) addr);
+				}
+				case PY_TYPE_DOUBLE: {
+					v = py_float_new(*(double*) p);
 					break;
-				case PY_TYPE_STRING:
-					if(*(char**) addr == NULL) {
+				}
+				case PY_TYPE_STRING: {
+					if(*(char**) p == NULL) {
 						py_object_incref(PY_NONE);
 						v = PY_NONE;
 					}
-					else {
-						v = py_string_new(*(char**) addr);
-					}
+					else v = py_string_new(*(char**) p);
+
 					break;
-				case PY_TYPE_OBJECT: v = *(struct py_object**) addr;
-					if(v == NULL) {
-						v = PY_NONE;
-					}
+				}
+				case PY_TYPE_OBJECT: {
+					v = *(struct py_object**) p;
+					if(v == NULL) v = PY_NONE;
+
 					py_object_incref(v);
 					break;
-				default:
+				}
+
+				default: {
 					py_error_set_string(
 							py_system_error, "bad memberlist type");
 					v = NULL;
+				}
 			}
+
 			return v;
 		}
 	}
@@ -60,12 +76,12 @@ py_memberlist_get(char* addr, struct py_memberlist* mlist, const char* name) {
 	return NULL;
 }
 
-int py_memberlist_set(addr, mlist, name, v)char* addr;
-										   struct py_memberlist* mlist;
+int py_struct_set(addr, mlist, name, v)char* addr;
+										   struct py_structmember* mlist;
 										   char* name;
 										   struct py_object* v;
 {
-	struct py_memberlist* l;
+	struct py_structmember* l;
 
 	for(l = mlist; l->name != NULL; l++) {
 		if(strcmp(l->name, name) == 0) {

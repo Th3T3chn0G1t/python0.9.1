@@ -23,7 +23,7 @@ typedef struct _tracebackobject {
 
 #define OFF(x) offsetof(tracebackobject, x)
 
-static struct py_memberlist tb_memberlist[] = {
+static struct py_structmember tb_memberlist[] = {
 		{ "tb_next",   PY_TYPE_OBJECT, OFF(tb_next),   PY_READWRITE },
 		{ "tb_frame",  PY_TYPE_OBJECT, OFF(tb_frame),  PY_READWRITE },
 		{ "tb_lasti",  PY_TYPE_INT,    OFF(tb_lasti),  PY_READWRITE },
@@ -31,10 +31,8 @@ static struct py_memberlist tb_memberlist[] = {
 		{ NULL,        0, 0,                           0 }  /* Sentinel */
 };
 
-static struct py_object* tb_getattr(tb, name)tracebackobject* tb;
-											 char* name;
-{
-	return py_memberlist_get((char*) tb, tb_memberlist, name);
+static struct py_object* tb_getattr(struct py_object* tb, const char* name) {
+	return py_struct_get(tb, tb_memberlist, name);
 }
 
 static void tb_dealloc(tb)tracebackobject* tb;
@@ -46,15 +44,15 @@ static void tb_dealloc(tb)tracebackobject* tb;
 
 static struct py_type Tracebacktype = {
 		{ 1, &py_type_type, 0 }, "traceback", sizeof(tracebackobject),
-		0, tb_dealloc,     /*dealloc*/
-		0,              /*print*/
-		tb_getattr,     /*get_attr*/
-		0,              /*set_attr*/
-		0,              /*cmp*/
-		0,              /*repr*/
-		0,              /*numbermethods*/
-		0,              /*sequencemethods*/
-		0,              /*mappingmethods*/
+		0, tb_dealloc, /* dealloc */
+		0, /* print */
+		tb_getattr, /* get_attr */
+		0, /* set_attr */
+		0, /* cmp */
+		0, /* repr */
+		0, /* numbermethods */
+		0, /* sequencemethods */
+		0, /* mappingmethods */
 };
 
 #define is_tracebackobject(v) \

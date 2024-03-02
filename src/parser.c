@@ -129,7 +129,7 @@ static int push(s, type, d, newstate, lineno)struct py_stack* s;
 	struct py_node* n;
 	n = s->top->parent;
 	assert(!s_empty(s));
-	if(py_tree_add(n, type, (char*) NULL, lineno) == NULL) {
+	if(py_tree_add(n, type, NULL, lineno) == NULL) {
 		fprintf(stderr, "push: no mem in py_tree_add\n");
 		return -1;
 	}

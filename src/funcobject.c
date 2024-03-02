@@ -53,7 +53,7 @@ struct py_object* py_func_get_globals(op)struct py_object* op;
 
 #define OFF(x) offsetof(funcobject, x)
 
-static struct py_memberlist func_memberlist[] = {
+static struct py_structmember func_memberlist[] = {
 		{ "func_code",    PY_TYPE_OBJECT, OFF(func_code),    PY_READWRITE },
 		{ "func_globals", PY_TYPE_OBJECT, OFF(func_globals), PY_READWRITE },
 		{ NULL,           0, 0,                              0 }  /* Sentinel */
@@ -62,7 +62,7 @@ static struct py_memberlist func_memberlist[] = {
 static struct py_object* func_getattr(op, name)funcobject* op;
 											   char* name;
 {
-	return py_memberlist_get((char*) op, func_memberlist, name);
+	return py_struct_get(op, func_memberlist, name);
 }
 
 static void func_dealloc(op)funcobject* op;

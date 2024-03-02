@@ -69,7 +69,7 @@ static void calcfirstset(g, d)struct py_grammar* g;
 		py_fatal("no mem for new sym in calcfirstset");
 	}
 	nsyms = 1;
-	sym[0] = py_labellist_find(&g->labels, d->type, (char*) NULL);
+	sym[0] = py_labellist_find(&g->labels, d->type, NULL);
 
 	s = &d->states[d->initial];
 	for(i = 0; i < s->count; i++) {

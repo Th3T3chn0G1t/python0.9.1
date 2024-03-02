@@ -16,7 +16,7 @@
 
 #define OFF(x) offsetof(struct py_frame, x)
 
-static struct py_memberlist frame_memberlist[] = {
+static struct py_structmember frame_memberlist[] = {
 		{ "back",    PY_TYPE_OBJECT, OFF(back),    PY_READWRITE },
 		{ "code",    PY_TYPE_OBJECT, OFF(code),    PY_READWRITE },
 		{ "globals", PY_TYPE_OBJECT, OFF(globals), PY_READWRITE },
@@ -27,7 +27,7 @@ static struct py_memberlist frame_memberlist[] = {
 static struct py_object* frame_getattr(f, name)struct py_frame* f;
 											   char* name;
 {
-	return py_memberlist_get((char*) f, frame_memberlist, name);
+	return py_struct_get(f, frame_memberlist, name);
 }
 
 static void frame_dealloc(f)struct py_frame* f;

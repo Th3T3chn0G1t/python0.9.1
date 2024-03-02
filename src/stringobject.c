@@ -81,7 +81,7 @@ static struct py_object* stringrepr(op)struct py_string* op;
 {
 	/* XXX overflow? */
 	int newsize = 2 + 4 * op->ob.size * sizeof(char);
-	struct py_object* v = py_string_new_size((char*) NULL, newsize);
+	struct py_object* v = py_string_new_size(NULL, newsize);
 	if(v == NULL) {
 		return py_error_set_nomem();
 	}
@@ -277,10 +277,12 @@ int py_string_resize(pv, newsize)struct py_object** pv;
 		py_error_set_badcall();
 		return -1;
 	}
+
 	/* XXX PY_UNREF/py_object_newref interface should be more symmetrical */
 #ifdef PY_REF_DEBUG
 	--py_ref_total;
 #endif
+
 	py_object_unref(v);
 
 	*pv = realloc(v, sizeof(struct py_string) + newsize * sizeof(char));

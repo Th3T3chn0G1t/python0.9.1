@@ -140,7 +140,7 @@ struct py_object py_none_object = { 1, &py_none_type };
 
 void py_object_delete(struct py_object* p) { free(p); }
 
-#ifdef PY_TRACE_REFS
+#ifdef PY_REF_TRACE
 /* TODO: Python global state. */
 static object py_refchain = { &py_refchain, &py_refchain };
 #endif
@@ -154,7 +154,7 @@ void* py_object_incref(void* p) {
 	py_ref_total++;
 #endif
 
-#ifdef PY_TRACE_REFS
+#ifdef PY_REF_TRACE
 #endif
 
 	op->refcount++;
@@ -171,7 +171,7 @@ void* py_object_decref(void* p) {
 	py_ref_total--;
 #endif
 
-#ifdef PY_TRACE_REFS
+#ifdef PY_REF_TRACE
 #endif
 
 	if(op->refcount-- <= 0) {
@@ -191,7 +191,7 @@ void* py_object_newref(void* p) {
 	py_ref_total++;
 #endif
 
-#ifdef PY_TRACE_REFS
+#ifdef PY_REF_TRACE
 	op->next = py_refchain.next;
 	op->prev = &py_refchain;
 	py_refchain.next->prev = op;
@@ -204,7 +204,7 @@ void* py_object_newref(void* p) {
 }
 
 void py_object_unref(void* p) {
-#ifdef PY_TRACE_REFS
+#ifdef PY_REF_TRACE
 	struct py_object* op;
 
 	if(!p) return;
@@ -230,7 +230,7 @@ void py_object_unref(void* p) {
 #endif
 }
 
-#ifdef PY_TRACE_REFS
+#ifdef PY_REF_TRACE
 void py_print_refs(FILE* fp) {
 	struct py_object*op;
 	fprintf(fp, "Remaining objects:\n");

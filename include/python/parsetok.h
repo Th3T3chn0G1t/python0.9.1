@@ -12,6 +12,8 @@
 #include <python/grammar.h>
 #include <python/node.h>
 
-int py_parse_file(FILE*, char*, struct py_grammar*, int, char*, char*, struct py_node**);
+int py_parse_file(
+		FILE*, const char*, struct py_grammar*, int, char*, char*,
+		struct py_node**);
 
 #endif
