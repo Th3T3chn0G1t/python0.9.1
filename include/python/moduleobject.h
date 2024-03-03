@@ -14,7 +14,7 @@ extern struct py_type py_module_type;
 
 #define py_is_module(op) ((op)->type == &py_module_type)
 
-struct py_object* py_module_new(char*);
+struct py_object* py_module_new(const char*);
 struct py_object* py_module_get_dict(struct py_object*);
 const char* py_module_get_name(struct py_object*);
 

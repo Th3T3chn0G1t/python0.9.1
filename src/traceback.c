@@ -8,7 +8,6 @@
 #include <python/std.h>
 #include <python/compile.h>
 #include <python/traceback.h>
-#include <python/structmember.h>
 #include <python/errors.h>
 #include <python/env.h>
 
@@ -99,10 +98,7 @@ int py_traceback_set(v)struct py_object* v;
 	return 0;
 }
 
-static void tb_displayline(fp, filename, lineno)FILE* fp;
-												char* filename;
-												int lineno;
-{
+static void tb_displayline(FILE* fp, const char* filename, int lineno) {
 	FILE* xfp;
 	char buf[1024];
 	int i;

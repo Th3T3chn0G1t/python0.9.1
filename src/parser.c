@@ -263,7 +263,7 @@ int py_parser_add(ps, type, str, lineno)struct py_parser* ps;
 void dumptree(g, n)struct py_grammar* g;
 				   struct py_node* n;
 {
-	int i;
+	unsigned i;
 
 	if(n == NULL) {
 		printf("NIL");
@@ -289,7 +289,7 @@ void dumptree(g, n)struct py_grammar* g;
 void showtree(g, n)struct py_grammar* g;
 				   struct py_node* n;
 {
-	int i;
+	unsigned i;
 
 	if(n == NULL) {
 		return;

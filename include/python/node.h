@@ -15,7 +15,7 @@ struct py_node {
 	char* str;
 	int lineno;
 
-	int count;
+	unsigned count;
 	struct py_node* children;
 };
 

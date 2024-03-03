@@ -69,28 +69,29 @@ void py_import_init(void) {
 	}
 }
 
-struct py_object* py_add_module(name)char* name;
-{
+struct py_object* py_add_module(const char* name) {
 	struct py_object* m;
+
 	if((m = py_dict_lookup(modules, name)) != NULL && py_is_module(m)) {
 		return m;
 	}
+
 	m = py_module_new(name);
 	if(m == NULL) {
 		return NULL;
 	}
+
 	if(py_dict_insert(modules, name, m) != 0) {
 		py_object_decref(m);
 		return NULL;
 	}
+
 	py_object_decref(m); /* Yes, it still exists, in modules! */
 	return m;
 }
 
-static FILE* open_module(name, suffix, namebuf)char* name;
-											   char* suffix;
-											   char* namebuf; /* XXX No buffer overflow checks! */
-{
+/* XXX No buffer overflow checks! */
+static FILE* open_module(const char* name, const char* suffix, char* namebuf) {
 	FILE* fp;
 
 	if(py_path == NULL || !py_is_list(py_path)) {
@@ -99,39 +100,38 @@ static FILE* open_module(name, suffix, namebuf)char* name;
 		fp = pyopen_r(namebuf);
 	}
 	else {
-		int npath = py_varobject_size(py_path);
-		int i;
+		unsigned npath = py_varobject_size(py_path);
+		unsigned i;
+
 		fp = NULL;
 		for(i = 0; i < npath; i++) {
 			struct py_object* v = py_list_get(py_path, i);
-			int len;
-			if(!py_is_string(v)) {
-				continue;
-			}
+			unsigned len;
+
+			if(!py_is_string(v)) continue;
+
 			strcpy(namebuf, py_string_get(v));
 			len = py_varobject_size(v);
-			if(len > 0 && namebuf[len - 1] != '/') {
-				namebuf[len++] = '/';
-			}
+
+			if(len > 0 && namebuf[len - 1] != '/') namebuf[len++] = '/';
+
 			strcpy(namebuf + len, name);
 			strcat(namebuf, suffix);
+
 			fp = pyopen_r(namebuf);
-			if(fp != NULL) {
-				break;
-			}
+			if(fp != NULL) break;
 		}
 	}
+
 	return fp;
 }
 
-static struct py_object* get_module(m, name, m_ret)
-/*module*/struct py_object* m;
-		  char* name;
-		  struct py_object** m_ret;
-{
+static struct py_object* get_module(
+		struct py_object* m, const char* name, struct py_object** m_ret) {
+
 	struct py_object* d;
-	FILE* fp;
 	struct py_node* n;
+	FILE* fp;
 	int err;
 	char namebuf[256];
 
@@ -145,7 +145,7 @@ static struct py_object* get_module(m, name, m_ret)
 		}
 		return NULL;
 	}
-	err = py_parse_file(fp, namebuf, &py_grammar, file_input, 0, 0, &n);
+	err = py_parse_file(fp, namebuf, &py_grammar, PY_GRAMMAR_FILE_INPUT, 0, 0, &n);
 	pyclose(fp);
 	if(err != PY_RESULT_DONE) {
 		py_error_set_input(err);
@@ -163,33 +163,22 @@ static struct py_object* get_module(m, name, m_ret)
 	return py_tree_run(n, namebuf, d, d);
 }
 
-static struct py_object* load_module(name)char* name;
-{
+static struct py_object* load_module(const char* name) {
 	struct py_object* m, * v;
+
 	v = get_module((struct py_object*) NULL, name, &m);
-	if(v == NULL) {
-		return NULL;
-	}
+	if(v == NULL) return NULL;
+
 	py_object_decref(v);
 	return m;
 }
 
 struct py_object* py_import_module(const char* name) {
 	struct py_object* m;
-	if((m = py_dict_lookup(modules, name)) == NULL) {
-		m = load_module(name);
-	}
-	return m;
-}
 
-struct py_object* py_reload_module(m)struct py_object* m;
-{
-	if(m == NULL || !py_is_module(m)) {
-		py_error_set_string(py_type_error, "reload() argument must be module");
-		return NULL;
-	}
-	/* XXX Ought to check for builtin modules -- can't reload these... */
-	return get_module(m, py_module_get_name(m), (struct py_object**) NULL);
+	if((m = py_dict_lookup(modules, name)) == NULL) m = load_module(name);
+
+	return m;
 }
 
 static void cleardict(d)struct py_object* d;

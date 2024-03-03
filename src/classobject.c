@@ -6,7 +6,6 @@
 /* Class object implementation */
 
 #include <python/std.h>
-#include <python/structmember.h>
 #include <python/errors.h>
 
 #include <python/object.h>
@@ -218,20 +217,6 @@ struct py_object* py_classmethod_get_self(cm)struct py_object* cm;
 
 /* Class method methods */
 
-#define OFF(x) offsetof(classmethodobject, x)
-
-static struct py_structmember classmethod_memberlist[] = {
-		{ "cm_func", PY_TYPE_OBJECT, OFF(cm_func), PY_READWRITE },
-		{ "cm_self", PY_TYPE_OBJECT, OFF(cm_self), PY_READWRITE },
-		{ NULL,      0, 0,                         0 }  /* Sentinel */
-};
-
-static struct py_object* classmethod_getattr(cm, name)classmethodobject* cm;
-													  char* name;
-{
-	return py_struct_get(cm, classmethod_memberlist, name);
-}
-
 static void classmethod_dealloc(struct py_object* op) {
 	classmethodobject* cm = (classmethodobject*) op;
 
@@ -242,7 +227,7 @@ static void classmethod_dealloc(struct py_object* op) {
 struct py_type py_class_method_type = {
 		{ 1, 0, &py_type_type }, "class method",
 		sizeof(classmethodobject), classmethod_dealloc, /* dealloc */
-		classmethod_getattr, /* get_attr */
+		0, /* get_attr */
 		0, /* set_attr */
 		0, /* cmp */
 		0, /* sequencemethods */

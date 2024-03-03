@@ -9,7 +9,6 @@
 #include <python/compile.h>
 #include <python/errors.h>
 #include <python/opcode.h>
-#include <python/structmember.h>
 
 #include <python/frameobject.h>
 #include <python/dictobject.h>

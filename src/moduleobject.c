@@ -19,18 +19,17 @@ typedef struct {
 	struct py_object* md_dict;
 } moduleobject;
 
-struct py_object* py_module_new(name)char* name;
-{
+struct py_object* py_module_new(const char* name) {
 	moduleobject* m = py_object_new(&py_module_type);
-	if(m == NULL) {
-		return NULL;
-	}
+	if(m == NULL) return NULL;
+
 	m->md_name = py_string_new(name);
 	m->md_dict = py_dict_new();
 	if(m->md_name == NULL || m->md_dict == NULL) {
 		py_object_decref(m);
 		return NULL;
 	}
+
 	return (struct py_object*) m;
 }
 

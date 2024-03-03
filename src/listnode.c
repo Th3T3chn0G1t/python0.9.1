@@ -28,7 +28,7 @@ static void list1node(fp, n)FILE* fp;
 		return;
 	}
 	if(n->type >= PY_NONTERMINAL) {
-		int i;
+		unsigned i;
 		for(i = 0; i < n->count; i++) {
 			list1node(fp, &n->children[i]);
 		}

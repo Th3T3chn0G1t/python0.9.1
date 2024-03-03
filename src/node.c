@@ -9,8 +9,7 @@
 
 #include <python/node.h>
 
-struct py_node* py_tree_new(type)int type;
-{
+struct py_node* py_tree_new(int type) {
 	struct py_node* n = malloc(sizeof(struct py_node));
 	if(n == NULL) {
 		return NULL;

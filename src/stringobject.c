@@ -10,6 +10,7 @@
 #include <python/errors.h>
 
 struct py_object* py_string_new_size(const char* str, unsigned size) {
+
 	struct py_string* op = malloc(
 			sizeof(struct py_string) + size * sizeof(char));
 	if(op == NULL) return py_error_set_nomem();

@@ -17,18 +17,11 @@
 #      added class definition.
 
 # Start symbols for the grammar:
-#      single_input is a single interactive statement;
-#      file_input is a module or sequence of commands read from an input file;
-#      expr_input is the input for the input() function;
-#      eval_input is the input for the eval() function.
+#      PY_GRAMMAR_FILE_INPUT is a module or sequence of commands read from an input file;
 
-# NB: compound_stmt in single_input is followed by extra PY_NEWLINE!
-single_input: PY_NEWLINE | simple_stmt | compound_stmt PY_NEWLINE
-file_input: (PY_NEWLINE | stmt)* PY_ENDMARKER
-expr_input: testlist PY_NEWLINE
-eval_input: testlist PY_ENDMARKER
+PY_GRAMMAR_FILE_INPUT: (PY_NEWLINE | stmt)* PY_ENDMARKER
 
-funcdef: 'def' PY_NAME parameters ':' suite
+PY_GRAMMAR_FUNCTION_DEFINITION: 'def' PY_NAME parameters ':' suite
 parameters: '(' [fplist] ')'
 fplist: fpdef (',' fpdef)*
 fpdef: PY_NAME | '(' fplist ')'
@@ -45,7 +38,7 @@ break_stmt: 'break' PY_NEWLINE
 return_stmt: 'return' [testlist] PY_NEWLINE
 raise_stmt: 'raise' expr [',' expr] PY_NEWLINE
 import_stmt: 'import' PY_NAME (',' PY_NAME)* PY_NEWLINE | 'from' PY_NAME 'import' ('*' | PY_NAME (',' PY_NAME)*) PY_NEWLINE
-compound_stmt: if_stmt | while_stmt | for_stmt | try_stmt | funcdef | classdef
+compound_stmt: if_stmt | while_stmt | for_stmt | try_stmt | PY_GRAMMAR_FUNCTION_DEFINITION | classdef
 if_stmt: 'if' test ':' suite ('elif' test ':' suite)* ['else' ':' suite]
 while_stmt: 'while' test ':' suite ['else' ':' suite]
 for_stmt: 'for' exprlist 'in' exprlist ':' suite ['else' ':' suite]

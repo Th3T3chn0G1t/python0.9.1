@@ -18,8 +18,7 @@ struct py_object* py_path_new(const char*);
 void py_import_init(void);
 void py_import_done(void);
 
-struct py_object* py_add_module(char*);
+struct py_object* py_add_module(const char*);
 struct py_object* py_import_module(const char*);
-struct py_object* py_reload_module(struct py_object*);
 
 #endif
