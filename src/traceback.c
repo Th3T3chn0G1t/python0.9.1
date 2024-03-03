@@ -21,34 +21,18 @@ typedef struct _tracebackobject {
 	int tb_lineno;
 } tracebackobject;
 
-#define OFF(x) offsetof(tracebackobject, x)
-
-static struct py_structmember tb_memberlist[] = {
-		{ "tb_next",   PY_TYPE_OBJECT, OFF(tb_next),   PY_READWRITE },
-		{ "tb_frame",  PY_TYPE_OBJECT, OFF(tb_frame),  PY_READWRITE },
-		{ "tb_lasti",  PY_TYPE_INT,    OFF(tb_lasti),  PY_READWRITE },
-		{ "tb_lineno", PY_TYPE_INT,    OFF(tb_lineno), PY_READWRITE },
-		{ NULL,        0, 0,                           0 }  /* Sentinel */
-};
-
-static struct py_object* tb_getattr(struct py_object* tb, const char* name) {
-	return py_struct_get(tb, tb_memberlist, name);
-}
-
 static void tb_dealloc(tb)tracebackobject* tb;
 {
 	py_object_decref(tb->tb_next);
 	py_object_decref(tb->tb_frame);
-	free(tb);
 }
 
 static struct py_type Tracebacktype = {
-		{ 1, &py_type_type, 0 }, "traceback", sizeof(tracebackobject),
+		{ 1, 0, &py_type_type }, "traceback", sizeof(tracebackobject),
 		tb_dealloc, /* dealloc */
-		tb_getattr, /* get_attr */
+		0, /* get_attr */
 		0, /* set_attr */
 		0, /* cmp */
-		0, /* numbermethods */
 		0, /* sequencemethods */
 };
 
@@ -118,7 +102,7 @@ static void tb_displayline(fp, filename, lineno)FILE* fp;
 												int lineno;
 {
 	FILE* xfp;
-	char buf[1000];
+	char buf[1024];
 	int i;
 	if(filename[0] == '<' && filename[strlen(filename) - 1] == '>') {
 		return;

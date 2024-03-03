@@ -30,12 +30,12 @@ struct py_list {
 /* TODO: Python global state */
 extern struct py_type py_list_type;
 
-#define py_is_list(op) ((op)->type == &py_list_type)
+#define py_is_list(op) (((struct py_object*) (op))->type == &py_list_type)
 
 struct py_object* py_list_new(unsigned);
-struct py_object* py_list_get(struct py_object*, int);
-int py_list_set(struct py_object*, int, struct py_object*);
-int py_list_insert(struct py_object*, int, struct py_object*);
+struct py_object* py_list_get(struct py_object*, unsigned);
+int py_list_set(struct py_object*, unsigned, struct py_object*);
+int py_list_insert(struct py_object*, unsigned, struct py_object*);
 int py_list_add(struct py_object*, struct py_object*);
 int py_list_sort(struct py_object*);
 

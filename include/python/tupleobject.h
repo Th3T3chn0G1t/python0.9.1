@@ -28,10 +28,10 @@ struct py_tuple {
 /* TODO: Python global state. */
 extern struct py_type py_tuple_type;
 
-#define py_is_tuple(op) ((op)->type == &py_tuple_type)
+#define py_is_tuple(op) (((struct py_object*) (op))->type == &py_tuple_type)
 
-struct py_object* py_tuple_new(int size);
-struct py_object* py_tuple_get(struct py_object*, int);
-int py_tuple_set(struct py_object*, int, struct py_object*);
+struct py_object* py_tuple_new(unsigned);
+struct py_object* py_tuple_get(struct py_object*, unsigned);
+int py_tuple_set(struct py_object*, unsigned, struct py_object*);
 
 #endif

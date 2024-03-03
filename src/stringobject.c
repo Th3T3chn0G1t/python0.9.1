@@ -9,9 +9,7 @@
 #include <python/stringobject.h>
 #include <python/errors.h>
 
-struct py_object* py_string_new_size(str, size)const char* str;
-											   int size;
-{
+struct py_object* py_string_new_size(const char* str, unsigned size) {
 	struct py_string* op = malloc(
 			sizeof(struct py_string) + size * sizeof(char));
 	if(op == NULL) return py_error_set_nomem();
@@ -40,7 +38,7 @@ struct py_object* py_string_new(const char* str) {
 	return (struct py_object*) op;
 }
 
-char* py_string_get(struct py_object* op) {
+const char* py_string_get(const struct py_object* op) {
 	if(!py_is_string(op)) {
 		py_error_set_badcall();
 		return NULL;
@@ -85,108 +83,76 @@ static struct py_object* stringconcat(a, bb)struct py_string* a;
 	return (struct py_object*) op;
 }
 
-static struct py_object* stringrepeat(a, n)struct py_string* a;
-										   int n;
-{
-	int i;
-	unsigned size;
-	struct py_string* op;
-	if(n < 0) {
-		n = 0;
-	}
-	size = a->ob.size * n;
-	if(size == a->ob.size) {
-		py_object_incref(a);
-		return (struct py_object*) a;
-	}
-	op = malloc(sizeof(struct py_string) + size * sizeof(char));
-	if(op == NULL) {
-		return py_error_set_nomem();
-	}
-	py_object_newref(op);
-	op->ob.type = &py_string_type;
-	op->ob.size = size;
-	for(i = 0; i < (int) size; i += a->ob.size) {
-		memcpy(op->value + i, a->value, (int) a->ob.size);
-	}
-	op->value[size] = '\0';
-	return (struct py_object*) op;
-}
-
 /* String slice a[i:j] consists of characters a[i] ... a[j-1] */
 
-static struct py_object* stringslice(a, i, j)struct py_string* a;
-											 int i, j; /* May be negative! */
-{
-	if(i < 0) {
-		i = 0;
+static struct py_object* stringslice(
+		struct py_object* op, unsigned i, unsigned j) {
+
+	if(j > py_varobject_size(op)) {
+		j = py_varobject_size(op);
 	}
-	if(j < 0) {
-		j = 0;
-	} /* Avoid signed/unsigned bug in next line */
-	if(j > (int) a->ob.size) {
-		j = (int) a->ob.size;
+
+	/* It's the same as op */
+	if(i == 0 && j == py_varobject_size(op)) {
+		py_object_incref(op);
+		return (struct py_object*) op;
 	}
-	if(i == 0 && j == (int) a->ob.size) { /* It's the same as a */
-		py_object_incref(a);
-		return (struct py_object*) a;
-	}
-	if(j < i) {
-		j = i;
-	}
-	return py_string_new_size(a->value + i, (int) (j - i));
+
+	if(j < i) j = i;
+
+	return py_string_new_size(py_string_get(op) + i, j - i);
 }
 
-static struct py_object* stringitem(a, i)struct py_string* a;
-										 int i;
-{
-	if(i < 0 || i >= (int) a->ob.size) {
+static struct py_object* stringitem(struct py_object* a, unsigned i) {
+	if(i >= py_varobject_size(a)) {
 		py_error_set_string(PY_INDEX_ERROR, "string index out of range");
 		return NULL;
 	}
+
 	return stringslice(a, i, i + 1);
 }
 
-static int stringcompare(a, b)struct py_string* a, * b;
-{
-	int len_a = a->ob.size, len_b = b->ob.size;
-	int min_len = (len_a < len_b) ? len_a : len_b;
-	int cmp = memcmp(a->value, b->value, min_len);
-	if(cmp != 0) {
-		return cmp;
-	}
-	return (len_a < len_b) ? -1 : (len_a > len_b) ? 1 : 0;
+static int stringcompare(
+		const struct py_object* a, const struct py_object* b) {
+
+	unsigned len_a = py_varobject_size(a);
+	unsigned len_b = py_varobject_size(b);
+	unsigned min_len = (len_a < len_b) ? len_a : len_b;
+
+	int cmp = memcmp(py_string_get(a), py_string_get(b), min_len);
+	if(cmp != 0) return cmp;
+
+	if(len_a < len_b) return -1;
+	if(len_a > len_b) return 1;
+
+	return 0;
 }
 
 static struct py_sequencemethods string_as_sequence = {
-		stringconcat,   /*tp_concat*/
-		stringrepeat,   /*tp_repeat*/
-		stringitem,     /*tp_item*/
-		stringslice,    /*tp_slice*/
-		0,      /*tp_ass_item*/
-		0,      /*tp_ass_slice*/
+		stringconcat, /* tp_concat */
+		stringitem, /* tp_ind */
+		stringslice, /* tp_slice */
 };
 
 struct py_type py_string_type = {
-		{ 1, &py_type_type, 0 }, "string", sizeof(struct py_string),
+		{ 1, 0, &py_type_type }, "string", sizeof(struct py_string),
 		py_object_delete, /* dealloc */
 		0, /* get_attr */
 		0, /* set_attr */
 		stringcompare, /* cmp */
-		0, /* numbermethods */
 		&string_as_sequence, /* sequencemethods */
 };
 
-/* The following function breaks the notion that strings are immutable:
-   it changes the size of a string. We get away with this only if there
-   is only one module referencing the object. You can also think of it
-   as creating a new string object and destroying the old one, only
-   more efficiently. In any case, don't use this if the string may
-   already be known to some other part of the code... */
+/*
+ * The following function breaks the notion that strings are immutable:
+ * it changes the size of a string. We get away with this only if there
+ * is only one module referencing the object. You can also think of it
+ * as creating a new string object and destroying the old one, only
+ * more efficiently. In any case, don't use this if the string may
+ * already be known to some other part of the code...
+ */
 /* TODO: Remove/rework. */
-int py_string_resize(pv, newsize)struct py_object** pv;
-								 int newsize;
-{
+int py_string_resize(struct py_object** pv, unsigned newsize) {
 	struct py_object* v;
 	struct py_string* sv;
 

@@ -8,9 +8,6 @@
 #include <python/std.h>
 #include <python/errors.h>
 
-#include <python/object.h>
-#include <python/stringobject.h>
-
 #ifdef PY_REF_DEBUG
 long py_ref_total;
 #endif
@@ -55,17 +52,16 @@ int py_object_set_attr(
 		struct py_object* v, const char* name, struct py_object* w) {
 
 	if(v->type->set_attr == NULL) {
-		if(v->type->get_attr == NULL) {
-			py_error_set_string(py_type_error, "attribute-less object");
-		}
-		else {
-			py_error_set_string(
-					py_type_error, "object has read-only attributes");
-		}
+		py_error_set_string(
+				py_type_error,
+				v->type->get_attr ?
+					"object has read-only attributes" :
+					"attribute-less object");
 
 		return -1;
 	}
-	else return (*v->type->set_attr)(v, name, w);
+
+	return (*v->type->set_attr)(v, name, w);
 }
 
 unsigned py_varobject_size(const void* op) {
@@ -80,12 +76,11 @@ unsigned py_varobject_size(const void* op) {
 
 /* TODO: Python global state. */
 static struct py_type py_none_type = {
-		{ 1, &py_type_type, 0 }, "None", 0,
+		{ 1, 0, &py_type_type }, "None", 0,
 		0, /* dealloc */ /* never called */
 		0, /* get_attr */
 		0, /* set_attr */
 		0, /* cmp */
-		0, /* numbermethods */
 		0, /* sequencemethods */
 };
 
@@ -130,6 +125,7 @@ void* py_object_decref(void* p) {
 	if(op->refcount-- <= 0) {
 		py_object_unref(op);
 		op->type->dealloc(op);
+		free(op);
 	}
 
 	return op;

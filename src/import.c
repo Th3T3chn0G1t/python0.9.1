@@ -174,8 +174,7 @@ static struct py_object* load_module(name)char* name;
 	return m;
 }
 
-struct py_object* py_import_module(name)char* name;
-{
+struct py_object* py_import_module(const char* name) {
 	struct py_object* m;
 	if((m = py_dict_lookup(modules, name)) == NULL) {
 		m = load_module(name);

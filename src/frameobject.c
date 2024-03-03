@@ -14,40 +14,23 @@
 #include <python/frameobject.h>
 #include <python/dictobject.h>
 
-#define OFF(x) offsetof(struct py_frame, x)
+static void frame_dealloc(struct py_object* op) {
+	struct py_frame* f = (struct py_frame*) op;
 
-static struct py_structmember frame_memberlist[] = {
-		{ "back",    PY_TYPE_OBJECT, OFF(back),    PY_READWRITE },
-		{ "code",    PY_TYPE_OBJECT, OFF(code),    PY_READWRITE },
-		{ "globals", PY_TYPE_OBJECT, OFF(globals), PY_READWRITE },
-		{ "locals",  PY_TYPE_OBJECT, OFF(locals),  PY_READWRITE },
-		{ NULL,      0, 0,                         0 }  /* Sentinel */
-};
-
-static struct py_object* frame_getattr(f, name)struct py_frame* f;
-											   char* name;
-{
-	return py_struct_get(f, frame_memberlist, name);
-}
-
-static void frame_dealloc(f)struct py_frame* f;
-{
 	py_object_decref(f->back);
 	py_object_decref(f->code);
 	py_object_decref(f->globals);
 	py_object_decref(f->locals);
 	free(f->valuestack);
 	free(f->blockstack);
-	free(f);
 }
 
 struct py_type py_frame_type = {
-		{ 1, &py_type_type, 0 }, "frame", sizeof(struct py_frame),
+		{ 1, 0, &py_type_type }, "frame", sizeof(struct py_frame),
 		frame_dealloc, /* dealloc */
-		frame_getattr, /* get_attr */
+		0, /* get_attr */
 		0, /* set_attr */
 		0, /* cmp */
-		0, /* numbermethods */
 		0, /* sequencemethods */
 };
 

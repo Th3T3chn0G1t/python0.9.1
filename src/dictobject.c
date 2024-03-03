@@ -304,17 +304,17 @@ static int dict2remove(op, key)struct py_object* op;
 	return py_dict_remove(op, GETSTRINGVALUE((struct py_string*) key));
 }
 
-int py_dict_size(op)struct py_object* op;
-{
+unsigned py_dict_size(struct py_object* op) {
 	if(!py_is_dict(op)) {
 		py_error_set_badcall();
 		return -1;
 	}
+
 	return ((struct py_dict*) op)->di_size;
 }
 
 static struct py_object* getdict2key(op, i)struct py_object* op;
-										   int i;
+										   unsigned i;
 {
 	/* XXX This can't return errors since its callers assume
 	   that NULL means there was no key at that point */
@@ -324,7 +324,7 @@ static struct py_object* getdict2key(op, i)struct py_object* op;
 		return NULL;
 	}
 	dp = (struct py_dict*) op;
-	if(i < 0 || i >= dp->di_size) {
+	if(i >= dp->di_size) {
 		/* py_error_set_badarg(); */
 		return NULL;
 	}
@@ -335,22 +335,20 @@ static struct py_object* getdict2key(op, i)struct py_object* op;
 	return (struct py_object*) dp->di_table[i].de_key;
 }
 
-char* py_dict_get_key(op, i)struct py_object* op;
-							int i;
-{
+char* py_dict_get_key(struct py_object* op, unsigned i) {
 	struct py_object* keyobj = getdict2key(op, i);
-	if(keyobj == NULL) {
-		return NULL;
-	}
+	if(keyobj == NULL) return NULL;
+
 	return GETSTRINGVALUE((struct py_string*) keyobj);
 }
 
 /* Methods */
 
-static void dict_dealloc(dp)struct py_dict* dp;
-{
-	int i;
+static void dict_dealloc(struct py_object* op) {
+	struct py_dict* dp = (struct py_dict*) op;
 	struct py_dictentry* ep;
+	unsigned i;
+
 	for(i = 0, ep = dp->di_table; i < dp->di_size; i++, ep++) {
 		if(ep->de_key != NULL)
 			py_object_decref(ep->de_key);
@@ -360,7 +358,6 @@ static void dict_dealloc(dp)struct py_dict* dp;
 	if(dp->di_table != NULL) {
 		free(dp->di_table);
 	}
-	free(dp);
 }
 
 struct py_object* py_dict_lookup_object(
@@ -386,18 +383,18 @@ int py_dict_assign(
 	else return dict2insert((struct py_object*) dp, v, w);
 }
 
-static struct py_object* dict_keys(dp, args)struct py_dict* dp;
-											struct py_object* args;
-{
+static struct py_object* dict_keys(
+		struct py_object* op, struct py_object* args) {
+
+	struct py_dict* dp = (struct py_dict*) op;
 	struct py_object* v;
-	int i, j;
-	if(!py_arg_none(args)) {
-		return NULL;
-	}
+	unsigned i, j;
+
+	if(!py_arg_none(args)) return NULL;
+
 	v = py_list_new(dp->di_used);
-	if(v == NULL) {
-		return NULL;
-	}
+	if(v == NULL) return NULL;
+
 	for(i = 0, j = 0; i < dp->di_size; i++) {
 		if(dp->di_table[i].de_value != NULL) {
 			struct py_string* key = dp->di_table[i].de_key;
@@ -409,13 +406,13 @@ static struct py_object* dict_keys(dp, args)struct py_dict* dp;
 	return v;
 }
 
-struct py_object* py_dict_get_keys(dp)struct py_object* dp;
-{
-	if(dp == NULL || !py_is_dict(dp)) {
+struct py_object* py_dict_get_keys(struct py_object* op) {
+	if(!py_is_dict(op)) {
 		py_error_set_badcall();
 		return NULL;
 	}
-	return dict_keys((struct py_dict*) dp, (struct py_object*) NULL);
+
+	return dict_keys(op, NULL);
 }
 
 static struct py_object* dict_has_key(dp, args)struct py_dict* dp;
@@ -448,11 +445,10 @@ void py_done_dict(void) {
 }
 
 struct py_type py_dict_type = {
-		{ 1, &py_type_type, 0 }, "dictionary", sizeof(struct py_dict),
+		{ 1, 0, &py_type_type }, "dictionary", sizeof(struct py_dict),
 		dict_dealloc, /* dealloc */
 		dict_getattr, /* get_attr */
 		0, /* set_attr */
 		0, /* cmp */
-		0, /* numbermethods */
 		0, /* sequencemethods */
 };

@@ -12,35 +12,29 @@
 #include <python/stringobject.h>
 #include <python/intobject.h>
 
-struct py_object* py_tuple_new(size)int size;
-{
-	int i;
+struct py_object* py_tuple_new(unsigned size) {
+	unsigned i;
 	struct py_tuple* op;
-	if(size < 0) {
-		py_error_set_badcall();
-		return NULL;
-	}
+
 	op = malloc(sizeof(struct py_tuple) + size * sizeof(struct py_object*));
-	if(op == NULL) {
-		return py_error_set_nomem();
-	}
+	if(op == NULL) return py_error_set_nomem();
+
 	py_object_newref(op);
 	op->ob.type = &py_tuple_type;
 	op->ob.size = size;
-	for(i = 0; i < size; i++) {
-		op->item[i] = NULL;
-	}
+
+	for(i = 0; i < size; i++) op->item[i] = NULL;
+
 	return (struct py_object*) op;
 }
 
-/* TODO: `int' to `unsigned'. */
-struct py_object* py_tuple_get(struct py_object* op, int i) {
+struct py_object* py_tuple_get(struct py_object* op, unsigned i) {
 	if(!py_is_tuple(op)) {
 		py_error_set_badcall();
 		return NULL;
 	}
 
-	if(i < 0 || i >= (int) py_varobject_size(op)) {
+	if(i >= py_varobject_size(op)) {
 		py_error_set_string(PY_INDEX_ERROR, "tuple index out of range");
 		return NULL;
 	}
@@ -48,7 +42,7 @@ struct py_object* py_tuple_get(struct py_object* op, int i) {
 	return ((struct py_tuple*) op)->item[i];
 }
 
-int py_tuple_set(struct py_object* op, int i, struct py_object* newitem) {
+int py_tuple_set(struct py_object* op, unsigned i, struct py_object* newitem) {
 	struct py_object* olditem;
 
 	if(!py_is_tuple(op)) {
@@ -57,7 +51,7 @@ int py_tuple_set(struct py_object* op, int i, struct py_object* newitem) {
 		return -1;
 	}
 
-	if(i < 0 || i >= (int) py_varobject_size(op)) {
+	if(i >= py_varobject_size(op)) {
 		if(newitem != NULL) py_object_decref(newitem);
 		py_error_set_string(
 				PY_INDEX_ERROR, "tuple assignment index out of range");
@@ -102,10 +96,10 @@ static int tuplecompare(const struct py_object* v, const struct py_object* w) {
 	return (int) (a - b);
 }
 
-static struct py_object* tupleitem(struct py_object* op, int i) {
+static struct py_object* tupleitem(struct py_object* op, unsigned i) {
 	struct py_object* item;
 
-	if(i < 0 || i >= (int) py_varobject_size(op)) {
+	if(i >= py_varobject_size(op)) {
 		py_error_set_string(PY_INDEX_ERROR, "tuple index out of range");
 		return NULL;
 	}
@@ -117,18 +111,16 @@ static struct py_object* tupleitem(struct py_object* op, int i) {
 }
 
 static struct py_object* tupleslice(
-		struct py_object* op, int ilow, int ihigh) {
+		struct py_object* op, unsigned ilow, unsigned ihigh) {
 
 	struct py_tuple* np;
-	int i;
+	unsigned i;
 
-	if(ilow < 0) ilow = 0;
-	if(ihigh > (int) py_varobject_size(op)) {
-		ihigh = (int) py_varobject_size(op);
-	}
+	if(ihigh > py_varobject_size(op)) ihigh = py_varobject_size(op);
+
 	if(ihigh < ilow) ihigh = ilow;
 
-	if(ilow == 0 && ihigh == (int) py_varobject_size(op)) {
+	if(ilow == 0 && ihigh == py_varobject_size(op)) {
 		/* XXX can only do this if tuples are immutable! */
 		py_object_incref(op);
 		return op;
@@ -182,21 +174,17 @@ static struct py_object* tupleconcat(
 }
 
 static struct py_sequencemethods tuple_as_sequence = {
-		tupleconcat,    /*cat*/
-		0,              /*rep*/
-		tupleitem,      /*ind*/
-		tupleslice,     /*slice*/
-		0,              /*assign_item*/
-		0,              /*assign_slice*/
+		tupleconcat, /* cat */
+		tupleitem, /* ind */
+		tupleslice, /* slice */
 };
 
 struct py_type py_tuple_type = {
-		{ 1, &py_type_type, 0 }, "tuple",
+		{ 1, 0, &py_type_type }, "tuple",
 		sizeof(struct py_tuple) - sizeof(struct py_object*),
 		tupledealloc, /* dealloc */
 		0, /* get_attr */
 		0, /* set_attr */
 		tuplecompare,  /* cmp*/
-		0, /* numbermethods */
 		&tuple_as_sequence, /* sequencemethods */
 };

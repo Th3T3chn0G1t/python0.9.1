@@ -47,93 +47,12 @@ static int float_compare(v, w)struct py_float* v, * w;
 	return (i < j) ? -1 : (i > j) ? 1 : 0;
 }
 
-static struct py_object* float_add(v, w)struct py_float* v;
-										struct py_object* w;
-{
-	if(!py_is_float(w)) {
-		py_error_set_badarg();
-		return NULL;
-	}
-	return py_float_new(v->value + ((struct py_float*) w)->value);
-}
-
-static struct py_object* float_sub(v, w)struct py_float* v;
-										struct py_object* w;
-{
-	if(!py_is_float(w)) {
-		py_error_set_badarg();
-		return NULL;
-	}
-	return py_float_new(v->value - ((struct py_float*) w)->value);
-}
-
-static struct py_object* float_mul(v, w)struct py_float* v;
-										struct py_object* w;
-{
-	if(!py_is_float(w)) {
-		py_error_set_badarg();
-		return NULL;
-	}
-	return py_float_new(v->value * ((struct py_float*) w)->value);
-}
-
-static struct py_object* float_div(v, w)struct py_float* v;
-										struct py_object* w;
-{
-	if(!py_is_float(w)) {
-		py_error_set_badarg();
-		return NULL;
-	}
-	if(((struct py_float*) w)->value == 0) {
-		py_error_set_string(PY_ZERO_DIVISION_ERROR, "float division by zero");
-		return NULL;
-	}
-	return py_float_new(v->value / ((struct py_float*) w)->value);
-}
-
-static struct py_object* float_rem(v, w)struct py_float* v;
-										struct py_object* w;
-{
-	double wx;
-	if(!py_is_float(w)) {
-		py_error_set_badarg();
-		return NULL;
-	}
-	wx = ((struct py_float*) w)->value;
-	if(wx == 0.0) {
-		py_error_set_string(PY_ZERO_DIVISION_ERROR, "float division by zero");
-		return NULL;
-	}
-	return py_float_new(fmod(v->value, wx));
-}
-
-static struct py_object* float_neg(v)struct py_float* v;
-{
-	return py_float_new(-v->value);
-}
-
-static struct py_object* float_pos(v)struct py_float* v;
-{
-	return py_float_new(v->value);
-}
-
-static struct py_numbermethods float_as_number = {
-		float_add,      /*tp_add*/
-		float_sub,      /*tp_sub*/
-		float_mul,      /*tp_mul*/
-		float_div,      /*tp_divide*/
-		float_rem,      /*tp_remainder*/
-		float_neg,      /*tp_negate*/
-		float_pos,      /*tp_plus*/
-};
-
 struct py_type py_float_type = {
-		{ 1, &py_type_type, 0 }, "float", sizeof(struct py_float),
+		{ 1, 0, &py_type_type }, "float", sizeof(struct py_float),
 		py_object_delete, /* dealloc */
 		0, /* get_attr */
 		0, /* set_attr */
 		float_compare, /* cmp */
-		&float_as_number, /* numbermethods */
 		0, /* sequencemethods */
 };
 

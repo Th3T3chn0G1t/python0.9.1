@@ -41,17 +41,13 @@ struct py_object* py_get_globals(void) {
 
 /* TODO: Move all these "generalising" functions into their own place. */
 /* Test a value used as condition, e.g., in a for or if statement */
-static int py_object_truthy(struct py_object* v) {
+int py_object_truthy(struct py_object* v) {
+
 	if(py_is_int(v)) return py_int_get(v) != 0;
-	if(py_is_float(v)) return py_float_get(v) != 0.0;
-
-	if(v->type->sequencemethods != NULL) {
-		return py_varobject_size(v) != 0;
-	}
-
-	if(py_is_dict(v)) return ((struct py_dict*) v)->di_used != 0;
-
-	if(v == PY_NONE) return 0;
+	else if(py_is_float(v)) return py_float_get(v) != 0.0;
+	else if(py_is_sequence(v)) return py_varobject_size(v) != 0;
+	else if(py_is_dict(v)) return ((struct py_dict*) v)->di_used != 0;
+	else if(v == PY_NONE) return 0;
 
 	/* All other objects are 'true' */
 	return 1;
@@ -60,25 +56,26 @@ static int py_object_truthy(struct py_object* v) {
 static struct py_object* py_object_add(
 		struct py_object* v, struct py_object* w) {
 
-	if(v->type->numbermethods != NULL) {
-		v = (*v->type->numbermethods->add)(v, w);
+	if(py_is_int(v) && py_is_int(w)) {
+		return py_int_new(py_int_get(v) + py_int_get(w));
 	}
-	else if(v->type->sequencemethods != NULL) {
-		v = (*v->type->sequencemethods->cat)(v, w);
+	else if(py_is_float(v) && py_is_float(w)) {
+		return py_float_new(py_float_get(v) + py_float_get(w));
 	}
-	else {
-		py_error_set_string(py_type_error, "+ not supported by operands");
-		return NULL;
-	}
+	else if(py_is_sequence(v)) return (*v->type->sequencemethods->cat)(v, w);
 
-	return v;
+	py_error_set_string(py_type_error, "+ not supported by operands");
+	return NULL;
 }
 
 static struct py_object* py_object_sub(
 		struct py_object* v, struct py_object* w) {
 
-	if(v->type->numbermethods != NULL) {
-		return (*v->type->numbermethods->sub)(v, w);
+	if(py_is_int(v) && py_is_int(w)) {
+		return py_int_new(py_int_get(v) - py_int_get(w));
+	}
+	else if(py_is_float(v) && py_is_float(w)) {
+		return py_float_new(py_float_get(v) - py_float_get(w));
 	}
 
 	py_error_set_string(py_type_error, "bad operand type(s) for -");
@@ -88,33 +85,11 @@ static struct py_object* py_object_sub(
 static struct py_object* py_object_mul(
 		struct py_object* v, struct py_object* w) {
 
-	struct py_type* tp;
-
-	if(py_is_int(v) && w->type->sequencemethods != NULL) {
-		/* int*sequence -- swap v and w */
-		struct py_object* tmp = v;
-
-		v = w;
-		w = tmp;
+	if(py_is_int(v) && py_is_int(w)) {
+		return py_int_new(py_int_get(v) * py_int_get(w));
 	}
-
-	tp = v->type;
-
-	if(tp->numbermethods != NULL) return (*tp->numbermethods->mul)(v, w);
-
-	if(tp->sequencemethods != NULL) {
-		if(!py_is_int(w)) {
-			py_error_set_string(
-					py_type_error, "can't mul sequence with non-int");
-			return NULL;
-		}
-
-		if(tp->sequencemethods->rep == NULL) {
-			py_error_set_string(py_type_error, "sequence does not support *");
-			return NULL;
-		}
-
-		return (*tp->sequencemethods->rep)(v, (int) py_int_get(w));
+	else if(py_is_float(v) && py_is_float(w)) {
+		return py_float_new(py_float_get(v) * py_float_get(w));
 	}
 
 	py_error_set_string(py_type_error, "bad operand type(s) for *");
@@ -122,8 +97,11 @@ static struct py_object* py_object_mul(
 }
 
 static struct py_object* py_object_div(struct py_object* v, struct py_object* w) {
-	if(v->type->numbermethods != NULL) {
-		return (*v->type->numbermethods->div)(v, w);
+	if(py_is_int(v) && py_is_int(w)) {
+		return py_int_new(py_int_get(v) / py_int_get(w));
+	}
+	else if(py_is_float(v) && py_is_float(w)) {
+		return py_float_new(py_float_get(v) / py_float_get(w));
 	}
 
 	py_error_set_string(py_type_error, "bad operand type(s) for /");
@@ -131,8 +109,11 @@ static struct py_object* py_object_div(struct py_object* v, struct py_object* w)
 }
 
 static struct py_object* py_object_mod(struct py_object* v, struct py_object* w) {
-	if(v->type->numbermethods != NULL) {
-		return (*v->type->numbermethods->mod)(v, w);
+	if(py_is_int(v) && py_is_int(w)) {
+		return py_int_new(py_int_get(v) % py_int_get(w));
+	}
+	else if(py_is_float(v) && py_is_float(w)) {
+		return py_float_new(fmod(py_float_get(v), py_float_get(w)));
 	}
 
 	py_error_set_string(py_type_error, "bad operand type(s) for %");
@@ -140,26 +121,19 @@ static struct py_object* py_object_mod(struct py_object* v, struct py_object* w)
 }
 
 static struct py_object* py_object_neg(struct py_object* v) {
-	if(v->type->numbermethods != NULL) {
-		return (*v->type->numbermethods->neg)(v);
+	if(py_is_int(v)) {
+		return py_int_new(-py_int_get(v));
+	}
+	else if(py_is_float(v)) {
+		return py_float_new(-py_float_get(v));
 	}
 
 	py_error_set_string(py_type_error, "bad operand type(s) for unary -");
 	return NULL;
 }
 
-static struct py_object* py_object_pos(struct py_object* v) {
-	if(v->type->numbermethods != NULL) {
-		return (*v->type->numbermethods->pos)(v);
-	}
-
-	py_error_set_string(py_type_error, "bad operand type(s) for unary +");
-	return NULL;
-}
-
 static struct py_object* py_object_not(struct py_object* v) {
-	int outcome = py_object_truthy(v);
-	struct py_object* w = outcome == 0 ? PY_TRUE : PY_FALSE;
+	struct py_object* w = !py_object_truthy(v) ? PY_TRUE : PY_FALSE;
 
 	py_object_incref(w);
 	return w;
@@ -188,8 +162,9 @@ call_builtin(struct py_object* func, struct py_object* arg) {
 	return NULL;
 }
 
-struct py_object*
-py_call_function(struct py_object* func, struct py_object* arg) {
+struct py_object* py_call_function(
+		struct py_object* func, struct py_object* arg) {
+
 	struct py_object* newarg = NULL;
 	struct py_object* newlocals;
 	struct py_object* newglobals;
@@ -248,36 +223,34 @@ py_call_function(struct py_object* func, struct py_object* arg) {
 	return v;
 }
 
-static struct py_object*
-py_object_ind(struct py_object* v, struct py_object* w) {
+static struct py_object* py_object_ind(
+		struct py_object* v, struct py_object* w) {
+
 	struct py_type* tp = v->type;
 
-	if(tp->sequencemethods == NULL && !py_is_dict(v)) {
+	if(!py_is_sequence(v) && !py_is_dict(v)) {
 		py_error_set_string(py_type_error, "unsubscriptable object");
 		return NULL;
 	}
 
-	if(tp->sequencemethods != NULL) {
-		int i;
-
+	if(py_is_sequence(v)) {
 		if(!py_is_int(w)) {
 			py_error_set_string(py_type_error, "sequence subscript not int");
 			return NULL;
 		}
 
-		i = py_int_get(w);
-		return (*tp->sequencemethods->ind)(v, i);
+		return (*tp->sequencemethods->ind)(v, py_int_get(w));
 	}
 
 	return py_dict_lookup_object(v, w);
 }
 
-static struct py_object*
-loop_subscript(struct py_object* v, struct py_object* w) {
-	struct py_sequencemethods* sq = v->type->sequencemethods;
-	int i, n;
+static struct py_object* loop_subscript(
+		struct py_object* v, struct py_object* w) {
 
-	if(sq == NULL) {
+	unsigned i, n;
+
+	if(!py_is_sequence(v)) {
 		py_error_set_string(py_type_error, "loop over non-sequence");
 		return NULL;
 	}
@@ -287,10 +260,10 @@ loop_subscript(struct py_object* v, struct py_object* w) {
 
 	if(i >= n) return NULL; /* End of loop */
 
-	return (*sq->ind)(v, i);
+	return (*v->type->sequencemethods->ind)(v, i);
 }
 
-static int slice_index(struct py_object* v, int isize, int* pi) {
+static int slice_index(struct py_object* v, unsigned* pi) {
 	if(v != NULL) {
 		if(!py_is_int(v)) {
 			py_error_set_string(py_type_error, "slice index must be int");
@@ -298,7 +271,6 @@ static int slice_index(struct py_object* v, int isize, int* pi) {
 		}
 
 		*pi = py_int_get(v);
-		if(*pi < 0) *pi += isize;
 	}
 
 	return 0;
@@ -308,18 +280,18 @@ static int slice_index(struct py_object* v, int isize, int* pi) {
 static struct py_object*
 apply_slice(struct py_object* u, struct py_object* v, struct py_object* w) {
 	struct py_type* tp = u->type;
-	int ilow, ihigh, isize;
+	unsigned ilow, ihigh;
 
-	if(tp->sequencemethods == NULL) {
+	if(!py_is_sequence(u)) {
 		py_error_set_string(py_type_error, "only sequences can be sliced");
 		return NULL;
 	}
 
 	ilow = 0;
-	isize = ihigh = py_varobject_size(u);
+	ihigh = py_varobject_size(u);
 
-	if(slice_index(v, isize, &ilow) != 0) return NULL;
-	if(slice_index(w, isize, &ihigh) != 0) return NULL;
+	if(slice_index(v, &ilow) != 0) return NULL;
+	if(slice_index(w, &ihigh) != 0) return NULL;
 
 	return (*tp->sequencemethods->slice)(u, ilow, ihigh);
 }
@@ -328,16 +300,27 @@ apply_slice(struct py_object* u, struct py_object* v, struct py_object* w) {
 static int assign_subscript(
 		struct py_object* w, struct py_object* key, struct py_object* v) {
 
-	struct py_sequencemethods* sq = w->type->sequencemethods;
+	if(py_is_list(w)) {
+		unsigned i;
 
-	if(sq != NULL && sq->assign_item != NULL) {
 		if(!py_is_int(key)) {
 			py_error_set_string(
 					py_type_error, "sequence subscript must be integer");
 			return -1;
 		}
 
-		return sq->assign_item(w, (int) py_int_get(key), v);
+		i = py_int_get(key);
+		if(i >= py_varobject_size(w)) {
+			py_error_set_string(
+					PY_INDEX_ERROR, "list assignment index out of range");
+			return -1;
+		}
+
+		py_object_incref(v);
+		py_object_decref(((struct py_list*) w)->item[i]);
+		((struct py_list*) w)->item[i] = v;
+
+		return 0;
 	}
 	else if(py_is_dict(w)) return py_dict_assign(w, key, v);
 	else {
@@ -347,40 +330,12 @@ static int assign_subscript(
 	}
 }
 
-/* u[v:w] = x */
-static int assign_slice(
-		struct py_object* u, struct py_object* v, struct py_object* w,
-		struct py_object* x) {
-	struct py_sequencemethods* sq = u->type->sequencemethods;
-	int ilow, ihigh, isize;
-
-	if(sq == NULL) {
-		py_error_set_string(py_type_error, "assign to slice of non-sequence");
-		return -1;
-	}
-
-	if(sq->assign_slice == NULL) {
-		py_error_set_string(py_type_error, "unassignable slice");
-		return -1;
-	}
-
-	ilow = 0;
-	isize = ihigh = py_varobject_size(u);
-
-	if(slice_index(v, isize, &ilow) != 0) return -1;
-	if(slice_index(w, isize, &ihigh) != 0) return -1;
-
-	return (*sq->assign_slice)(u, ilow, ihigh, x);
-}
-
 static int cmp_exception(struct py_object* err, struct py_object* v) {
 	if(py_is_tuple(v)) {
-		int i, n;
+		unsigned i, n;
 
 		n = py_varobject_size(v);
-		for(i = 0; i < n; i++) {
-			if(err == py_tuple_get(v, i)) return 1;
-		}
+		for(i = 0; i < n; i++) if(err == py_tuple_get(v, i)) return 1;
 
 		return 0;
 	}
@@ -389,14 +344,13 @@ static int cmp_exception(struct py_object* err, struct py_object* v) {
 }
 
 static int cmp_member(struct py_object* v, struct py_object* w) {
-	int i, n, cmp;
 	struct py_object* x;
-	struct py_sequencemethods* sq;
+	unsigned i, n;
+	int cmp;
 
 	/* Special case for char in string */
 	if(py_is_string(w)) {
-		char* s;
-		char* end;
+		const char* s;
 		char c;
 
 		if(!py_is_string(v) || py_varobject_size(v) != 1) {
@@ -408,18 +362,13 @@ static int cmp_member(struct py_object* v, struct py_object* w) {
 
 		c = py_string_get(v)[0];
 		s = py_string_get(w);
-		end = s + py_varobject_size(w);
 
-		while(s < end) {
-			if(c == *s++) return 1;
-		}
+		while(s < s + py_varobject_size(w)) if(c == *s++) return 1;
 
 		return 0;
 	}
 
-	sq = w->type->sequencemethods;
-
-	if(sq == NULL) {
+	if(!py_is_sequence(w)) {
 		py_error_set_string(
 				py_type_error,
 				"'in' or 'not in' needs sequence right argument");
@@ -429,7 +378,7 @@ static int cmp_member(struct py_object* v, struct py_object* w) {
 	n = py_varobject_size(w);
 
 	for(i = 0; i < n; i++) {
-		x = (*sq->ind)(w, i);
+		x = (*w->type->sequencemethods->ind)(w, i);
 		cmp = py_object_cmp(v, x);
 		py_object_decref(x);
 
@@ -503,15 +452,15 @@ cmp_outcome(enum py_cmp_op op, struct py_object* v, struct py_object* w) {
 }
 
 static int
-import_from(struct py_object* locals, struct py_object* v, char* name) {
+import_from(struct py_object* locals, struct py_object* v, const char* name) {
 	struct py_object* w;
 	struct py_object* x;
 
 	w = py_module_get_dict(v);
 
 	if(name[0] == '*') {
-		int i;
-		int n = py_dict_size(w);
+		unsigned i;
+		unsigned n = py_dict_size(w);
 
 		for(i = 0; i < n; i++) {
 			name = py_dict_get_key(w, i);
@@ -577,7 +526,7 @@ enum why_code {
 	WHY_BREAK       /* 'break' statement */
 };
 
-char* getname(struct py_frame* f, int i) {
+const char* getname(struct py_frame* f, int i) {
 	return py_string_get(py_list_get(f->code->names, i));
 }
 
@@ -587,8 +536,8 @@ struct py_object* py_code_eval(
 		struct py_code* co, struct py_object* globals, struct py_object* locals,
 		struct py_object* arg) {
 
-	unsigned char* next_instr;
-	int opcode; /* Current opcode */
+	py_byte_t* next_instr;
+	py_byte_t opcode; /* Current opcode */
 	int oparg; /* Current opcode argument, if any */
 	struct py_object** stack_pointer;
 	enum why_code why; /* Reason for block stack unwind */
@@ -597,16 +546,15 @@ struct py_object* py_code_eval(
 	struct py_object* v; /* Temporary objects popped off stack */
 	struct py_object* w;
 	struct py_object* u;
-	struct py_object* t;
 	struct py_frame* f; /* Current frame */
 	int lineno; /* Current line number */
 	struct py_object* retval; /* Return value iff why == WHY_RETURN */
-	char* name; /* Name used by some instructions */
+	const char* name; /* Name used by some instructions */
 
 	/* Code access macros */
 
 #define GETNAME(i) getname(f, i)
-#define FIRST_INSTR() (GETUSTRINGVALUE(f->code->code))
+#define FIRST_INSTR() (f->code->code)
 #define INSTR_OFFSET() (next_instr - FIRST_INSTR())
 #define NEXTOP() (*next_instr++)
 #define NEXTARG() (next_instr += 2, (next_instr[-1]<<8) + next_instr[-2])
@@ -636,7 +584,7 @@ struct py_object* py_code_eval(
 	if(f == NULL) return NULL;
 
 	py_frame_current = f;
-	next_instr = GETUSTRINGVALUE(f->code->code);
+	next_instr = f->code->code;
 	stack_pointer = f->valuestack;
 
 	if(arg != NULL) {
@@ -652,7 +600,7 @@ struct py_object* py_code_eval(
 	for(;;) {
 		/* Extract opcode and argument */
 
-		opcode = NEXTOP();
+		opcode = *next_instr++;
 		if(opcode >= PY_OP_HAVE_ARGUMENT) oparg = NEXTARG();
 
 		/* Main switch on opcode */
@@ -698,15 +646,6 @@ struct py_object* py_code_eval(
 				v = TOP();
 				py_object_incref(v);
 				PUSH(v);
-
-				break;
-			}
-
-			case PY_OP_UNARY_POSITIVE: {
-				v = POP();
-				x = py_object_pos(v);
-				py_object_decref(v);
-				PUSH(x);
 
 				break;
 			}
@@ -850,65 +789,6 @@ struct py_object* py_code_eval(
 				py_object_decref(v);
 				py_object_decref(w);
 				PUSH(x);
-
-				break;
-			}
-
-			case PY_OP_STORE_SLICE + 0: {
-				PY_FALLTHROUGH;
-				/* FALLTHRU */
-			}
-			case PY_OP_STORE_SLICE + 1: {
-				PY_FALLTHROUGH;
-				/* FALLTHRU */
-			}
-			case PY_OP_STORE_SLICE + 2: {
-				PY_FALLTHROUGH;
-				/* FALLTHRU */
-			}
-			case PY_OP_STORE_SLICE + 3: {
-				if((opcode - PY_OP_STORE_SLICE) & 2) { w = POP(); }
-				else { w = NULL; }
-
-				if((opcode - PY_OP_STORE_SLICE) & 1) { v = POP(); }
-				else { v = NULL; }
-
-				u = POP();
-				t = POP();
-				err = assign_slice(u, v, w, t); /* u[v:w] = t */
-				py_object_decref(t);
-				py_object_decref(u);
-				py_object_decref(v);
-				py_object_decref(w);
-
-				break;
-			}
-
-			case PY_OP_DELETE_SLICE + 0: {
-				PY_FALLTHROUGH;
-				/* FALLTHRU */
-			}
-			case PY_OP_DELETE_SLICE + 1: {
-				PY_FALLTHROUGH;
-				/* FALLTHRU */
-			}
-			case PY_OP_DELETE_SLICE + 2: {
-				PY_FALLTHROUGH;
-				/* FALLTHRU */
-			}
-			case PY_OP_DELETE_SLICE + 3: {
-				if((opcode - PY_OP_DELETE_SLICE) & 2) { w = POP(); }
-				else { w = NULL; }
-
-				if((opcode - PY_OP_DELETE_SLICE) & 1) { v = POP(); }
-				else { v = NULL; }
-
-				u = POP();
-				err = assign_slice(u, v, w, (struct py_object*) NULL);
-				/* del u[v:w] */
-				py_object_decref(u);
-				py_object_decref(v);
-				py_object_decref(w);
 
 				break;
 			}

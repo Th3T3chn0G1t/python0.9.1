@@ -32,138 +32,13 @@ struct py_object* py_memory_error;
 struct py_object* py_name_error;
 struct py_object* py_system_error;
 
-static struct py_object*
-builtin_abs(struct py_object* self, struct py_object* v) {
-	(void) self;
-
-	/* XXX This should be a method in the as_number struct in the type */
-	if(v == NULL) {
-		/* */
-	}
-	else if(py_is_int(v)) {
-		long x = py_int_get(v);
-
-		if(x < 0) x = -x;
-		return py_int_new(x);
-	}
-	else if(py_is_float(v)) {
-		double x = py_float_get(v);
-
-		if(x < 0) x = -x;
-		return py_float_new(x);
-	}
-
-	py_error_set_string(py_type_error, "abs() argument must be float or int");
-	return NULL;
+int py_is_sequence(const void* op) {
+	return py_is_list(op) || py_is_tuple(op) || py_is_string(op);
 }
 
-static struct py_object*
-builtin_chr(struct py_object* self, struct py_object* v) {
-	long x;
-	char s;
+static struct py_object* builtin_float(
+		struct py_object* self, struct py_object* v) {
 
-	(void) self;
-
-	if(v == NULL || !py_is_int(v)) {
-		py_error_set_string(py_type_error, "chr() must have int argument");
-		return NULL;
-	}
-
-	x = py_int_get(v);
-
-	if(x < 0 || x >= 256) {
-		py_error_set_string(py_runtime_error, "chr() arg not in range(256)");
-		return NULL;
-	}
-
-	s = (char) x;
-	return py_string_new_size(&s, 1);
-}
-
-static struct py_object*
-builtin_dir(struct py_object* self, struct py_object* v) {
-	struct py_object* d;
-
-	(void) self;
-
-	if(v == NULL) { d = py_get_locals(); }
-	else {
-		if(!py_is_module(v)) {
-			py_error_set_string(
-					py_type_error, "dir() argument, must be module or absent");
-			return NULL;
-		}
-
-		d = py_module_get_dict(v);
-	}
-
-	v = py_dict_get_keys(d);
-	if(py_list_sort(v) != 0) {
-		py_object_decref(v);
-		v = NULL;
-	}
-
-	return v;
-}
-
-static struct py_object*
-builtin_divmod(struct py_object* self, struct py_object* v) {
-	struct py_object* x;
-	struct py_object* y;
-	long xi, yi, xdivy, xmody;
-
-	(void) self;
-
-	if(v == NULL || !py_is_tuple(v) || py_varobject_size(v) != 2) {
-		py_error_set_string(py_type_error, "divmod() requires 2 int arguments");
-		return NULL;
-	}
-
-	x = py_tuple_get(v, 0);
-	y = py_tuple_get(v, 1);
-
-	if(!py_is_int(x) || !py_is_int(y)) {
-		py_error_set_string(py_type_error, "divmod() requires 2 int arguments");
-		return NULL;
-	}
-
-	xi = py_int_get(x);
-	yi = py_int_get(y);
-
-	if(yi == 0) {
-		py_error_set_string(py_type_error, "divmod() division by zero");
-		return NULL;
-	}
-
-	if(yi < 0) { xdivy = -xi / -yi; }
-	else { xdivy = xi / yi; }
-
-	xmody = xi - xdivy * yi;
-
-	if((xmody < 0 && yi > 0) || (xmody > 0 && yi < 0)) {
-		xmody += yi;
-		xdivy -= 1;
-	}
-
-	v = py_tuple_new(2);
-	x = py_int_new(xdivy);
-	y = py_int_new(xmody);
-
-	if(v == NULL || x == NULL || y == NULL || py_tuple_set(v, 0, x) != 0 ||
-		py_tuple_set(v, 1, y) != 0) {
-
-		py_object_decref(v);
-		py_object_decref(x);
-		py_object_decref(y);
-
-		return NULL;
-	}
-
-	return v;
-}
-
-static struct py_object*
-builtin_float(struct py_object* self, struct py_object* v) {
 	(void) self;
 
 	if(v == NULL) {
@@ -182,8 +57,9 @@ builtin_float(struct py_object* self, struct py_object* v) {
 	return NULL;
 }
 
-static struct py_object*
-builtin_int(struct py_object* self, struct py_object* v) {
+static struct py_object* builtin_int(
+		struct py_object* self, struct py_object* v) {
+
 	(void) self;
 
 	if(v == NULL) {
@@ -202,10 +78,10 @@ builtin_int(struct py_object* self, struct py_object* v) {
 	return NULL;
 }
 
-static struct py_object*
-builtin_len(struct py_object* self, struct py_object* v) {
+static struct py_object* builtin_len(
+		struct py_object* self, struct py_object* v) {
+
 	long len;
-	struct py_type* tp;
 
 	(void) self;
 
@@ -214,9 +90,7 @@ builtin_len(struct py_object* self, struct py_object* v) {
 		return NULL;
 	}
 
-	tp = v->type;
-
-	if(tp->sequencemethods != NULL) len = py_varobject_size(v);
+	if(py_is_sequence(v)) len = py_varobject_size(v);
 	else if(py_is_dict(v)) len = ((struct py_dict*) v)->di_used;
 	else {
 		py_error_set_string(py_type_error, "len() of unsized object");
@@ -226,81 +100,9 @@ builtin_len(struct py_object* self, struct py_object* v) {
 	return py_int_new(len);
 }
 
-static struct py_object* min_max(struct py_object* v, int sign) {
-	int i, n, cmp;
-	struct py_object* w;
-	struct py_object* x;
-	struct py_sequencemethods* sq;
+static struct py_object* builtin_range(
+		struct py_object* self, struct py_object* v) {
 
-	if(v == NULL) {
-		py_error_set_string(py_type_error, "min() or max() without argument");
-		return NULL;
-	}
-
-	sq = v->type->sequencemethods;
-
-	if(sq == NULL) {
-		py_error_set_string(py_type_error, "min() or max() of non-sequence");
-		return NULL;
-	}
-
-	n = py_varobject_size(v);
-
-	if(n == 0) {
-		py_error_set_string(
-				py_runtime_error, "min() or max() of empty sequence");
-		return NULL;
-	}
-
-	w = (*sq->ind)(v, 0); /* Implies py_object_incref */
-
-	for(i = 1; i < n; i++) {
-		x = (*sq->ind)(v, i); /* Implies py_object_incref */
-		cmp = py_object_cmp(x, w);
-
-		if(cmp * sign > 0) {
-			py_object_decref(w);
-			w = x;
-		}
-		else py_object_decref(x);
-	}
-
-	return w;
-}
-
-static struct py_object*
-builtin_min(struct py_object* self, struct py_object* v) {
-	(void) self;
-
-	return min_max(v, -1);
-}
-
-static struct py_object*
-builtin_max(struct py_object* self, struct py_object* v) {
-	(void) self;
-
-	return min_max(v, 1);
-}
-
-static struct py_object*
-builtin_ord(struct py_object* self, struct py_object* v) {
-	(void) self;
-
-	if(v == NULL || !py_is_string(v)) {
-		py_error_set_string(py_type_error, "ord() must have string argument");
-		return NULL;
-	}
-
-	if(py_varobject_size(v) != 1) {
-		py_error_set_string(py_runtime_error, "ord() arg must have length 1");
-		return NULL;
-	}
-
-	return py_int_new((long) (py_string_get(v)[0] & 0xff));
-}
-
-static struct py_object*
-builtin_range(struct py_object* self, struct py_object* v) {
 	static char* errmsg = "range() requires 1-3 int arguments";
 	int i, n;
 	long ilow, ihigh, istep;
@@ -372,44 +174,52 @@ builtin_range(struct py_object* self, struct py_object* v) {
 	return v;
 }
 
-static struct py_object*
-builtin_reload(struct py_object* self, struct py_object* v) {
+static struct py_object* builtin_append(
+		struct py_object* self, struct py_object* v) {
+
+	struct py_object* lp = py_tuple_get(v, 0);
+	struct py_object* op = py_tuple_get(v, 1);
+
 	(void) self;
 
-	return py_reload_module(v);
+	if(!lp || !op || py_list_add(lp, op) == -1) return 0;
+
+	return py_object_incref(PY_NONE);
 }
 
-static struct py_object*
-builtin_type(struct py_object* self, struct py_object* v) {
+static struct py_object* builtin_insert(
+		struct py_object* self, struct py_object* args) {
+
+	struct py_object* lp;
+	struct py_object* ind;
+	struct py_object* op;
+
 	(void) self;
 
-	if(v == NULL) {
-		py_error_set_string(py_type_error, "type() requres an argument");
+	if(!args || !py_is_tuple(args) || py_varobject_size(args) != 2 ||
+			!(lp = py_tuple_get(args, 0)) || !py_is_list(lp) ||
+			!(ind = py_tuple_get(args, 1)) || !py_is_int(ind) ||
+			!(op = py_tuple_get(args, 2))) {
+
+		py_error_set_badarg();
 		return NULL;
 	}
 
-	v = (struct py_object*) v->type;
-	py_object_incref(v);
-	return v;
+	if(py_list_insert(lp, py_int_get(ind), op) == -1) return NULL;
+
+	return py_object_incref(PY_NONE);
 }
 
 static struct py_methodlist builtin_methods[] = {
-		{ "abs", builtin_abs },
-		{ "chr", builtin_chr },
-		{ "dir", builtin_dir },
-		{ "divmod", builtin_divmod },
 		{ "float", builtin_float },
 		{ "int", builtin_int },
 		{ "len", builtin_len },
-		{ "max", builtin_max },
-		{ "min", builtin_min },
-		{ "ord", builtin_ord },
 		{ "range", builtin_range },
-		{ "reload", builtin_reload },
-		{ "type", builtin_type },
-		{ NULL, NULL }, };
+		{ "append", builtin_append },
+		{ "insert", builtin_insert },
+		{ NULL, NULL } };
 
-/* TODO: Centralise all global interpreter state. */
+/* TODO: Python global state. */
 static struct py_object* builtin_dict;
 
 struct py_object* py_builtin_get(const char* name) {

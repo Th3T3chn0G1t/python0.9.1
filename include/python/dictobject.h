@@ -30,9 +30,9 @@ struct py_dictentry {
 
 struct py_dict {
 	struct py_object ob;
-	int di_fill;
-	int di_used;
-	int di_size;
+	unsigned di_fill;
+	unsigned di_used;
+	unsigned di_size;
 	struct py_dictentry* di_table;
 };
 
@@ -48,8 +48,8 @@ struct py_object* py_dict_lookup_object(struct py_object*, struct py_object*);
 int py_dict_assign(struct py_object*, struct py_object*, struct py_object*);
 int py_dict_insert(struct py_object*, const char*, struct py_object*);
 int py_dict_remove(struct py_object*, const char*);
-int py_dict_size(struct py_object*);
-char* py_dict_get_key(struct py_object*, int);
+unsigned py_dict_size(struct py_object*);
+char* py_dict_get_key(struct py_object*, unsigned);
 struct py_object* py_dict_get_keys(struct py_object*);
 
 void py_done_dict(void);

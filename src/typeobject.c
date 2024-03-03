@@ -11,11 +11,11 @@
 #include <python/stringobject.h>
 
 struct py_type py_type_type = {
-		{ 1, &py_type_type, 0 },
+		{ 1, 0, &py_type_type },
 		"type", /* Name of this type */
 		sizeof(struct py_type), /* Basic object size */
 		0, /* dealloc */
 		0, /* get_attr */
 		0, /* set_attr */
 		0, /* cmp*/
-		0, 0 };
+		0 };

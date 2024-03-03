@@ -78,9 +78,9 @@ struct py_object {
 
 struct py_varobject {
 	unsigned refcount;
-	struct py_type* type;
-
 	unsigned size;
+
+	struct py_type* type;
 
 #ifdef PY_REF_TRACE
 	struct py_object* next;
@@ -102,23 +102,10 @@ struct py_varobject {
  * method blocks.
  */
 
-struct py_numbermethods {
-	struct py_object* (*add)(struct py_object*, struct py_object*);
-	struct py_object* (*sub)(struct py_object*, struct py_object*);
-	struct py_object* (*mul)(struct py_object*, struct py_object*);
-	struct py_object* (*div)(struct py_object*, struct py_object*);
-	struct py_object* (*mod)(struct py_object*, struct py_object*);
-	struct py_object* (*neg)(struct py_object*);
-	struct py_object* (*pos)(struct py_object*);
-};
-
 struct py_sequencemethods {
 	struct py_object* (*cat)(struct py_object*, struct py_object*);
-	struct py_object* (*rep)(struct py_object*, int);
-	struct py_object* (*ind)(struct py_object*, int);
-	struct py_object* (*slice)(struct py_object*, int, int);
-	int (*assign_item)(struct py_object*, int, struct py_object*);
-	int (*assign_slice)(struct py_object*, int, int, struct py_object*);
+	struct py_object* (*ind)(struct py_object*, unsigned);
+	struct py_object* (*slice)(struct py_object*, unsigned, unsigned);
 };
 
 enum py_print_mode {
@@ -139,8 +126,6 @@ struct py_type {
 	int (*set_attr)(struct py_object*, const char*, struct py_object*);
 	int (*cmp)(const struct py_object*, const struct py_object*);
 
-	/* Method suites for standard classes */
-	struct py_numbermethods* numbermethods;
 	struct py_sequencemethods* sequencemethods;
 };
 
@@ -148,6 +133,7 @@ struct py_type {
 extern struct py_type py_type_type; /* The type of type objects */
 
 /* Generic operations on objects */
+
 /*
  * NEWOBJ(type, typeobj) allocates memory for a new object of the given
  * type; here 'type' must be the C structure type used to represent the
@@ -164,6 +150,8 @@ struct py_object* py_object_get_attr(struct py_object*, const char*);
 int py_object_set_attr(struct py_object*, const char*, struct py_object*);
 
 unsigned py_varobject_size(const void*);
+
+int py_is_sequence(const void*);
 
 /*
  * py_object_incref and py_object_decref are used to increment or decrement

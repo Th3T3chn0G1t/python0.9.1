@@ -8,9 +8,11 @@
 #ifndef PY_COMPILE_H
 #define PY_COMPILE_H
 
+#include <python/node.h>
+#include <python/bitset.h>
+
 #include <python/object.h>
 #include <python/stringobject.h>
-#include <python/node.h>
 
 /* An intermediate code fragment contains:
    - a string that encodes the instructions,
@@ -20,10 +22,10 @@
 struct py_code {
 	struct py_object ob;
 
-	struct py_string* code;  /* instruction opcodes */
-	struct py_object* consts;      /* list of immutable constant objects */
-	struct py_object* names;       /* list of stringobjects */
-	struct py_object* filename;    /* string */
+	py_byte_t* code; /* instruction opcodes */
+	struct py_object* consts; /* list of immutable constant objects */
+	struct py_object* names; /* list of stringobjects */
+	struct py_object* filename; /* string */
 };
 
 /* TODO: Python global state. */

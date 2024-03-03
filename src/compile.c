@@ -12,7 +12,6 @@
 */
 
 #include <python/std.h>
-#include <python/node.h>
 #include <python/token.h>
 #include <python/graminit.h>
 #include <python/opcode.h>
@@ -24,50 +23,33 @@
 #include <python/intobject.h>
 #include <python/floatobject.h>
 
-#define OFF(x) offsetof(struct py_code, x)
+static void code_dealloc(struct py_object* op) {
+	struct py_code* co = (struct py_code*) op;
 
-static struct py_structmember code_memberlist[] = {
-		{ "code",     PY_TYPE_OBJECT, OFF(code),     PY_READWRITE },
-		{ "consts",   PY_TYPE_OBJECT, OFF(consts),   PY_READWRITE },
-		{ "names",    PY_TYPE_OBJECT, OFF(names),    PY_READWRITE },
-		{ "filename", PY_TYPE_OBJECT, OFF(filename), PY_READWRITE },
-		{ NULL,       0, 0,                          0 }  /* Sentinel */
-};
-
-static struct py_object* code_getattr(co, name)struct py_code* co;
-											   char* name;
-{
-	return py_struct_get(co, code_memberlist, name);
-}
-
-static void code_dealloc(co)struct py_code* co;
-{
-	py_object_decref(co->code);
+	free(co->code);
 	py_object_decref(co->consts);
 	py_object_decref(co->names);
 	py_object_decref(co->filename);
-	free(co);
 }
 
 struct py_type py_code_type = {
-		{ 1, &py_type_type, 0 }, "code", sizeof(struct py_code),
+		{ 1, 0, &py_type_type }, "code", sizeof(struct py_code),
 		code_dealloc, /* dealloc */
-		code_getattr, /* get_attr */
+		0, /* get_attr */
 		0, /* set_attr */
 		0, /* cmp */
-		0, /* numbermethods */
 		0, /* sequencemethods */
 };
 
 static struct py_code* newcodeobject(
-		struct py_object* code, struct py_object* consts,
+		py_byte_t* code, struct py_object* consts,
 		struct py_object* names, const char* filename) {
 
 	struct py_code* co;
 	int i;
 
 	/* Check argument types */
-	if(code == NULL || !py_is_string(code) || consts == NULL ||
+	if(consts == NULL ||
 	   !py_is_list(consts) || names == NULL || !py_is_list(names)) {
 		py_error_set_badcall();
 		return NULL;
@@ -83,8 +65,7 @@ static struct py_code* newcodeobject(
 	}
 	co = py_object_new(&py_code_type);
 	if(co != NULL) {
-		py_object_incref(code);
-		co->code = (struct py_string*) code;
+		co->code = code;
 		py_object_incref(consts);
 		co->consts = consts;
 		py_object_incref(names);
@@ -100,7 +81,7 @@ static struct py_code* newcodeobject(
 
 /* Data structure used internally */
 struct compiling {
-	struct py_object* c_code; /* string */
+	py_byte_t* c_code; /* string */
 	struct py_object* c_consts; /* list of objects */
 	struct py_object* c_names; /* list of strings (names) */
 	int c_nexti; /* index into c_code */
@@ -138,10 +119,9 @@ static int com_addname(struct compiling*, struct py_object*);
 static void com_addopname(struct compiling*, int, struct py_node*);
 
 static int com_init(struct compiling* c, const char* filename) {
-	if((c->c_code = py_string_new_size(NULL, 0)) == NULL) goto fail_3;
+	c->c_code = 0;
 
 	if((c->c_consts = py_list_new(0)) == NULL) goto fail_2;
-
 	if((c->c_names = py_list_new(0)) == NULL) goto fail_1;
 
 	c->c_nexti = 0;
@@ -149,13 +129,11 @@ static int com_init(struct compiling* c, const char* filename) {
 	c->c_infunction = 0;
 	c->c_loops = 0;
 	c->c_filename = filename;
+
 	return 1;
 
-	fail_1:
-	py_object_decref(c->c_consts);
-	fail_2:
-	py_object_decref(c->c_code);
-	fail_3:
+	fail_1: py_object_decref(c->c_consts);
+	fail_2: py_object_decref(c->c_code);
 	return 0;
 }
 
@@ -166,11 +144,9 @@ static void com_free(c)struct compiling* c;
 	py_object_decref(c->c_names);
 }
 
-static void com_done(c)struct compiling* c;
-{
-	if(c->c_code != NULL) {
-		py_string_resize(&c->c_code, c->c_nexti);
-	}
+static void com_done(struct compiling* c) {
+	/* TODO: Leaky realloc. */
+	c->c_code = realloc(c->c_code, c->c_nexti);
 }
 
 static void com_addbyte(c, byte)struct compiling* c;
@@ -186,14 +162,18 @@ static void com_addbyte(c, byte)struct compiling* c;
 	if(c->c_code == NULL) {
 		return;
 	}
+
 	len = py_varobject_size(c->c_code);
 	if(c->c_nexti >= len) {
-		if(py_string_resize(&c->c_code, len + 1000) != 0) {
+		/* TODO: Leaky realloc. */
+		c->c_code = realloc(c->c_code, len + 1024);
+		if(!c->c_code) {
 			c->c_errors++;
 			return;
 		}
 	}
-	py_string_get(c->c_code)[c->c_nexti++] = byte;
+
+	c->c_code[c->c_nexti++] = byte;
 }
 
 static void com_addint(c, x)struct compiling* c;
@@ -228,16 +208,15 @@ static void com_addfwref(c, op, p_anchor)struct compiling* c;
 static void com_backpatch(c, anchor)struct compiling* c;
 									int anchor; /* Must be nonzero */
 {
-	unsigned char* code = (unsigned char*) py_string_get(c->c_code);
 	int target = c->c_nexti;
 	int dist;
 	int prev;
 	for(;;) {
 		/* Make the JUMP instruction at anchor point to target */
-		prev = code[anchor] + (code[anchor + 1] << 8);
+		prev = c->c_code[anchor] + (c->c_code[anchor + 1] << 8);
 		dist = target - (anchor + 2);
-		code[anchor] = dist & 0xff;
-		code[anchor + 1] = dist >> 8;
+		c->c_code[anchor] = dist & 0xff;
+		c->c_code[anchor + 1] = dist >> 8;
 		if(!prev) {
 			break;
 		}
@@ -317,89 +296,37 @@ static struct py_object* parsenumber(s)char* s;
 	return NULL;
 }
 
-static struct py_object* parsestr(s)char* s;
-{
-	struct py_object* v;
-	int len;
-	char* buf;
-	char* p;
-	int c;
-	if(*s != '\'') {
-		py_error_set_badcall();
-		return NULL;
-	}
-	s++;
-	len = strlen(s);
-	if(s[--len] != '\'') {
-		py_error_set_badcall();
-		return NULL;
-	}
-	if(strchr(s, '\\') == NULL) {
-		return py_string_new_size(s, len);
-	}
-	v = py_string_new_size(NULL, len);
-	p = buf = py_string_get(v);
-	while(*s != '\0' && *s != '\'') {
-		if(*s != '\\') {
-			*p++ = *s++;
-			continue;
+static struct py_object* parsestr(const char* s) {
+	char* buf = 0;
+	unsigned len = 0;
+	unsigned i;
+
+	for(i = 0; s[i]; ++i) {
+		/* TODO: Leaky realloc. */
+		buf = realloc(buf, ++len);
+		if(!buf) return py_error_set_nomem();
+
+		buf[len - 1] = s[i];
+		if(s[i] != '\\') continue;
+
+#define _(c, v) case c: buf[i] = v; continue
+		switch(s[++i]) {
+			default: continue;
+			_('\\', '\\');
+			_('\'', '\'');
+			_('b', '\b');
+			_('f', '\014');
+			_('t', '\t');
+			_('n', '\n');
+			_('r', '\r');
+			_('v', '\013');
+			_('E', '\033');
+			_('a', '\007');
 		}
-		s++;
-		switch(*s++) {
-			/* XXX This assumes ASCII! */
-			case '\\': *p++ = '\\';
-				break;
-			case '\'': *p++ = '\'';
-				break;
-			case 'b': *p++ = '\b';
-				break;
-			case 'f': *p++ = '\014';
-				break; /* FF */
-			case 't': *p++ = '\t';
-				break;
-			case 'n': *p++ = '\n';
-				break;
-			case 'r': *p++ = '\r';
-				break;
-			case 'v': *p++ = '\013';
-				break; /* VT */
-			case 'E': *p++ = '\033';
-				break; /* ESC, not C */
-			case 'a': *p++ = '\007';
-				break; /* BEL, not classic C */
-			case '0':
-			case '1':
-			case '2':
-			case '3':
-			case '4':
-			case '5':
-			case '6':
-			case '7':c = s[-1] - '0';
-				if('0' <= *s && *s <= '7') {
-					c = (c << 3) + *s++ - '0';
-					if('0' <= *s && *s <= '7') {
-						c = (c << 3) + *s++ - '0';
-					}
-				}
-				*p++ = c;
-				break;
-			case 'x':
-				if(isxdigit(*s)) {
-					sscanf(s, "%x", (unsigned*) &c);
-					*p++ = c;
-					do {
-						s++;
-					} while(isxdigit(*s));
-					break;
-				}
-				/* FALLTHROUGH */
-			default: *p++ = '\\';
-				*p++ = s[-1];
-				break;
-		}
+#undef _
 	}
-	py_string_resize(&v, (int) (p - buf));
-	return v;
+
+	return py_string_new_size(buf, len);
 }
 
 static void com_list_constructor(c, n)struct compiling* c;
@@ -554,11 +481,7 @@ static void com_factor(c, n)struct compiling* c;
 {
 	int i;
 	PY_REQ(n, factor);
-	if(n->children[0].type == PY_PLUS) {
-		com_factor(c, &n->children[1]);
-		com_addbyte(c, PY_OP_UNARY_POSITIVE);
-	}
-	else if(n->children[0].type == PY_MINUS) {
+	if(n->children[0].type == PY_MINUS) {
 		com_factor(c, &n->children[1]);
 		com_addbyte(c, PY_OP_UNARY_NEGATIVE);
 	}
@@ -819,13 +742,6 @@ static void com_assign_attr(c, n, assigning)struct compiling* c;
 	com_addopname(c, assigning ? PY_OP_STORE_ATTR : PY_OP_DELETE_ATTR, n);
 }
 
-static void com_assign_slice(c, n, assigning)struct compiling* c;
-											 struct py_node* n;
-											 int assigning;
-{
-	com_slice(c, n, assigning ? PY_OP_STORE_SLICE : PY_OP_DELETE_SLICE);
-}
-
 static void com_assign_subscript(c, n, assigning)struct compiling* c;
 												 struct py_node* n;
 												 int assigning;
@@ -850,12 +766,7 @@ static void com_assign_trailer(c, n, assigning)struct compiling* c;
 		case PY_LSQB: /* '[' subscript ']' */
 			n = &n->children[1];
 			PY_REQ(n, subscript); /* subscript: expr | [expr] ':' [expr] */
-			if(n->count > 1 || n->children[0].type == PY_COLON) {
-				com_assign_slice(c, n, assigning);
-			}
-			else {
-				com_assign_subscript(c, &n->children[0], assigning);
-			}
+			com_assign_subscript(c, &n->children[0], assigning);
 			break;
 		default:py_error_set_string(py_type_error, "unknown trailer type");
 			c->c_errors++;
@@ -1406,10 +1317,10 @@ static void com_classdef(c, n)struct compiling* c;
 	struct py_object* v;
 	PY_REQ(n, classdef);
 	/*
-	classdef: 'class' PY_NAME parameters ['=' baselist] ':' suite
-	baselist: atom arguments (',' atom arguments)*
-	arguments: '(' [testlist] ')'
-	*/
+	 * classdef: 'class' PY_NAME parameters ['=' baselist] ':' suite
+	 * baselist: atom arguments (',' atom arguments)*
+	 * arguments: '(' [testlist] ')'
+     */
 	if(n->count == 7) {
 		com_bases(c, &n->children[4]);
 	}

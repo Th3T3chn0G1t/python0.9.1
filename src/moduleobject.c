@@ -43,12 +43,12 @@ struct py_object* py_module_get_dict(m)struct py_object* m;
 	return ((moduleobject*) m)->md_dict;
 }
 
-char* py_module_get_name(m)struct py_object* m;
-{
+const char* py_module_get_name(struct py_object* m) {
 	if(!py_is_module(m)) {
 		py_error_set_badarg();
 		return NULL;
 	}
+
 	return py_string_get(((moduleobject*) m)->md_name);
 }
 
@@ -60,7 +60,6 @@ static void module_dealloc(m)moduleobject* m;
 		py_object_decref(m->md_name);
 	if(m->md_dict != NULL)
 		py_object_decref(m->md_dict);
-	free(m);
 }
 
 static struct py_object* module_getattr(m, name)moduleobject* m;
@@ -102,11 +101,11 @@ static int module_setattr(m, name, v)moduleobject* m;
 }
 
 struct py_type py_module_type = {
-		{ 1, &py_type_type, 0 }, /* size */
+		{ 1, 0, &py_type_type }, /* size */
 		"module", /* name */
 		sizeof(moduleobject), /* tp_size */
 		module_dealloc, /* dealloc */
 		module_getattr, /* get_attr */
 		module_setattr, /* set_attr */
 		0, /* cmp */
-		0, 0 };
+		0 };

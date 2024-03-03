@@ -16,7 +16,6 @@ enum py_opcode {
 	PY_OP_ROT_THREE = 3,
 	PY_OP_DUP_TOP = 4,
 
-	PY_OP_UNARY_POSITIVE = 10,
 	PY_OP_UNARY_NEGATIVE = 11,
 	PY_OP_UNARY_NOT = 12,
 	PY_OP_UNARY_CALL = 14,
@@ -31,12 +30,6 @@ enum py_opcode {
 
 	PY_OP_SLICE = 30,
 	/* Also uses 31-33 */
-
-	PY_OP_STORE_SLICE = 40,
-	/* Also uses 41-43 */
-
-	PY_OP_DELETE_SLICE = 50,
-	/* Also uses 51-53 */
 
 	PY_OP_STORE_SUBSCR = 60,
 	PY_OP_DELETE_SUBSCR = 61,

@@ -38,13 +38,13 @@ struct py_object* py_list_new(unsigned size) {
 	return (struct py_object*) op;
 }
 
-struct py_object* py_list_get(struct py_object* op, int i) {
+struct py_object* py_list_get(struct py_object* op, unsigned i) {
 	if(!py_is_list(op)) {
 		py_error_set_badcall();
 		return NULL;
 	}
 
-	if(i < 0 || i >= (int) py_varobject_size(op)) {
+	if(i >= py_varobject_size(op)) {
 		py_error_set_string(PY_INDEX_ERROR, "list index out of range");
 		return NULL;
 	}
@@ -52,7 +52,7 @@ struct py_object* py_list_get(struct py_object* op, int i) {
 	return ((struct py_list*) op)->item[i];
 }
 
-int py_list_set(struct py_object* op, int i, struct py_object* newitem) {
+int py_list_set(struct py_object* op, unsigned i, struct py_object* newitem) {
 	struct py_object* olditem;
 	struct py_list* lp = (struct py_list*) op;
 
@@ -63,7 +63,7 @@ int py_list_set(struct py_object* op, int i, struct py_object* newitem) {
 		return -1;
 	}
 
-	if(i < 0 || i >= (int) py_varobject_size(op)) {
+	if(i >= py_varobject_size(op)) {
 		if(newitem != NULL) py_object_decref(newitem);
 
 		py_error_set_string(
@@ -74,14 +74,14 @@ int py_list_set(struct py_object* op, int i, struct py_object* newitem) {
 	olditem = lp->item[i];
 	lp->item[i] = newitem;
 
-	if(olditem != NULL) py_object_decref(olditem);
+	py_object_decref(olditem);
 
 	return 0;
 }
 
-static int ins1(struct py_list* self, int where, struct py_object* v) {
-	int i;
+static int ins1(struct py_list* self, unsigned where, struct py_object* v) {
 	struct py_object** items;
+	unsigned i;
 
 	if(v == NULL) {
 		py_error_set_badcall();
@@ -97,12 +97,9 @@ static int ins1(struct py_list* self, int where, struct py_object* v) {
 		return -1;
 	}
 
-	if(where < 0) where = 0;
+	if(where > self->ob.size) where = self->ob.size;
 
-	/* TODO: Address massive amount of `(int)' casting from old code. */
-	if(where > (int) self->ob.size) where = (int) self->ob.size;
-
-	for(i = (int) self->ob.size; --i >= where;) items[i + 1] = items[i];
+	for(i = self->ob.size + 1; --i >= where + 1;) items[i] = items[i - 1];
 
 	py_object_incref(v);
 	items[where] = v;
@@ -114,7 +111,7 @@ static int ins1(struct py_list* self, int where, struct py_object* v) {
 }
 
 int py_list_insert(
-		struct py_object* op, int where, struct py_object* newitem) {
+		struct py_object* op, unsigned where, struct py_object* newitem) {
 
 	if(!py_is_list(op)) {
 		py_error_set_badcall();
@@ -143,7 +140,6 @@ static void list_dealloc(struct py_object* op) {
 	}
 
 	free(lp->item);
-	free(op);
 }
 
 static int list_compare(const struct py_object* v, const struct py_object* w) {
@@ -163,10 +159,10 @@ static int list_compare(const struct py_object* v, const struct py_object* w) {
 	return (int) (a - b);
 }
 
-static struct py_object* list_item(struct py_object* op, int i) {
+static struct py_object* list_item(struct py_object* op, unsigned i) {
 	struct py_object* item;
 
-	if(i < 0 || i >= (int) py_varobject_size(op)) {
+	if(i >= py_varobject_size(op)) {
 		py_error_set_string(PY_INDEX_ERROR, "list index out of range");
 		return NULL;
 	}
@@ -176,21 +172,16 @@ static struct py_object* list_item(struct py_object* op, int i) {
 	return item;
 }
 
-static struct py_object* list_slice(struct py_object* op, int ilow, int ihigh) {
+static struct py_object* list_slice(
+		struct py_object* op, unsigned ilow, unsigned ihigh) {
+
 	struct py_list* np;
-	int i;
+	unsigned i;
 
-	if(ilow < 0) ilow = 0;
-	else if(ilow > (int) py_varobject_size(op)) {
-		ilow = (int) py_varobject_size(op);
-	}
-
-	if(ihigh < 0) ihigh = 0;
+	if(ilow > py_varobject_size(op)) ilow = py_varobject_size(op);
 
 	if(ihigh < ilow) ihigh = ilow;
-	else if(ihigh > (int) py_varobject_size(op)) {
-		ihigh = (int) py_varobject_size(op);
-	}
+	else if(ihigh > py_varobject_size(op)) ihigh = py_varobject_size(op);
 
 	np = (struct py_list*) py_list_new(ihigh - ilow);
 	if(np == NULL) return NULL;
@@ -237,203 +228,17 @@ static struct py_object* list_concat(
 	return (struct py_object*) np;
 }
 
-
-
-static int list_ass_slice(
-		struct py_object* v, int ilow, int ihigh, struct py_object* w) {
-
-	struct py_object** item;
-	struct py_list* a;
-	struct py_list* b;
-	unsigned n; /* Size of replacement list */
-	int d; /* Change in size */
-	unsigned k; /* Loop index */
-
-	a = ((struct py_list*) v);
-	b = ((struct py_list*) w);
-
-	if(w == NULL) n = 0;
-	else if(py_is_list(w)) n = py_varobject_size(b);
-	else {
-		py_error_set_badarg();
-		return -1;
-	}
-
-	if(ilow < 0) ilow = 0;
-	else if(ilow > (int) py_varobject_size(a)) {
-		ilow = (int) py_varobject_size(a);
-	}
-
-	if(ihigh < 0) ihigh = 0;
-
-	if(ihigh < ilow) ihigh = ilow;
-	else if(ihigh > (int) py_varobject_size(a)) {
-		ihigh = (int) py_varobject_size(a);
-	}
-
-	item = a->item;
-	d = (int) n - (ihigh - ilow);
-
-	if(d <= 0) { /* Delete -d items; py_object_decref ihigh-ilow items */
-		for(k = ilow; k < (unsigned) ihigh; k++) py_object_decref(item[k]);
-
-		if(d < 0) {
-			for(; k < py_varobject_size(a); k++) item[k + d] = item[k];
-
-			((struct py_varobject*) a)->size += d;
-
-			/* TODO: Leaky realloc. */
-			item = realloc(
-					item, py_varobject_size(a) * sizeof(struct py_object*));
-
-			a->item = item;
-		}
-	}
-	else { /* Insert d items; py_object_decref ihigh-ilow items */
-		/* TODO: Leaky realloc. */
-		item = realloc(
-				item, (py_varobject_size(a) + d) * sizeof(struct py_object*));
-		if(item == NULL) {
-			py_error_set_nomem();
-			return -1;
-		}
-
-		for(k = py_varobject_size(a); --k >= (unsigned) ihigh;) {
-			item[k + d] = item[k];
-		}
-
-		for(; k >= (unsigned) ilow; --k) py_object_decref(item[k]);
-
-		a->item = item;
-		((struct py_varobject*) a)->size += d;
-	}
-
-	for(k = 0; k < n; k++, ilow++) {
-		struct py_object* x = b->item[k];
-
-		py_object_incref(x);
-		item[ilow] = x;
-	}
-
-	return 0;
-}
-
-static int list_ass_item(struct py_object* v, int i, struct py_object* w) {
-	if(i < 0 || i >= (int) py_varobject_size(v)) {
-		py_error_set_string(
-				PY_INDEX_ERROR, "list assignment index out of range");
-		return -1;
-	}
-
-	if(v == NULL) return list_ass_slice((struct py_object*) v, i, i + 1, w);
-
-	py_object_incref(w);
-	py_object_decref(((struct py_list*) v)->item[i]);
-	((struct py_list*) v)->item[i] = w;
-
-	return 0;
-}
-
-static struct py_object* ins(self, where, v)struct py_list* self;
-											int where;
-											struct py_object* v;
-{
-	if(ins1(self, where, v) != 0) {
-		return NULL;
-	}
-	py_object_incref(PY_NONE);
-	return PY_NONE;
-}
-
-static struct py_object* listinsert(self, args)struct py_list* self;
-											   struct py_object* args;
-{
-	int i;
-	if(args == NULL || !py_is_tuple(args) || py_varobject_size(args) != 2) {
-		py_error_set_badarg();
-		return NULL;
-	}
-	if(!py_arg_int(py_tuple_get(args, 0), &i)) {
-		return NULL;
-	}
-	return ins(self, i, py_tuple_get(args, 1));
-}
-
-static struct py_object* listappend(
-		struct py_object* self, struct py_object* args) {
-
-	return ins((struct py_list*) self, (int) py_varobject_size(self), args);
-}
-
-static int py_list_cmp_qsort(
-		const void* v, const void* w) {
-
-	return py_object_cmp(*(struct py_object**) v, *(struct py_object**) w);
-}
-
-static struct py_object* listsort(
-		struct py_object* self, struct py_object* args) {
-
-	if(args != NULL) {
-		py_error_set_badarg();
-		return NULL;
-	}
-
-	py_error_clear();
-	if(py_varobject_size(self) > 1) {
-		int (*cmp)(const void*, const void*) = py_list_cmp_qsort;
-		struct py_object** item = ((struct py_list*) self)->item;
-
-		qsort(item, py_varobject_size(self), sizeof(struct py_object*), cmp);
-	}
-
-	if(py_error_occurred()) return NULL;
-
-	py_object_incref(PY_NONE);
-	return PY_NONE;
-}
-
-int py_list_sort(struct py_object* v) {
-	if(v == NULL || !py_is_list(v)) {
-		py_error_set_badcall();
-		return -1;
-	}
-
-	v = listsort(v, (struct py_object*) NULL);
-	if(v == NULL) return -1;
-
-	py_object_decref(v);
-	return 0;
-}
-
-static struct py_methodlist list_methods[] = {
-		{ "append", listappend },
-		{ "insert", listinsert },
-		{ "sort",   listsort },
-		{ NULL, NULL }           /* sentinel */
-};
-
-static struct py_object* list_getattr(f, name)struct py_list* f;
-											  char* name;
-{
-	return py_methodlist_find(list_methods, (struct py_object*) f, name);
-}
-
 static struct py_sequencemethods list_as_sequence = {
-		list_concat,    /*cat*/
-		0,              /*rep*/
-		list_item,      /*ind*/
-		list_slice,     /*slice*/
-		list_ass_item,  /*assign_item*/
-		list_ass_slice, /*assign_slice*/
+		list_concat, /* cat */
+		list_item, /* ind */
+		list_slice /* slice */
 };
 
 struct py_type py_list_type = {
-		{ 1, &py_type_type, 0 }, "list", sizeof(struct py_list),
+		{ 1, 0, &py_type_type }, "list", sizeof(struct py_list),
 		list_dealloc, /* dealloc */
-		list_getattr, /* get_attr */
+		0, /* get_attr */
 		0, /* set_attr */
 		list_compare, /* cmp */
-		0, /* numbermethods */
 		&list_as_sequence, /* sequencemethods */
 };
