@@ -20,6 +20,7 @@
 #include <python/intobject.h>
 #include <python/floatobject.h>
 #include <python/dictobject.h>
+#include <python/stringobject.h>
 #include <python/listobject.h>
 #include <python/tupleobject.h>
 #include <python/methodobject.h>

@@ -82,18 +82,12 @@ static struct py_state states_5[4] = {
 		{ 1, arcs_5_2, 0, 0, 0, 0 },
 		{ 1, arcs_5_3, 0, 0, 0, 0 }, };
 static struct py_dfa dfas[6] = {
-		{
-				256, "MSTART", 0, 2, states_0, "\070\000\000" },
-		{
-				257, "RULE",   0, 5, states_1, "\040\000\000" },
-		{
-				258, "RHS",    0, 2, states_2, "\040\010\003" },
-		{
-				259, "ALT",    0, 2, states_3, "\040\010\003" },
-		{
-				260, "ITEM",   0, 5, states_4, "\040\010\003" },
-		{
-				261, "ATOM",   0, 4, states_5, "\040\000\003" }, };
+		{ 256, "MSTART", 0, 2, states_0, (py_byte_t*) "\070\000\000" },
+		{ 257, "RULE",   0, 5, states_1, (py_byte_t*) "\040\000\000" },
+		{ 258, "RHS",    0, 2, states_2, (py_byte_t*) "\040\010\003" },
+		{ 259, "ALT",    0, 2, states_3, (py_byte_t*) "\040\010\003" },
+		{ 260, "ITEM",   0, 5, states_4, (py_byte_t*) "\040\010\003" },
+		{ 261, "ATOM",   0, 4, states_5, (py_byte_t*) "\040\000\003" } };
 static struct py_label labels[19] = {
 		{ 0,   "EMPTY" },
 		{ 256, 0 },

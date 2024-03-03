@@ -22,6 +22,9 @@
 #include <python/listobject.h>
 #include <python/intobject.h>
 #include <python/floatobject.h>
+#include <python/stringobject.h>
+
+#define PY_CODE_CHUNK (1024)
 
 static void code_dealloc(struct py_object* op) {
 	struct py_code* co = (struct py_code*) op;
@@ -81,11 +84,14 @@ static struct py_code* newcodeobject(
 
 /* Data structure used internally */
 struct compiling {
-	py_byte_t* c_code; /* string */
+	unsigned len;
+	py_byte_t* c_code;
+
 	struct py_object* c_consts; /* list of objects */
 	struct py_object* c_names; /* list of strings (names) */
-	int c_nexti; /* index into c_code */
-	int c_errors; /* counts errors occurred */
+
+	unsigned c_nexti; /* index into c_code */
+	unsigned c_errors; /* counts errors occurred */
 	int c_infunction; /* set when compiling a function */
 	int c_loops; /* counts nested loops */
 	const char* c_filename; /* filename of current node */
@@ -99,10 +105,6 @@ static void com_free(struct compiling*);
 static void com_done(struct compiling*);
 
 static void com_node(struct compiling*, struct py_node*);
-
-static void com_addbyte(struct compiling*, int);
-
-static void com_addint(struct compiling*, int);
 
 static void com_addoparg(struct compiling*, int, int);
 
@@ -120,8 +122,9 @@ static void com_addopname(struct compiling*, int, struct py_node*);
 
 static int com_init(struct compiling* c, const char* filename) {
 	c->c_code = 0;
+	c->len = 0;
 
-	if((c->c_consts = py_list_new(0)) == NULL) goto fail_2;
+	if((c->c_consts = py_list_new(0)) == NULL) return 0;
 	if((c->c_names = py_list_new(0)) == NULL) goto fail_1;
 
 	c->c_nexti = 0;
@@ -133,13 +136,10 @@ static int com_init(struct compiling* c, const char* filename) {
 	return 1;
 
 	fail_1: py_object_decref(c->c_consts);
-	fail_2: py_object_decref(c->c_code);
 	return 0;
 }
 
-static void com_free(c)struct compiling* c;
-{
-	py_object_decref(c->c_code);
+static void com_free(struct compiling* c) {
 	py_object_decref(c->c_consts);
 	py_object_decref(c->c_names);
 }
@@ -147,26 +147,17 @@ static void com_free(c)struct compiling* c;
 static void com_done(struct compiling* c) {
 	/* TODO: Leaky realloc. */
 	c->c_code = realloc(c->c_code, c->c_nexti);
+	memset(c->c_code + c->len, 0, c->c_nexti - c->len);
+	c->len = c->c_nexti;
 }
 
-static void com_addbyte(c, byte)struct compiling* c;
-								int byte;
-{
-	int len;
-	if(byte < 0 || byte > 255) {
-		fprintf(stderr, "XXX compiling bad byte: %d\n", byte);
-		abort();
-		py_error_set_string(py_system_error, "com_addbyte: byte out of range");
-		c->c_errors++;
-	}
-	if(c->c_code == NULL) {
-		return;
-	}
-
-	len = py_varobject_size(c->c_code);
-	if(c->c_nexti >= len) {
+static void com_addbyte(struct compiling* c, py_byte_t byte) {
+	if(c->c_nexti >= c->len) {
 		/* TODO: Leaky realloc. */
-		c->c_code = realloc(c->c_code, len + 1024);
+		c->c_code = realloc(c->c_code, c->len + PY_CODE_CHUNK);
+		memset(c->c_code + c->len, 0, PY_CODE_CHUNK);
+		c->len += PY_CODE_CHUNK;
+
 		if(!c->c_code) {
 			c->c_errors++;
 			return;
@@ -176,9 +167,7 @@ static void com_addbyte(c, byte)struct compiling* c;
 	c->c_code[c->c_nexti++] = byte;
 }
 
-static void com_addint(c, x)struct compiling* c;
-							int x;
-{
+static void com_addint(struct compiling* c, unsigned x) {
 	com_addbyte(c, x & 0xff);
 	com_addbyte(c, x >> 8); /* XXX x should be positive */
 }
@@ -238,9 +227,11 @@ static int com_add(c, list, v)struct compiling* c;
 			return i;
 		}
 	}
+
 	if(py_list_add(list, v) != 0) {
 		c->c_errors++;
 	}
+
 	return n;
 }
 

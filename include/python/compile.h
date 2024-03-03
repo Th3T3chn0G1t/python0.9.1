@@ -12,7 +12,6 @@
 #include <python/bitset.h>
 
 #include <python/object.h>
-#include <python/stringobject.h>
 
 /* An intermediate code fragment contains:
    - a string that encodes the instructions,

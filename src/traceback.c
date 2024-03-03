@@ -7,11 +7,13 @@
 
 #include <python/std.h>
 #include <python/compile.h>
-#include <python/frameobject.h>
 #include <python/traceback.h>
 #include <python/structmember.h>
 #include <python/errors.h>
 #include <python/env.h>
+
+#include <python/stringobject.h>
+#include <python/frameobject.h>
 
 typedef struct _tracebackobject {
 	struct py_object ob;

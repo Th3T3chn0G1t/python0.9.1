@@ -15,7 +15,7 @@
 #define PY_TESTBIT(ss, ibit) \
     (((ss)[(ibit) / CHAR_BIT] & PY_BIT2MASK(ibit)) != 0)
 
-typedef char py_byte_t;
+typedef unsigned char py_byte_t;
 typedef py_byte_t* py_bitset_t;
 
 py_bitset_t py_bitset_new(int);

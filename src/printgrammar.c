@@ -98,7 +98,7 @@ static void printdfas(g, fp)struct py_grammar* g;
 		fprintf(
 				fp, "\t{%d, \"%s\", %d, %d, states_%d,\n", d->type, d->name,
 				d->initial, d->count, i);
-		fprintf(fp, "\t \"");
+		fprintf(fp, "\t (py_byte_t*) \"");
 		for(j = 0; j < (int) PY_NBYTES(g->labels.count); j++) {
 			fprintf(fp, "\\%03o", d->first[j] & 0xff);
 		}
