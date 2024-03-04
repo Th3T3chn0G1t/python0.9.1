@@ -8,7 +8,6 @@
 #ifndef PY_TOKEN_H
 #define PY_TOKEN_H
 
-/* TODO: Use enum type for this and all uses. */
 #define PY_ENDMARKER (0)
 #define PY_NAME (1)
 #define PY_NUMBER (2)
