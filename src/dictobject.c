@@ -195,39 +195,14 @@ static int dictresize(struct py_dict* dp) {
 }
 
 struct py_object* py_dict_lookup(struct py_object* op, const char* key) {
-	if(!py_is_dict(op)) {
-		py_fatal("py_dict_lookup on non-dictionary");
-	}
+	if(!py_is_dict(op)) py_fatal("py_dict_lookup on non-dictionary");
+
 	return lookdict((struct py_dict*) op, key)->de_value;
 }
 
-#ifdef NOT_USED
-static struct py_object*
-dict2lookup(op, key)
-	   struct py_object*op;
-	   struct py_object*key;
-{
-	   struct py_object*res;
-	   if (!py_is_dict(op)) {
-			   py_error_set_badcall();
-			   return NULL;
-	   }
-	   if (!py_is_string(key)) {
-			   py_error_set_badarg();
-			   return NULL;
-	   }
-	   res = lookdict((struct py_dict *)op, ((struct py_string *)key)->value)
-															   -> de_value;
-	   if (res == NULL)
-			   py_error_set_string(PY_KEY_ERROR, "key not in dictionary");
-	   return res;
-}
-#endif
+static int dict2insert(
+		struct py_object* op, struct py_object* key, struct py_object* value) {
 
-static int dict2insert(op, key, value)struct py_object* op;
-									  struct py_object* key;
-									  struct py_object* value;
-{
 	struct py_dict* dp;
 	struct py_string* keyobj;
 	if(!py_is_dict(op)) {
@@ -388,9 +363,8 @@ void py_done_dict(void) {
 }
 
 struct py_type py_dict_type = {
-		{ 1, 0, &py_type_type }, sizeof(struct py_dict),
+		{ 1, &py_type_type }, sizeof(struct py_dict),
 		dict_dealloc, /* dealloc */
-		0, /* get_attr */
 		0, /* cmp */
 		0, /* sequencemethods */
 };

@@ -66,16 +66,15 @@ static void meth_dealloc(struct py_object* op) {
 }
 
 struct py_type py_method_type = {
-		{ 1, 0, &py_type_type }, sizeof(methodobject),
+		{ 1, &py_type_type }, sizeof(methodobject),
 		meth_dealloc, /* dealloc */
-		0, /* get_attr */
 		0, /* cmp */
 		0, /* sequencemethods */
 };
 
 /*
  * Find a method in a module's method table.
- * Usually called from an object's py_object_get_attr method.
+ * Usually called from an object's get_attr method.
  */
 
 struct py_object* py_methodlist_find(

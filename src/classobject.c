@@ -14,17 +14,13 @@
 #include <python/tupleobject.h>
 #include <python/funcobject.h>
 
-struct py_object* py_class_new(
-		struct py_object* bases, struct py_object* methods) {
+struct py_object* py_class_new(struct py_object* methods) {
 
 	struct py_class* op;
 
 	op = py_object_new(&py_class_type);
 	if(op == NULL) return NULL;
 
-	if(bases != NULL) py_object_incref(bases);
-
-	op->bases = bases;
 	py_object_incref(methods);
 	op->attr = methods;
 
@@ -34,36 +30,15 @@ struct py_object* py_class_new(
 /* Class methods */
 
 static void py_class_dealloc(struct py_object* op) {
-	struct py_class* cls = (struct py_class*) op;
-
-	py_object_decref(cls->bases);
-	py_object_decref(cls->attr);
+	py_object_decref(((struct py_class*) op)->attr);
 }
 
-static struct py_object* py_class_get_attr(
-		struct py_object* op, const char* name) {
-
-	struct py_object* v;
-	struct py_class* cls;
-
-	cls = (struct py_class*) op;
-	v = py_dict_lookup(cls->attr, name);
+struct py_object* py_class_get_attr(struct py_object* op, const char* name) {
+	struct py_object* v = py_dict_lookup(((struct py_class*) op)->attr, name);
 
 	if(v != NULL) {
 		py_object_incref(v);
 		return v;
-	}
-
-	if(cls->bases != NULL) {
-		unsigned n = py_varobject_size(cls->bases);
-		unsigned i;
-
-		for(i = 0; i < n; i++) {
-			v = py_class_get_attr(py_tuple_get(cls->bases, i), name);
-			if(v != NULL) return v;
-
-			py_error_clear();
-		}
 	}
 
 	py_error_set_string(py_name_error, name);
@@ -71,9 +46,8 @@ static struct py_object* py_class_get_attr(
 }
 
 struct py_type py_class_type = {
-		{ 1, 0, &py_type_type }, sizeof(struct py_class),
+		{ 1, &py_type_type }, sizeof(struct py_class),
 		py_class_dealloc, /* dealloc */
-		py_class_get_attr, /* get_attr */
 		0, /* cmp */
 		0, /* sequencemethods */
 };
@@ -110,7 +84,7 @@ static void classmember_dealloc(struct py_object* op) {
 	py_object_decref(cm->attr);
 }
 
-static struct py_object* classmember_getattr(
+struct py_object* py_classmember_get_attr(
 		struct py_object* op, const char* name) {
 
 	struct py_classmember* cm = (struct py_classmember*) op;
@@ -136,9 +110,8 @@ static struct py_object* classmember_getattr(
 }
 
 struct py_type py_class_member_type = {
-		{ 1, 0, &py_type_type },
+		{ 1, &py_type_type },
 		sizeof(struct py_classmember), classmember_dealloc, /* dealloc */
-		classmember_getattr, /* get_attr */
 		0, /* cmp */
 		0, /* sequencemethods */
 };
@@ -201,9 +174,8 @@ static void classmethod_dealloc(struct py_object* op) {
 }
 
 struct py_type py_class_method_type = {
-		{ 1, 0, &py_type_type },
+		{ 1, &py_type_type },
 		sizeof(classmethodobject), classmethod_dealloc, /* dealloc */
-		0, /* get_attr */
 		0, /* cmp */
 		0, /* sequencemethods */
 };

@@ -235,9 +235,8 @@ static struct py_sequencemethods list_as_sequence = {
 };
 
 struct py_type py_list_type = {
-		{ 1, 0, &py_type_type }, sizeof(struct py_list),
+		{ 1, &py_type_type }, sizeof(struct py_list),
 		list_dealloc, /* dealloc */
-		0, /* get_attr */
 		list_compare, /* cmp */
 		&list_as_sequence, /* sequencemethods */
 };

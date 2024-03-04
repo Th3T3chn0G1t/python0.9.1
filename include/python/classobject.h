@@ -18,7 +18,6 @@
 
 struct py_class {
 	struct py_object ob;
-	struct py_object* bases; /* A tuple */
 	struct py_object* attr; /* A dictionary */
 };
 
@@ -37,9 +36,11 @@ extern struct py_type py_class_method_type;
 #define py_is_classmember(op) ((op)->type == &py_class_member_type)
 #define py_is_classmethod(op) ((op)->type == &py_class_method_type)
 
-/* bases should be NULL or tuple of classobjects! */
-struct py_object* py_class_new(struct py_object*, struct py_object*);
+struct py_object* py_class_new(struct py_object*);
+struct py_object* py_class_get_attr(struct py_object*, const char*);
+
 struct py_object* py_classmember_new(struct py_object*);
+struct py_object* py_classmember_get_attr(struct py_object*, const char*);
 
 struct py_object* py_classmethod_new(struct py_object*, struct py_object*);
 struct py_object* py_classmethod_get_func(struct py_object*);

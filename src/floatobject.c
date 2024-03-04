@@ -48,9 +48,8 @@ static int float_compare(v, w)struct py_float* v, * w;
 }
 
 struct py_type py_float_type = {
-		{ 1, 0, &py_type_type }, sizeof(struct py_float),
+		{ 1, &py_type_type }, sizeof(struct py_float),
 		py_object_delete, /* dealloc */
-		0, /* get_attr */
 		float_compare, /* cmp */
 		0, /* sequencemethods */
 };

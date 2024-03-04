@@ -11,9 +11,8 @@
 #include <python/stringobject.h>
 
 struct py_type py_type_type = {
-		{ 1, 0, &py_type_type },
+		{ 1, &py_type_type },
 		sizeof(struct py_type), /* Basic object size */
 		0, /* dealloc */
-		0, /* get_attr */
 		0, /* cmp*/
 		0 };

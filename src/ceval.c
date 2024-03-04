@@ -164,24 +164,15 @@ call_builtin(struct py_object* func, struct py_object* arg) {
 }
 
 struct py_object* py_object_get_attr(struct py_object* v, const char* name) {
-	struct py_object* attr;
-	if(py_is_classmember(v)) attr = ((struct py_classmember*) v)->attr;
-	else if(py_is_class(v)) attr = ((struct py_class*) v)->attr;
-	else if(py_is_module(v)) attr = ((struct py_module*) v)->attr;
+	if(py_is_classmember(v)) return py_classmember_get_attr(v, name);
+	else if(py_is_class(v)) return py_class_get_attr(v, name);
+	else if(py_is_module(v)) return py_module_get_attr(v, name);
 	else {
 		py_error_set_string(
 				py_type_error,
 				"can only set attributes on classmember or module");
 		return 0;
 	}
-
-	(void) attr;
-
-	if(v->type->get_attr == NULL) {
-		py_error_set_string(py_type_error, "attribute-less object");
-		return NULL;
-	}
-	else return (*v->type->get_attr)(v, name);
 }
 
 static int py_object_set_attr(
@@ -530,28 +521,13 @@ import_from(struct py_object* locals, struct py_object* v, const char* name) {
 	}
 }
 
-static struct py_object* build_class(struct py_object* v, struct py_object* w) {
-	if(py_is_tuple(v)) {
-		int i;
-
-		for(i = py_varobject_size(v); --i >= 0;) {
-			struct py_object* x = py_tuple_get(v, i);
-
-			if(!py_is_class(x)) {
-				py_error_set_string(
-						py_type_error, "base is not a class object");
-				return NULL;
-			}
-		}
-	}
-	else { v = NULL; }
-
-	if(!py_is_dict(w)) {
+static struct py_object* build_class(struct py_object* v) {
+	if(!py_is_dict(v)) {
 		py_error_set_string(py_system_error, "build_class with non-dictionary");
 		return NULL;
 	}
 
-	return py_class_new(v, w);
+	return py_class_new(v);
 }
 
 
@@ -968,12 +944,10 @@ struct py_object* py_code_eval(
 			}
 
 			case PY_OP_BUILD_CLASS: {
-				w = POP();
 				v = POP();
-				x = build_class(v, w);
+				x = build_class(v);
 				PUSH(x);
 				py_object_decref(v);
-				py_object_decref(w);
 
 				break;
 			}

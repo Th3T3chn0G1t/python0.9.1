@@ -25,9 +25,8 @@ static void frame_dealloc(struct py_object* op) {
 }
 
 struct py_type py_frame_type = {
-		{ 1, 0, &py_type_type }, sizeof(struct py_frame),
+		{ 1, &py_type_type }, sizeof(struct py_frame),
 		frame_dealloc, /* dealloc */
-		0, /* get_attr */
 		0, /* cmp */
 		0, /* sequencemethods */
 };

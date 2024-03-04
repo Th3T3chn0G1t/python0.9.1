@@ -1374,21 +1374,6 @@ static void py_compile_function_definition(
 	}
 }
 
-static void py_compile_bases(struct py_compiler* c, struct py_node* n) {
-	unsigned i;
-
-	PY_REQ(n, PY_GRAMMAR_BASE_LIST);
-	/*
-	 * PY_GRAMMAR_BASE_LIST:
-	 * PY_GRAMMAR_ATOM PY_GRAMMAR_ARGUMENTS
-	 * (',' PY_GRAMMAR_ATOM PY_GRAMMAR_ARGUMENTS)*
-	 * PY_GRAMMAR_ARGUMENTS: '(' [PY_GRAMMAR_TEST_LIST] ')'
-	 */
-	for(i = 0; i < n->count; i += 3) py_compile_node(c, &n->children[i]);
-
-	py_compile_add_op_arg(c, PY_OP_BUILD_TUPLE, (n->count + 1) / 3);
-}
-
 static void py_compile_class_definition(
 		struct py_compiler* c, struct py_node* n) {
 
@@ -1406,11 +1391,8 @@ static void py_compile_class_definition(
      */
 	PY_REQ(n, PY_GRAMMAR_CLASS_DEFINITION);
 
-	if(n->count == 7) py_compile_bases(c, &n->children[4]);
-	else {
-		py_compile_add_op_arg(
-				c, PY_OP_LOAD_CONST, py_compile_add_const(c, PY_NONE));
-	}
+	py_compile_add_op_arg(
+			c, PY_OP_LOAD_CONST, py_compile_add_const(c, PY_NONE));
 
 	v = (struct py_object*) py_compile(n, c->filename);
 	if(v == NULL) {
@@ -1762,9 +1744,8 @@ static void code_dealloc(struct py_object* op) {
 }
 
 struct py_type py_code_type = {
-		{ 1, 0, &py_type_type }, sizeof(struct py_code),
+		{ 1, &py_type_type }, sizeof(struct py_code),
 		code_dealloc, /* dealloc */
-		0, /* get_attr */
 		0, /* cmp */
 		0, /* sequencemethods */
 };
