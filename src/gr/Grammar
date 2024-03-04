@@ -2,7 +2,7 @@
 
 # Changes compared to version 3:
 #      Removed 'dir' statement.
-#      Function call argument is a testlist instead of exprlist.
+#      Function call argument is a PY_GRAMMAR_TEST_LIST instead of PY_GRAMMAR_EXPRESSION_LIST.
 
 # Changes compared to version 2:
 #      The syntax of Boolean operations is changed to use more
@@ -19,47 +19,44 @@
 # Start symbols for the grammar:
 #      PY_GRAMMAR_FILE_INPUT is a module or sequence of commands read from an input file;
 
-PY_GRAMMAR_FILE_INPUT: (PY_NEWLINE | stmt)* PY_ENDMARKER
+PY_GRAMMAR_FILE_INPUT: (PY_NEWLINE | PY_GRAMMAR_STATEMENT)* PY_ENDMARKER
 
-PY_GRAMMAR_FUNCTION_DEFINITION: 'def' PY_NAME parameters ':' suite
-parameters: '(' [fplist] ')'
-fplist: fpdef (',' fpdef)*
-fpdef: PY_NAME | '(' fplist ')'
+PY_GRAMMAR_FUNCTION_DEFINITION: 'def' PY_NAME PY_GRAMMAR_PARAMETERS ':' PY_GRAMMAR_SUITE
+PY_GRAMMAR_PARAMETERS: '(' [PY_GRAMMAR_PARAMETER_LIST] ')'
+PY_GRAMMAR_PARAMETER_LIST: PY_GRAMMAR_PARAMETER_DEFINITION (',' PY_GRAMMAR_PARAMETER_DEFINITION)*
+PY_GRAMMAR_PARAMETER_DEFINITION: PY_NAME | '(' PY_GRAMMAR_PARAMETER_LIST ')'
 
-stmt: simple_stmt | compound_stmt
-simple_stmt: expr_stmt | print_stmt  | pass_stmt | del_stmt | flow_stmt | import_stmt
-expr_stmt: (exprlist '=')* exprlist PY_NEWLINE
+PY_GRAMMAR_STATEMENT: PY_GRAMMAR_SIMPLE_STATEMENT | PY_GRAMMAR_COMPOUND_STATEMENT
+PY_GRAMMAR_SIMPLE_STATEMENT: PY_GRAMMAR_EXPRESSION_STATEMENT | PY_GRAMMAR_FLOW_STATEMENT | PY_GRAMMAR_IMPORT_STATEMENT
+PY_GRAMMAR_EXPRESSION_STATEMENT: (PY_GRAMMAR_EXPRESSION_LIST '=')* PY_GRAMMAR_EXPRESSION_LIST PY_NEWLINE
 # For assignments, additional restrictions enforced by the interpreter
-print_stmt: 'print' (test ',')* [test] PY_NEWLINE
-del_stmt: 'del' exprlist PY_NEWLINE
-pass_stmt: 'pass' PY_NEWLINE
-flow_stmt: break_stmt | return_stmt | raise_stmt
-break_stmt: 'break' PY_NEWLINE
-return_stmt: 'return' [testlist] PY_NEWLINE
-raise_stmt: 'raise' expr [',' expr] PY_NEWLINE
-import_stmt: 'import' PY_NAME (',' PY_NAME)* PY_NEWLINE | 'from' PY_NAME 'import' ('*' | PY_NAME (',' PY_NAME)*) PY_NEWLINE
-compound_stmt: if_stmt | while_stmt | for_stmt | try_stmt | PY_GRAMMAR_FUNCTION_DEFINITION | classdef
-if_stmt: 'if' test ':' suite ('elif' test ':' suite)* ['else' ':' suite]
-while_stmt: 'while' test ':' suite ['else' ':' suite]
-for_stmt: 'for' exprlist 'in' exprlist ':' suite ['else' ':' suite]
-try_stmt: 'try' ':' suite (except_clause ':' suite)* ['finally' ':' suite]
-except_clause: 'except' [expr [',' expr]]
-suite: simple_stmt | PY_NEWLINE PY_INDENT PY_NEWLINE* (stmt PY_NEWLINE*)+ PY_DEDENT
+PY_GRAMMAR_FLOW_STATEMENT: PY_GRAMMAR_BREAK_STATEMENT | PY_GRAMMAR_RETURN_STATEMENT | PY_GRAMMAR_RAISE_STATEMENT
+PY_GRAMMAR_BREAK_STATEMENT: 'break' PY_NEWLINE
+PY_GRAMMAR_RETURN_STATEMENT: 'return' [PY_GRAMMAR_TEST_LIST] PY_NEWLINE
+PY_GRAMMAR_RAISE_STATEMENT: 'raise' PY_GRAMMAR_EXPRESSION [',' PY_GRAMMAR_EXPRESSION] PY_NEWLINE
+PY_GRAMMAR_IMPORT_STATEMENT: 'import' PY_NAME (',' PY_NAME)* PY_NEWLINE | 'from' PY_NAME 'import' ('*' | PY_NAME (',' PY_NAME)*) PY_NEWLINE
+PY_GRAMMAR_COMPOUND_STATEMENT: PY_GRAMMAR_IF_STATEMENT | PY_GRAMMAR_WHILE_STATEMENT | PY_GRAMMAR_FOR_STATEMENT | PY_GRAMMAR_TRY_STATEMENT | PY_GRAMMAR_FUNCTION_DEFINITION | PY_GRAMMAR_CLASS_DEFINITION
+PY_GRAMMAR_IF_STATEMENT: 'if' PY_GRAMMAR_TEST ':' PY_GRAMMAR_SUITE ('elif' PY_GRAMMAR_TEST ':' PY_GRAMMAR_SUITE)* ['else' ':' PY_GRAMMAR_SUITE]
+PY_GRAMMAR_WHILE_STATEMENT: 'while' PY_GRAMMAR_TEST ':' PY_GRAMMAR_SUITE ['else' ':' PY_GRAMMAR_SUITE]
+PY_GRAMMAR_FOR_STATEMENT: 'for' PY_GRAMMAR_EXPRESSION_LIST 'in' PY_GRAMMAR_EXPRESSION_LIST ':' PY_GRAMMAR_SUITE ['else' ':' PY_GRAMMAR_SUITE]
+PY_GRAMMAR_TRY_STATEMENT: 'try' ':' PY_GRAMMAR_SUITE (PY_GRAMMAR_EXCEPT_CLAUSE ':' PY_GRAMMAR_SUITE)* ['finally' ':' PY_GRAMMAR_SUITE]
+PY_GRAMMAR_EXCEPT_CLAUSE: 'except' [PY_GRAMMAR_EXPRESSION [',' PY_GRAMMAR_EXPRESSION]]
+PY_GRAMMAR_SUITE: PY_GRAMMAR_SIMPLE_STATEMENT | PY_NEWLINE PY_INDENT PY_NEWLINE* (PY_GRAMMAR_STATEMENT PY_NEWLINE*)+ PY_DEDENT
 
-test: and_test ('or' and_test)*
-and_test: not_test ('and' not_test)*
-not_test: 'not' not_test | comparison
-comparison: expr (comp_op expr)*
-comp_op: '<'|'>'|'='|'>' '='|'<' '='|'<' '>'|'in'|'not' 'in'|'is'|'is' 'not'
-expr: term (('+'|'-') term)*
-term: factor (('*'|'/'|'%') factor)*
-factor: ('+'|'-') factor | atom trailer*
-atom: '(' [testlist] ')' | '[' [testlist] ']' | '{' '}' | '`' testlist '`' | PY_NAME | PY_NUMBER | PY_STRING
-trailer: '(' [testlist] ')' | '[' subscript ']' | '.' PY_NAME
-subscript: expr | [expr] ':' [expr]
-exprlist: expr (',' expr)* [',']
-testlist: test (',' test)* [',']
+PY_GRAMMAR_TEST: PY_GRAMMAR_TEST_AND ('or' PY_GRAMMAR_TEST_AND)*
+PY_GRAMMAR_TEST_AND: PY_GRAMMAR_TEST_NOT ('and' PY_GRAMMAR_TEST_NOT)*
+PY_GRAMMAR_TEST_NOT: 'not' PY_GRAMMAR_TEST_NOT | PY_GRAMMAR_TEST_COMPARE
+PY_GRAMMAR_TEST_COMPARE: PY_GRAMMAR_EXPRESSION (PY_GRAMMAR_COMPARE_OP PY_GRAMMAR_EXPRESSION)*
+PY_GRAMMAR_COMPARE_OP: '<'|'>'|'='|'>' '='|'<' '='|'<' '>'|'in'|'not' 'in'|'is'|'is' 'not'
+PY_GRAMMAR_EXPRESSION: PY_GRAMMAR_TERM (('+'|'-') PY_GRAMMAR_TERM)*
+PY_GRAMMAR_TERM: PY_GRAMMAR_FACTOR (('*'|'/'|'%') PY_GRAMMAR_FACTOR)*
+PY_GRAMMAR_FACTOR: ('+'|'-') PY_GRAMMAR_FACTOR | PY_GRAMMAR_ATOM PY_GRAMMAR_TRAILER*
+PY_GRAMMAR_ATOM: '(' [PY_GRAMMAR_TEST_LIST] ')' | '[' [PY_GRAMMAR_TEST_LIST] ']' | '{' '}' | '`' PY_GRAMMAR_TEST_LIST '`' | PY_NAME | PY_NUMBER | PY_STRING
+PY_GRAMMAR_TRAILER: '(' [PY_GRAMMAR_TEST_LIST] ')' | '[' PY_GRAMMAR_SUBSCRIPT ']' | '.' PY_NAME
+PY_GRAMMAR_SUBSCRIPT: PY_GRAMMAR_EXPRESSION | [PY_GRAMMAR_EXPRESSION] ':' [PY_GRAMMAR_EXPRESSION]
+PY_GRAMMAR_EXPRESSION_LIST: PY_GRAMMAR_EXPRESSION (',' PY_GRAMMAR_EXPRESSION)* [',']
+PY_GRAMMAR_TEST_LIST: PY_GRAMMAR_TEST (',' PY_GRAMMAR_TEST)* [',']
 
-classdef: 'class' PY_NAME parameters ['=' baselist] ':' suite
-baselist: atom arguments (',' atom arguments)*
-arguments: '(' [testlist] ')'
+PY_GRAMMAR_CLASS_DEFINITION: 'class' PY_NAME PY_GRAMMAR_PARAMETERS ['=' PY_GRAMMAR_BASE_LIST] ':' PY_GRAMMAR_SUITE
+PY_GRAMMAR_BASE_LIST: PY_GRAMMAR_ATOM PY_GRAMMAR_ARGUMENTS (',' PY_GRAMMAR_ATOM PY_GRAMMAR_ARGUMENTS)*
+PY_GRAMMAR_ARGUMENTS: '(' [PY_GRAMMAR_TEST_LIST] ')'

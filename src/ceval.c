@@ -820,15 +820,10 @@ struct py_object* py_code_eval(
 
 			/* TODO: De-printify opcodes. */
 			case PY_OP_PRINT_EXPR: {
-				PY_FALLTHROUGH;
-				/* FALLTHRU */
-			}
-			case PY_OP_PRINT_ITEM: {
 				v = POP();
 				py_object_decref(v);
 				break;
 			}
-			case PY_OP_PRINT_NEWLINE: ;break;
 
 			case PY_OP_BREAK_LOOP: {
 				why = WHY_BREAK;

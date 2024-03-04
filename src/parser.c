@@ -358,18 +358,18 @@ symbol.
 
 As an example, consider this grammar:
 
-expr:  term (PY_OP term)*
-term:  CONSTANT | '(' expr ')'
+PY_GRAMMAR_EXPRESSION:  PY_GRAMMAR_TERM (PY_OP PY_GRAMMAR_TERM)*
+PY_GRAMMAR_TERM:  CONSTANT | '(' PY_GRAMMAR_EXPRESSION ')'
 
-The DFA corresponding to the rule for expr is:
+The DFA corresponding to the rule for PY_GRAMMAR_EXPRESSION is:
 
-------->.---term-->.------->
+------->.---PY_GRAMMAR_TERM-->.------->
        ^          |
        |          |
        \----PY_OP----/
 
 The parse tree generated for the input a+b is:
 
-(expr: (term: (PY_NAME: a)), (PY_OP: +), (term: (PY_NAME: b)))
+(PY_GRAMMAR_EXPRESSION: (PY_GRAMMAR_TERM: (PY_NAME: a)), (PY_OP: +), (PY_GRAMMAR_TERM: (PY_NAME: b)))
 
 */

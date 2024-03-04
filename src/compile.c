@@ -265,9 +265,9 @@ static void com_list_constructor(struct py_compiler* c, struct py_node* n) {
 	unsigned len;
 	unsigned i;
 
-	if(n->type != testlist) PY_REQ(n, exprlist);
+	if(n->type != PY_GRAMMAR_TEST_LIST) PY_REQ(n, PY_GRAMMAR_EXPRESSION_LIST);
 
-	/* exprlist: expr (',' expr)* [',']; likewise for testlist */
+	/* PY_GRAMMAR_EXPRESSION_LIST: PY_GRAMMAR_EXPRESSION (',' PY_GRAMMAR_EXPRESSION)* [',']; likewise for PY_GRAMMAR_TEST_LIST */
 	len = (n->count + 1) / 2;
 
 	for(i = 0; i < n->count; i += 2) com_node(c, &n->children[i]);
@@ -280,7 +280,7 @@ static void com_atom(struct py_compiler* c, struct py_node* n) {
 	struct py_object* v;
 	unsigned i;
 
-	PY_REQ(n, atom);
+	PY_REQ(n, PY_GRAMMAR_ATOM);
 	ch = &n->children[0];
 
 	switch(ch->type) {
@@ -374,21 +374,21 @@ static void com_slice(struct py_compiler* c, struct py_node* n, py_byte_t op) {
 }
 
 static void com_apply_subscript(struct py_compiler* c, struct py_node* n) {
-	PY_REQ(n, subscript);
+	PY_REQ(n, PY_GRAMMAR_SUBSCRIPT);
 
 	if(n->count == 1 && n->children[0].type != PY_COLON) {
-		/* It's a single subscript */
+		/* It's a single PY_GRAMMAR_SUBSCRIPT */
 		com_node(c, &n->children[0]);
 		com_addbyte(c, PY_OP_BINARY_SUBSCR);
 	}
 	else {
-		/* It's a slice: [expr] ':' [expr] */
+		/* It's a slice: [PY_GRAMMAR_EXPRESSION] ':' [PY_GRAMMAR_EXPRESSION] */
 		com_slice(c, n, PY_OP_SLICE);
 	}
 }
 
 static void com_call_function(
-		struct py_compiler* c, struct py_node* n /* EITHER testlist OR ')' */) {
+		struct py_compiler* c, struct py_node* n /* EITHER PY_GRAMMAR_TEST_LIST OR ')' */) {
 
 	if(n->type == PY_RPAR) com_addbyte(c, PY_OP_UNARY_CALL);
 	else {
@@ -402,7 +402,7 @@ static void com_select_member(struct py_compiler* c, struct py_node* n) {
 }
 
 static void com_apply_trailer(struct py_compiler* c, struct py_node* n) {
-	PY_REQ(n, trailer);
+	PY_REQ(n, PY_GRAMMAR_TRAILER);
 
 	switch(n->children[0].type) {
 		case PY_LPAR: {
@@ -425,7 +425,7 @@ static void com_apply_trailer(struct py_compiler* c, struct py_node* n) {
 
 		default: {
 			py_error_set_string(
-					py_system_error, "com_apply_trailer: unknown trailer type");
+					py_system_error, "com_apply_trailer: unknown PY_GRAMMAR_TRAILER type");
 			/* TODO: Proper EH. */
 			abort();
 		}
@@ -435,7 +435,7 @@ static void com_apply_trailer(struct py_compiler* c, struct py_node* n) {
 static void com_factor(struct py_compiler* c, struct py_node* n) {
 	unsigned i;
 
-	PY_REQ(n, factor);
+	PY_REQ(n, PY_GRAMMAR_FACTOR);
 
 	if(n->children[0].type == PY_MINUS) {
 		com_factor(c, &n->children[1]);
@@ -451,7 +451,7 @@ static void com_term(struct py_compiler* c, struct py_node* n) {
 	unsigned i;
 	unsigned op;
 
-	PY_REQ(n, term);
+	PY_REQ(n, PY_GRAMMAR_TERM);
 
 	com_factor(c, &n->children[0]);
 
@@ -480,7 +480,7 @@ static void com_term(struct py_compiler* c, struct py_node* n) {
 			default: {
 				py_error_set_string(
 						py_system_error,
-						"com_term: term operator not *, / or %");
+						"com_term: PY_GRAMMAR_TERM operator not *, / or %");
 				/* TODO: Proper EH. */
 				abort();
 			}
@@ -494,7 +494,7 @@ static void com_expr(struct py_compiler* c, struct py_node* n) {
 	unsigned i;
 	py_byte_t op;
 
-	PY_REQ(n, expr);
+	PY_REQ(n, PY_GRAMMAR_EXPRESSION);
 
 	com_term(c, &n->children[0]);
 
@@ -516,7 +516,7 @@ static void com_expr(struct py_compiler* c, struct py_node* n) {
 
 			default: {
 				py_error_set_string(
-						py_system_error, "com_expr: expr operator not + or -");
+						py_system_error, "com_expr: PY_GRAMMAR_EXPRESSION operator not + or -");
 				/* TODO: Proper EH. */
 				abort();
 			}
@@ -527,9 +527,9 @@ static void com_expr(struct py_compiler* c, struct py_node* n) {
 }
 
 static enum py_cmp_op cmp_type(struct py_node* n) {
-	PY_REQ(n, comp_op);
+	PY_REQ(n, PY_GRAMMAR_COMPARE_OP);
 
-	/* comp_op: '<' | '>' | '=' | '>' '=' | '<' '=' | '<' '>'
+	/* PY_GRAMMAR_COMPARE_OP: '<' | '>' | '=' | '>' '=' | '<' '=' | '<' '>'
 			  | 'in' | 'not' 'in' | 'is' | 'is' not' */
 	if(n->count == 1) {
 		n = &n->children[0];
@@ -576,14 +576,14 @@ static void com_comparison(struct py_compiler* c, struct py_node* n) {
 	unsigned anchor = 0;
 	unsigned i;
 
-	PY_REQ(n, comparison); /* comparison: expr (comp_op expr)* */
+	PY_REQ(n, PY_GRAMMAR_TEST_COMPARE); /* PY_GRAMMAR_TEST_COMPARE: PY_GRAMMAR_EXPRESSION (PY_GRAMMAR_COMPARE_OP PY_GRAMMAR_EXPRESSION)* */
 
 	com_expr(c, &n->children[0]);
 	if(n->count == 1) return;
 
 	/*
 	 * The following code is generated for all but the last
-	 * comparison in a chain:
+	 * PY_GRAMMAR_TEST_COMPARE in a chain:
 	 *
 	 * label:       on stack:       opcode:         jump to:
 	 *
@@ -596,7 +596,7 @@ static void com_comparison(struct py_compiler* c, struct py_node* n) {
 	 * 			b
 	 *
 	 * We are now ready to repeat this sequence for the next
-	 * comparison in the chain.
+	 * PY_GRAMMAR_TEST_COMPARE in the chain.
 	 *
 	 * For the last we generate:
 	 *
@@ -605,7 +605,7 @@ static void com_comparison(struct py_compiler* c, struct py_node* n) {
 	 * 			0-or-1
 	 *
 	 * If there were any jumps to L1 (i.e., there was more than one
-	 * comparison), we generate:
+	 * PY_GRAMMAR_TEST_COMPARE), we generate:
 	 *
 	 * 			0-or-1          PY_OP_JUMP_FORWARD    L2
 	 * L1:          b, 0            PY_OP_ROT_TWO
@@ -625,7 +625,7 @@ static void com_comparison(struct py_compiler* c, struct py_node* n) {
 		op = cmp_type(&n->children[i - 1]);
 		if(op == PY_CMP_BAD) {
 			py_error_set_string(
-					py_system_error, "com_comparison: unknown comparison op");
+					py_system_error, "com_comparison: unknown PY_GRAMMAR_TEST_COMPARE op");
 			/* TODO: Proper EH. */
 			abort();
 		}
@@ -649,7 +649,7 @@ static void com_comparison(struct py_compiler* c, struct py_node* n) {
 }
 
 static void com_not_test(struct py_compiler* c, struct py_node* n) {
-	PY_REQ(n, not_test); /* 'not' not_test | comparison */
+	PY_REQ(n, PY_GRAMMAR_TEST_NOT); /* 'not' PY_GRAMMAR_TEST_NOT | PY_GRAMMAR_TEST_COMPARE */
 
 	if(n->count == 1) com_comparison(c, &n->children[0]);
 	else {
@@ -662,7 +662,7 @@ static void com_and_test(struct py_compiler* c, struct py_node* n) {
 	unsigned i = 0;
 	unsigned anchor = 0;
 
-	PY_REQ(n, and_test); /* not_test ('and' not_test)* */
+	PY_REQ(n, PY_GRAMMAR_TEST_AND); /* PY_GRAMMAR_TEST_NOT ('and' PY_GRAMMAR_TEST_NOT)* */
 
 	for(;;) {
 		com_not_test(c, &n->children[i]);
@@ -680,7 +680,7 @@ static void com_test(struct py_compiler* c, struct py_node* n) {
 	unsigned i = 0;
 	unsigned anchor = 0;
 
-	PY_REQ(n, test); /* and_test ('and' and_test)* */
+	PY_REQ(n, PY_GRAMMAR_TEST); /* PY_GRAMMAR_TEST_AND ('and' PY_GRAMMAR_TEST_AND)* */
 
 	for(;;) {
 		com_and_test(c, &n->children[i]);
@@ -695,7 +695,7 @@ static void com_test(struct py_compiler* c, struct py_node* n) {
 }
 
 static void com_list(struct py_compiler* c, struct py_node* n) {
-	/* exprlist: expr (',' expr)* [',']; likewise for testlist */
+	/* PY_GRAMMAR_EXPRESSION_LIST: PY_GRAMMAR_EXPRESSION (',' PY_GRAMMAR_EXPRESSION)* [',']; likewise for PY_GRAMMAR_TEST_LIST */
 	if(n->count == 1) com_node(c, &n->children[0]);
 	else {
 		unsigned i;
@@ -713,10 +713,10 @@ static void com_list(struct py_compiler* c, struct py_node* n) {
 static void com_assign_trailer(
 		struct py_compiler* c, struct py_node* n, int assigning) {
 
-	PY_REQ(n, trailer);
+	PY_REQ(n, PY_GRAMMAR_TRAILER);
 
 	switch(n->children[0].type) {
-		case PY_LPAR: { /* '(' [exprlist] ')' */
+		case PY_LPAR: { /* '(' [PY_GRAMMAR_EXPRESSION_LIST] ')' */
 			py_error_set_string(
 					py_type_error, "can't assign to function call");
 			/* TODO: Proper EH. */
@@ -731,10 +731,10 @@ static void com_assign_trailer(
 			break;
 		}
 
-		case PY_LSQB: { /* '[' subscript ']' */
+		case PY_LSQB: { /* '[' PY_GRAMMAR_SUBSCRIPT ']' */
 			n = &n->children[1];
 
-			PY_REQ(n, subscript); /* subscript: expr | [expr] ':' [expr] */
+			PY_REQ(n, PY_GRAMMAR_SUBSCRIPT); /* PY_GRAMMAR_SUBSCRIPT: PY_GRAMMAR_EXPRESSION | [PY_GRAMMAR_EXPRESSION] ':' [PY_GRAMMAR_EXPRESSION] */
 
 			com_node(c, &n->children[0]);
 			com_addbyte(
@@ -744,7 +744,7 @@ static void com_assign_trailer(
 		}
 
 		default: {
-			py_error_set_string(py_type_error, "unknown trailer type");
+			py_error_set_string(py_type_error, "unknown PY_GRAMMAR_TRAILER type");
 			/* TODO: Proper EH. */
 			abort();
 		}
@@ -759,7 +759,7 @@ static void com_assign_tuple(
 
 	unsigned i;
 
-	if(n->type != testlist) PY_REQ(n, exprlist);
+	if(n->type != PY_GRAMMAR_TEST_LIST) PY_REQ(n, PY_GRAMMAR_EXPRESSION_LIST);
 
 	if(assigning) com_addoparg(c, PY_OP_UNPACK_TUPLE, (n->count + 1) / 2);
 
@@ -788,11 +788,11 @@ static void com_assign(
 	/* Loop to avoid trivial recursion */
 	for(;;) {
 		switch(n->type) {
-			case exprlist: {
+			case PY_GRAMMAR_EXPRESSION_LIST: {
 				PY_FALLTHROUGH;
 				/* FALLTHRU */
 			}
-			case testlist: {
+			case PY_GRAMMAR_TEST_LIST: {
 				if(n->count > 1) {
 					com_assign_tuple(c, n, assigning);
 					return;
@@ -803,15 +803,15 @@ static void com_assign(
 				break;
 			}
 
-			case test: {
+			case PY_GRAMMAR_TEST: {
 				PY_FALLTHROUGH;
 				/* FALLTHRU */
 			}
-			case and_test: {
+			case PY_GRAMMAR_TEST_AND: {
 				PY_FALLTHROUGH;
 				/* FALLTHRU */
 			}
-			case not_test: {
+			case PY_GRAMMAR_TEST_NOT: {
 				if(n->count > 1) {
 					py_error_set_string(
 							py_type_error, "can't assign to operator");
@@ -824,7 +824,7 @@ static void com_assign(
 				break;
 			}
 
-			case comparison: {
+			case PY_GRAMMAR_TEST_COMPARE: {
 				if(n->count > 1) {
 					py_error_set_string(
 							py_type_error, "can't assign to operator");
@@ -837,7 +837,7 @@ static void com_assign(
 				break;
 			}
 
-			case expr: {
+			case PY_GRAMMAR_EXPRESSION: {
 				if(n->count > 1) {
 					py_error_set_string(
 							py_type_error, "can't assign to operator");
@@ -850,7 +850,7 @@ static void com_assign(
 				break;
 			}
 
-			case term: {
+			case PY_GRAMMAR_TERM: {
 				if(n->count > 1) {
 					py_error_set_string(
 							py_type_error, "can't assign to operator");
@@ -863,15 +863,15 @@ static void com_assign(
 				break;
 			}
 
-			case factor: {/* ('+'|'-') factor | atom trailer* */
-				if(n->children[0].type != atom) { /* '+' | '-' */
+			case PY_GRAMMAR_FACTOR: {/* ('+'|'-') PY_GRAMMAR_FACTOR | PY_GRAMMAR_ATOM PY_GRAMMAR_TRAILER* */
+				if(n->children[0].type != PY_GRAMMAR_ATOM) { /* '+' | '-' */
 					py_error_set_string(
 							py_type_error, "can't assign to operator");
 					/* TODO: Proper EH. */
 					abort();
 				}
 
-				if(n->count > 1) { /* trailer present */
+				if(n->count > 1) { /* PY_GRAMMAR_TRAILER present */
 					unsigned i;
 
 					com_node(c, &n->children[0]);
@@ -890,7 +890,7 @@ static void com_assign(
 				break;
 			}
 
-			case atom: {
+			case PY_GRAMMAR_ATOM: {
 				switch(n->children[0].type) {
 					case PY_LPAR: {
 						n = &n->children[1];
@@ -949,7 +949,7 @@ static void com_assign(
 }
 
 static void com_expr_stmt(struct py_compiler* c, struct py_node* n) {
-	PY_REQ(n, expr_stmt); /* exprlist ('=' exprlist)* PY_NEWLINE */
+	PY_REQ(n, PY_GRAMMAR_EXPRESSION_STATEMENT); /* PY_GRAMMAR_EXPRESSION_LIST ('=' PY_GRAMMAR_EXPRESSION_LIST)* PY_NEWLINE */
 
 	com_node(c, &n->children[n->count - 2]);
 	if(n->count == 2) com_addbyte(c, PY_OP_PRINT_EXPR);
@@ -962,25 +962,8 @@ static void com_expr_stmt(struct py_compiler* c, struct py_node* n) {
 	}
 }
 
-static void com_print_stmt(struct py_compiler* c, struct py_node* n) {
-	unsigned i;
-
-	PY_REQ(n, print_stmt); /* 'print' (test ',')* [test] PY_NEWLINE */
-
-	for(i = 1; i + 1 < n->count; i += 2) {
-		com_node(c, &n->children[i]);
-		com_addbyte(c, PY_OP_PRINT_ITEM);
-	}
-
-	if(n->children[n->count - 2].type != PY_COMMA) {
-		com_addbyte(c, PY_OP_PRINT_NEWLINE);
-	}
-
-	/* XXX Alternatively, PY_OP_LOAD_CONST '\n' and then PY_OP_PRINT_ITEM */
-}
-
 static void com_return_stmt(struct py_compiler* c, struct py_node* n) {
-	PY_REQ(n, return_stmt); /* 'return' [testlist] PY_NEWLINE */
+	PY_REQ(n, PY_GRAMMAR_RETURN_STATEMENT); /* 'return' [PY_GRAMMAR_TEST_LIST] PY_NEWLINE */
 
 	if(!c->in_function) {
 		py_error_set_string(py_type_error, "'return' outside function");
@@ -995,7 +978,7 @@ static void com_return_stmt(struct py_compiler* c, struct py_node* n) {
 }
 
 static void com_raise_stmt(struct py_compiler* c, struct py_node* n) {
-	PY_REQ(n, raise_stmt); /* 'raise' expr [',' expr] PY_NEWLINE */
+	PY_REQ(n, PY_GRAMMAR_RAISE_STATEMENT); /* 'raise' PY_GRAMMAR_EXPRESSION [',' PY_GRAMMAR_EXPRESSION] PY_NEWLINE */
 
 	com_node(c, &n->children[1]);
 
@@ -1008,7 +991,7 @@ static void com_raise_stmt(struct py_compiler* c, struct py_node* n) {
 static void com_import_stmt(struct py_compiler* c, struct py_node* n) {
 	unsigned i;
 
-	PY_REQ(n, import_stmt);
+	PY_REQ(n, PY_GRAMMAR_IMPORT_STATEMENT);
 
 	/*
 	 * 'import' PY_NAME (',' PY_NAME)* PY_NEWLINE |
@@ -1039,8 +1022,8 @@ static void com_if_stmt(struct py_compiler* c, struct py_node* n) {
 	unsigned i;
 	unsigned anchor = 0;
 
-	PY_REQ(n, if_stmt);
-	/*'if' test ':' suite ('elif' test ':' suite)* ['else' ':' suite] */
+	PY_REQ(n, PY_GRAMMAR_IF_STATEMENT);
+	/*'if' PY_GRAMMAR_TEST ':' PY_GRAMMAR_SUITE ('elif' PY_GRAMMAR_TEST ':' PY_GRAMMAR_SUITE)* ['else' ':' PY_GRAMMAR_SUITE] */
 
 	for(i = 0; i + 3 < n->count; i += 4) {
 		unsigned a = 0;
@@ -1068,7 +1051,7 @@ static void com_while_stmt(struct py_compiler* c, struct py_node* n) {
 	unsigned anchor = 0;
 	unsigned begin;
 
-	PY_REQ(n, while_stmt); /* 'while' test ':' suite ['else' ':' suite] */
+	PY_REQ(n, PY_GRAMMAR_WHILE_STATEMENT); /* 'while' PY_GRAMMAR_TEST ':' PY_GRAMMAR_SUITE ['else' ':' PY_GRAMMAR_SUITE] */
 
 	com_addfwref(c, PY_OP_SETUP_LOOP, &break_anchor);
 
@@ -1099,9 +1082,9 @@ static void com_for_stmt(struct py_compiler* c, struct py_node* n) {
 	unsigned anchor = 0;
 	unsigned begin;
 
-	PY_REQ(n, for_stmt);
+	PY_REQ(n, PY_GRAMMAR_FOR_STATEMENT);
 
-	/* 'for' exprlist 'in' exprlist ':' suite ['else' ':' suite] */
+	/* 'for' PY_GRAMMAR_EXPRESSION_LIST 'in' PY_GRAMMAR_EXPRESSION_LIST ':' PY_GRAMMAR_SUITE ['else' ':' PY_GRAMMAR_SUITE] */
 	com_addfwref(c, PY_OP_SETUP_LOOP, &break_anchor);
 	com_node(c, &n->children[3]);
 
@@ -1221,15 +1204,15 @@ static void com_try_stmt(struct py_compiler* c, struct py_node* n) {
 	unsigned finally_anchor = 0;
 	unsigned except_anchor = 0;
 
-	PY_REQ(n, try_stmt);
-	/* 'try' ':' suite (except_clause ':' suite)* ['finally' ':' suite] */
+	PY_REQ(n, PY_GRAMMAR_TRY_STATEMENT);
+	/* 'try' ':' PY_GRAMMAR_SUITE (PY_GRAMMAR_EXCEPT_CLAUSE ':' PY_GRAMMAR_SUITE)* ['finally' ':' PY_GRAMMAR_SUITE] */
 
-	if(n->count > 3 && n->children[n->count - 3].type != except_clause) {
+	if(n->count > 3 && n->children[n->count - 3].type != PY_GRAMMAR_EXCEPT_CLAUSE) {
 		/* Have a 'finally' clause */
 		com_addfwref(c, PY_OP_SETUP_FINALLY, &finally_anchor);
 	}
 
-	if(n->count > 3 && n->children[3].type == except_clause) {
+	if(n->count > 3 && n->children[3].type == PY_GRAMMAR_EXCEPT_CLAUSE) {
 		/* Have an 'except' clause */
 		com_addfwref(c, PY_OP_SETUP_EXCEPT, &except_anchor);
 	}
@@ -1245,10 +1228,10 @@ static void com_try_stmt(struct py_compiler* c, struct py_node* n) {
 		com_backpatch(c, except_anchor);
 
 		for(i = 3;
-				i < n->count && (ch = &n->children[i])->type == except_clause;
+				i < n->count && (ch = &n->children[i])->type == PY_GRAMMAR_EXCEPT_CLAUSE;
 				i += 3) {
 
-			/* except_clause: 'except' [expr [',' expr]] */
+			/* PY_GRAMMAR_EXCEPT_CLAUSE: 'except' [PY_GRAMMAR_EXPRESSION [',' PY_GRAMMAR_EXPRESSION]] */
 			if(except_anchor == 0) {
 				py_error_set_string(
 						py_type_error, "default 'except:' must be last");
@@ -1302,16 +1285,16 @@ static void com_try_stmt(struct py_compiler* c, struct py_node* n) {
 }
 
 static void com_suite(struct py_compiler* c, struct py_node* n) {
-	PY_REQ(n, suite);
+	PY_REQ(n, PY_GRAMMAR_SUITE);
 
-	/* simple_stmt | PY_NEWLINE PY_INDENT PY_NEWLINE* (stmt PY_NEWLINE*)+ PY_DEDENT */
+	/* PY_GRAMMAR_SIMPLE_STATEMENT | PY_NEWLINE PY_INDENT PY_NEWLINE* (PY_GRAMMAR_STATEMENT PY_NEWLINE*)+ PY_DEDENT */
 	if(n->count == 1) com_node(c, &n->children[0]);
 	else {
 		unsigned i;
 		for(i = 0; i < n->count; i++) {
 			struct py_node* ch = &n->children[i];
 
-			if(ch->type == stmt) com_node(c, ch);
+			if(ch->type == PY_GRAMMAR_STATEMENT) com_node(c, ch);
 		}
 	}
 }
@@ -1320,7 +1303,7 @@ static void com_funcdef(struct py_compiler* c, struct py_node* n) {
 	struct py_object* v;
 
 	PY_REQ(n, PY_GRAMMAR_FUNCTION_DEFINITION);
-	/* PY_GRAMMAR_FUNCTION_DEFINITION: 'def' PY_NAME parameters ':' suite */
+	/* PY_GRAMMAR_FUNCTION_DEFINITION: 'def' PY_NAME parameters ':' PY_GRAMMAR_SUITE */
 
 	v = (struct py_object*) py_compile(n, c->filename);
 	if(v == NULL) {
@@ -1338,10 +1321,10 @@ static void com_funcdef(struct py_compiler* c, struct py_node* n) {
 static void com_bases(struct py_compiler* c, struct py_node* n) {
 	unsigned i;
 
-	PY_REQ(n, baselist);
+	PY_REQ(n, PY_GRAMMAR_BASE_LIST);
 	/*
-	 * baselist: atom arguments (',' atom arguments)*
-	 * arguments: '(' [testlist] ')'
+	 * PY_GRAMMAR_BASE_LIST: PY_GRAMMAR_ATOM PY_GRAMMAR_ARGUMENTS (',' PY_GRAMMAR_ATOM PY_GRAMMAR_ARGUMENTS)*
+	 * PY_GRAMMAR_ARGUMENTS: '(' [PY_GRAMMAR_TEST_LIST] ')'
 	 */
 	for(i = 0; i < n->count; i += 3) com_node(c, &n->children[i]);
 
@@ -1351,11 +1334,11 @@ static void com_bases(struct py_compiler* c, struct py_node* n) {
 static void com_classdef(struct py_compiler* c, struct py_node* n) {
 	struct py_object* v;
 
-	PY_REQ(n, classdef);
+	PY_REQ(n, PY_GRAMMAR_CLASS_DEFINITION);
 	/*
-	 * classdef: 'class' PY_NAME parameters ['=' baselist] ':' suite
-	 * baselist: atom arguments (',' atom arguments)*
-	 * arguments: '(' [testlist] ')'
+	 * PY_GRAMMAR_CLASS_DEFINITION: 'class' PY_NAME parameters ['=' PY_GRAMMAR_BASE_LIST] ':' PY_GRAMMAR_SUITE
+	 * PY_GRAMMAR_BASE_LIST: PY_GRAMMAR_ATOM PY_GRAMMAR_ARGUMENTS (',' PY_GRAMMAR_ATOM PY_GRAMMAR_ARGUMENTS)*
+	 * PY_GRAMMAR_ARGUMENTS: '(' [PY_GRAMMAR_TEST_LIST] ')'
      */
 
 	if(n->count == 7) com_bases(c, &n->children[4]);
@@ -1387,7 +1370,7 @@ static void com_node(struct py_compiler* c, struct py_node* n) {
 			break;
 		}
 
-		case classdef: {
+		case PY_GRAMMAR_CLASS_DEFINITION: {
 			com_classdef(c, n);
 
 			break;
@@ -1395,20 +1378,20 @@ static void com_node(struct py_compiler* c, struct py_node* n) {
 
 		/* Trivial parse tree nodes */
 
-		case stmt: {
+		case PY_GRAMMAR_STATEMENT: {
 			PY_FALLTHROUGH;
 			/* FALLTHRU */
 		}
-		case flow_stmt: {
+		case PY_GRAMMAR_FLOW_STATEMENT: {
 			com_node(c, &n->children[0]);
 			break;
 		}
 
-		case simple_stmt: {
+		case PY_GRAMMAR_SIMPLE_STATEMENT: {
 			PY_FALLTHROUGH;
 			/* FALLTHRU */
 		}
-		case compound_stmt: {
+		case PY_GRAMMAR_COMPOUND_STATEMENT: {
 			com_addoparg(c, PY_OP_SET_LINENO, n->lineno);
 			com_node(c, &n->children[0]);
 
@@ -1417,27 +1400,13 @@ static void com_node(struct py_compiler* c, struct py_node* n) {
 
 		/* Statement nodes */
 
-		case expr_stmt: {
+		case PY_GRAMMAR_EXPRESSION_STATEMENT: {
 			com_expr_stmt(c, n);
 
 			break;
 		}
 
-		case print_stmt: {
-			com_print_stmt(c, n);
-
-			break;
-		}
-
-		case del_stmt: { /* 'del' exprlist PY_NEWLINE */
-			com_assign(c, &n->children[1], 0/*delete*/);
-
-			break;
-		}
-
-		case pass_stmt: break;
-
-		case break_stmt: {
+		case PY_GRAMMAR_BREAK_STATEMENT: {
 			if(c->nesting == 0) {
 				py_error_set_string(py_type_error, "'break' outside loop");
 				/* TODO: Proper EH. */
@@ -1449,49 +1418,49 @@ static void com_node(struct py_compiler* c, struct py_node* n) {
 			break;
 		}
 
-		case return_stmt: {
+		case PY_GRAMMAR_RETURN_STATEMENT: {
 			com_return_stmt(c, n);
 
 			break;
 		}
 
-		case raise_stmt: {
+		case PY_GRAMMAR_RAISE_STATEMENT: {
 			com_raise_stmt(c, n);
 
 			break;
 		}
 
-		case import_stmt: {
+		case PY_GRAMMAR_IMPORT_STATEMENT: {
 			com_import_stmt(c, n);
 
 			break;
 		}
 
-		case if_stmt: {
+		case PY_GRAMMAR_IF_STATEMENT: {
 			com_if_stmt(c, n);
 
 			break;
 		}
 
-		case while_stmt: {
+		case PY_GRAMMAR_WHILE_STATEMENT: {
 			com_while_stmt(c, n);
 
 			break;
 		}
 
-		case for_stmt: {
+		case PY_GRAMMAR_FOR_STATEMENT: {
 			com_for_stmt(c, n);
 
 			break;
 		}
 
-		case try_stmt: {
+		case PY_GRAMMAR_TRY_STATEMENT: {
 			com_try_stmt(c, n);
 
 			break;
 		}
 
-		case suite: {
+		case PY_GRAMMAR_SUITE: {
 			com_suite(c, n);
 
 			break;
@@ -1499,61 +1468,61 @@ static void com_node(struct py_compiler* c, struct py_node* n) {
 
 		/* Expression nodes */
 
-		case testlist: {
+		case PY_GRAMMAR_TEST_LIST: {
 			com_list(c, n);
 
 			break;
 		}
 
-		case test: {
+		case PY_GRAMMAR_TEST: {
 			com_test(c, n);
 
 			break;
 		}
 
-		case and_test: {
+		case PY_GRAMMAR_TEST_AND: {
 			com_and_test(c, n);
 
 			break;
 		}
 
-		case not_test: {
+		case PY_GRAMMAR_TEST_NOT: {
 			com_not_test(c, n);
 
 			break;
 		}
 
-		case comparison: {
+		case PY_GRAMMAR_TEST_COMPARE: {
 			com_comparison(c, n);
 
 			break;
 		}
 
-		case exprlist: {
+		case PY_GRAMMAR_EXPRESSION_LIST: {
 			com_list(c, n);
 
 			break;
 		}
 
-		case expr: {
+		case PY_GRAMMAR_EXPRESSION: {
 			com_expr(c, n);
 
 			break;
 		}
 
-		case term: {
+		case PY_GRAMMAR_TERM: {
 			com_term(c, n);
 
 			break;
 		}
 
-		case factor: {
+		case PY_GRAMMAR_FACTOR: {
 			com_factor(c, n);
 
 			break;
 		}
 
-		case atom: {
+		case PY_GRAMMAR_ATOM: {
 			com_atom(c, n);
 
 			break;
@@ -1572,14 +1541,14 @@ static void com_node(struct py_compiler* c, struct py_node* n) {
 static void com_fplist(struct py_compiler*, struct py_node*);
 
 static void com_fpdef(struct py_compiler* c, struct py_node* n) {
-	PY_REQ(n, fpdef); /* fpdef: PY_NAME | '(' fplist ')' */
+	PY_REQ(n, PY_GRAMMAR_PARAMETER_DEFINITION); /* PY_GRAMMAR_PARAMETER_DEFINITION: PY_NAME | '(' PY_GRAMMAR_PARAMETER_LIST ')' */
 
 	if(n->children[0].type == PY_LPAR) com_fplist(c, &n->children[1]);
 	else com_addopname(c, PY_OP_STORE_NAME, &n->children[0]);
 }
 
 static void com_fplist(struct py_compiler* c, struct py_node* n) {
-	PY_REQ(n, fplist); /* fplist: fpdef (',' fpdef)* */
+	PY_REQ(n, PY_GRAMMAR_PARAMETER_LIST); /* PY_GRAMMAR_PARAMETER_LIST: PY_GRAMMAR_PARAMETER_DEFINITION (',' PY_GRAMMAR_PARAMETER_DEFINITION)* */
 
 	if(n->count == 1) com_fpdef(c, &n->children[0]);
 	else {
@@ -1593,7 +1562,7 @@ static void com_fplist(struct py_compiler* c, struct py_node* n) {
 static void com_file_input(struct py_compiler* c, struct py_node* n) {
 	unsigned i;
 
-	PY_REQ(n, PY_GRAMMAR_FILE_INPUT); /* (PY_NEWLINE | stmt)* PY_ENDMARKER */
+	PY_REQ(n, PY_GRAMMAR_FILE_INPUT); /* (PY_NEWLINE | PY_GRAMMAR_STATEMENT)* PY_ENDMARKER */
 
 	for(i = 0; i < n->count; i++) {
 		struct py_node* ch = &n->children[i];
@@ -1607,11 +1576,11 @@ static void com_file_input(struct py_compiler* c, struct py_node* n) {
 static void compile_funcdef(struct py_compiler* c, struct py_node* n) {
 	struct py_node* ch;
 
-	/* PY_GRAMMAR_FUNCTION_DEFINITION: 'def' PY_NAME parameters ':' suite */
+	/* PY_GRAMMAR_FUNCTION_DEFINITION: 'def' PY_NAME parameters ':' PY_GRAMMAR_SUITE */
 	PY_REQ(n, PY_GRAMMAR_FUNCTION_DEFINITION);
 
-	ch = &n->children[2]; /* parameters: '(' [fplist] ')' */
-	ch = &ch->children[1]; /* ')' | fplist */
+	ch = &n->children[2]; /* parameters: '(' [PY_GRAMMAR_PARAMETER_LIST] ')' */
+	ch = &ch->children[1]; /* ')' | PY_GRAMMAR_PARAMETER_LIST */
 
 	if(ch->type == PY_RPAR) com_addbyte(c, PY_OP_REFUSE_ARGS);
 	else {
@@ -1648,8 +1617,8 @@ static void compile_node(struct py_compiler* c, struct py_node* n) {
 			break;
 		}
 
-		case classdef: { /* A class definition */
-			/* 'class' PY_NAME parameters ['=' baselist] ':' suite */
+		case PY_GRAMMAR_CLASS_DEFINITION: { /* A class definition */
+			/* 'class' PY_NAME parameters ['=' PY_GRAMMAR_BASE_LIST] ':' PY_GRAMMAR_SUITE */
 			com_addbyte(c, PY_OP_REFUSE_ARGS);
 			com_node(c, &n->children[n->count - 1]);
 			com_addbyte(c, PY_OP_LOAD_LOCALS);

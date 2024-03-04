@@ -210,6 +210,15 @@ static struct py_object* builtin_insert(
 	return py_object_incref(PY_NONE);
 }
 
+static struct py_object* builtin_pass(
+		struct py_object* self, struct py_object* args) {
+
+	(void) self;
+	(void) args;
+
+	return py_object_incref(PY_NONE);
+}
+
 static struct py_methodlist builtin_methods[] = {
 		{ "float", builtin_float },
 		{ "int", builtin_int },
@@ -217,6 +226,7 @@ static struct py_methodlist builtin_methods[] = {
 		{ "range", builtin_range },
 		{ "append", builtin_append },
 		{ "insert", builtin_insert },
+		{ "pass", builtin_pass },
 		{ NULL, NULL } };
 
 /* TODO: Python global state. */

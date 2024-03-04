@@ -39,7 +39,7 @@ void py_grammar_print_nonterminals(g, fp)struct py_grammar* g;
 
 	d = g->dfas;
 	for(i = g->count; --i >= 0; d++) {
-		fprintf(fp, "#define %s %d\n", d->name, d->type);
+		fprintf(fp, "#define %s (%d)\n", d->name, d->type);
 	}
 }
 
