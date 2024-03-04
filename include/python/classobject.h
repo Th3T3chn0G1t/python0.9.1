@@ -16,6 +16,12 @@
  * but currently it isn't. We'll see if we can fix that later, sigh...
  */
 
+struct py_class {
+	struct py_object ob;
+	struct py_object* bases; /* A tuple */
+	struct py_object* attr; /* A dictionary */
+};
+
 struct py_classmember {
 	struct py_object ob;
 	struct py_class* class; /* The class object */

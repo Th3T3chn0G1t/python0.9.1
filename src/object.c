@@ -40,14 +40,6 @@ int py_object_cmp(const struct py_object* v, const struct py_object* w) {
 	return tp->cmp(v, w);
 }
 
-struct py_object* py_object_get_attr(struct py_object* v, const char* name) {
-	if(v->type->get_attr == NULL) {
-		py_error_set_string(py_type_error, "attribute-less object");
-		return NULL;
-	}
-	else return (*v->type->get_attr)(v, name);
-}
-
 unsigned py_varobject_size(const void* op) {
 	return ((struct py_varobject*) op)->size;
 }

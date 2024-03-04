@@ -120,7 +120,6 @@ struct py_type {
 
 	/* Methods to implement standard operations */
 	void (*dealloc)(struct py_object*);
-
 	struct py_object* (*get_attr)(struct py_object*, const char*);
 	int (*cmp)(const struct py_object*, const struct py_object*);
 
@@ -145,7 +144,6 @@ void* py_object_new(struct py_type*); /* `void*' for convenience's sake. */
 void py_object_delete(struct py_object* p);
 int py_object_cmp(const struct py_object*, const struct py_object*);
 struct py_object* py_object_get_attr(struct py_object*, const char*);
-int py_object_set_attr(struct py_object*, const char*, struct py_object*);
 
 unsigned py_varobject_size(const void*);
 

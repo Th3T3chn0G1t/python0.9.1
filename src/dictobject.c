@@ -383,63 +383,6 @@ int py_dict_assign(
 	else return dict2insert((struct py_object*) dp, v, w);
 }
 
-static struct py_object* dict_keys(
-		struct py_object* op, struct py_object* args) {
-
-	struct py_dict* dp = (struct py_dict*) op;
-	struct py_object* v;
-	unsigned i, j;
-
-	if(!py_arg_none(args)) return NULL;
-
-	v = py_list_new(dp->di_used);
-	if(v == NULL) return NULL;
-
-	for(i = 0, j = 0; i < dp->di_size; i++) {
-		if(dp->di_table[i].de_value != NULL) {
-			struct py_string* key = dp->di_table[i].de_key;
-			py_object_incref(key);
-			py_list_set(v, j, (struct py_object*) key);
-			j++;
-		}
-	}
-	return v;
-}
-
-struct py_object* py_dict_get_keys(struct py_object* op) {
-	if(!py_is_dict(op)) {
-		py_error_set_badcall();
-		return NULL;
-	}
-
-	return dict_keys(op, NULL);
-}
-
-static struct py_object* dict_has_key(dp, args)struct py_dict* dp;
-											   struct py_object* args;
-{
-	struct py_object* key;
-	long ok;
-	if(!py_arg_str(args, &key)) {
-		return NULL;
-	}
-	ok = lookdict(dp, GETSTRINGVALUE((struct py_string*) key))->de_value !=
-		 NULL;
-	return py_int_new(ok);
-}
-
-static struct py_methodlist dict_methods[] = {
-		{ "keys",    dict_keys },
-		{ "has_key", dict_has_key },
-		{ NULL, NULL }           /* sentinel */
-};
-
-static struct py_object* dict_getattr(dp, name)struct py_dict* dp;
-											   char* name;
-{
-	return py_methodlist_find(dict_methods, (struct py_object*) dp, name);
-}
-
 void py_done_dict(void) {
 	py_object_decref(dummy);
 }
@@ -447,7 +390,7 @@ void py_done_dict(void) {
 struct py_type py_dict_type = {
 		{ 1, 0, &py_type_type }, sizeof(struct py_dict),
 		dict_dealloc, /* dealloc */
-		dict_getattr, /* get_attr */
+		0, /* get_attr */
 		0, /* cmp */
 		0, /* sequencemethods */
 };

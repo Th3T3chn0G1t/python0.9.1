@@ -14,11 +14,6 @@
 #include <python/tupleobject.h>
 #include <python/funcobject.h>
 
-struct py_class {
-	struct py_object ob;
-	struct py_object* bases; /* A tuple */
-	struct py_object* methods; /* A dictionary */
-};
 struct py_object* py_class_new(
 		struct py_object* bases, struct py_object* methods) {
 
@@ -31,7 +26,7 @@ struct py_object* py_class_new(
 
 	op->bases = bases;
 	py_object_incref(methods);
-	op->methods = methods;
+	op->attr = methods;
 
 	return (struct py_object*) op;
 }
@@ -42,7 +37,7 @@ static void py_class_dealloc(struct py_object* op) {
 	struct py_class* cls = (struct py_class*) op;
 
 	py_object_decref(cls->bases);
-	py_object_decref(cls->methods);
+	py_object_decref(cls->attr);
 }
 
 static struct py_object* py_class_get_attr(
@@ -52,7 +47,7 @@ static struct py_object* py_class_get_attr(
 	struct py_class* cls;
 
 	cls = (struct py_class*) op;
-	v = py_dict_lookup(cls->methods, name);
+	v = py_dict_lookup(cls->attr, name);
 
 	if(v != NULL) {
 		py_object_incref(v);
@@ -60,8 +55,8 @@ static struct py_object* py_class_get_attr(
 	}
 
 	if(cls->bases != NULL) {
-		int n = py_varobject_size(cls->bases);
-		int i;
+		unsigned n = py_varobject_size(cls->bases);
+		unsigned i;
 
 		for(i = 0; i < n; i++) {
 			v = py_class_get_attr(py_tuple_get(cls->bases, i), name);

@@ -163,7 +163,28 @@ call_builtin(struct py_object* func, struct py_object* arg) {
 	return NULL;
 }
 
-int py_object_set_attr(
+struct py_object* py_object_get_attr(struct py_object* v, const char* name) {
+	struct py_object* attr;
+	if(py_is_classmember(v)) attr = ((struct py_classmember*) v)->attr;
+	else if(py_is_class(v)) attr = ((struct py_class*) v)->attr;
+	else if(py_is_module(v)) attr = ((struct py_module*) v)->attr;
+	else {
+		py_error_set_string(
+				py_type_error,
+				"can only set attributes on classmember or module");
+		return 0;
+	}
+
+	(void) attr;
+
+	if(v->type->get_attr == NULL) {
+		py_error_set_string(py_type_error, "attribute-less object");
+		return NULL;
+	}
+	else return (*v->type->get_attr)(v, name);
+}
+
+static int py_object_set_attr(
 		struct py_object* v, const char* name, struct py_object* w) {
 
 	struct py_object* attr;
