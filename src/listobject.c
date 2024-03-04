@@ -81,7 +81,6 @@ int py_list_set(struct py_object* op, unsigned i, struct py_object* newitem) {
 
 static int ins1(struct py_list* self, unsigned where, struct py_object* v) {
 	struct py_object** items;
-	unsigned i;
 
 	if(v == NULL) {
 		py_error_set_badcall();
@@ -99,8 +98,9 @@ static int ins1(struct py_list* self, unsigned where, struct py_object* v) {
 
 	if(where > self->ob.size) where = self->ob.size;
 
-	for(i = self->ob.size + 1; --i >= where + 1;) items[i] = items[i - 1];
-
+	memmove(
+			&items[where + 1], &items[where],
+			(self->ob.size - where) * sizeof(struct py_object*));
 	py_object_incref(v);
 	items[where] = v;
 

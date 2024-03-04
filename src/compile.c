@@ -711,7 +711,7 @@ static void com_list(struct py_compiler* c, struct py_node* n) {
 /* Begin of assignment compilation */
 
 static void com_assign_trailer(
-		struct py_compiler* c, struct py_node* n, int assigning) {
+		struct py_compiler* c, struct py_node* n) {
 
 	PY_REQ(n, PY_GRAMMAR_TRAILER);
 
@@ -725,7 +725,7 @@ static void com_assign_trailer(
 
 		case PY_DOT: { /* '.' PY_NAME */
 			com_addopname(
-					c, assigning ? PY_OP_STORE_ATTR : PY_OP_DELETE_ATTR,
+					c, c ? PY_OP_STORE_ATTR : PY_OP_DELETE_ATTR,
 					&n->children[1]);
 
 			break;
@@ -737,8 +737,7 @@ static void com_assign_trailer(
 			PY_REQ(n, PY_GRAMMAR_SUBSCRIPT); /* PY_GRAMMAR_SUBSCRIPT: PY_GRAMMAR_EXPRESSION | [PY_GRAMMAR_EXPRESSION] ':' [PY_GRAMMAR_EXPRESSION] */
 
 			com_node(c, &n->children[0]);
-			com_addbyte(
-					c, assigning ? PY_OP_STORE_SUBSCR : PY_OP_DELETE_SUBSCR);
+			com_addbyte(c, c ? PY_OP_STORE_SUBSCR : PY_OP_DELETE_SUBSCR);
 
 			break;
 		}
@@ -752,38 +751,38 @@ static void com_assign_trailer(
 }
 
 static void com_assign(
-		struct py_compiler* c, struct py_node* n, int assigning);
+		struct py_compiler* c, struct py_node* n);
 
 static void com_assign_tuple(
-		struct py_compiler* c, struct py_node* n, int assigning) {
+		struct py_compiler* c, struct py_node* n) {
 
 	unsigned i;
 
 	if(n->type != PY_GRAMMAR_TEST_LIST) PY_REQ(n, PY_GRAMMAR_EXPRESSION_LIST);
 
-	if(assigning) com_addoparg(c, PY_OP_UNPACK_TUPLE, (n->count + 1) / 2);
+	com_addoparg(c, PY_OP_UNPACK_TUPLE, (n->count + 1) / 2);
 
-	for(i = 0; i < n->count; i += 2) com_assign(c, &n->children[i], assigning);
+	for(i = 0; i < n->count; i += 2) com_assign(c, &n->children[i]);
 }
 
 static void com_assign_list(
-		struct py_compiler* c, struct py_node* n, int assigning) {
+		struct py_compiler* c, struct py_node* n) {
 
 	unsigned i;
-	if(assigning) com_addoparg(c, PY_OP_UNPACK_LIST, (n->count + 1) / 2);
+	com_addoparg(c, PY_OP_UNPACK_LIST, (n->count + 1) / 2);
 
-	for(i = 0; i < n->count; i += 2) com_assign(c, &n->children[i], assigning);
+	for(i = 0; i < n->count; i += 2) com_assign(c, &n->children[i]);
 }
 
 static void com_assign_name(
-		struct py_compiler* c, struct py_node* n, int assigning) {
+		struct py_compiler* c, struct py_node* n) {
 
 	PY_REQ(n, PY_NAME);
-	com_addopname(c, assigning ? PY_OP_STORE_NAME : PY_OP_DELETE_NAME, n);
+	com_addopname(c, PY_OP_STORE_NAME, n);
 }
 
 static void com_assign(
-		struct py_compiler* c, struct py_node* n, int assigning) {
+		struct py_compiler* c, struct py_node* n) {
 
 	/* Loop to avoid trivial recursion */
 	for(;;) {
@@ -794,7 +793,7 @@ static void com_assign(
 			}
 			case PY_GRAMMAR_TEST_LIST: {
 				if(n->count > 1) {
-					com_assign_tuple(c, n, assigning);
+					com_assign_tuple(c, n);
 					return;
 				}
 
@@ -880,7 +879,7 @@ static void com_assign(
 					} /* NB i is still alive */
 
 					com_assign_trailer(
-							c, &n->children[i], assigning);
+							c, &n->children[i]);
 
 					return;
 				}
@@ -916,13 +915,13 @@ static void com_assign(
 							abort();
 						}
 
-						com_assign_list(c, n, assigning);
+						com_assign_list(c, n);
 
 						return;
 					}
 
 					case PY_NAME: {
-						com_assign_name(c, &n->children[0], assigning);
+						com_assign_name(c, &n->children[0]);
 
 						return;
 					}
@@ -957,7 +956,7 @@ static void com_expr_stmt(struct py_compiler* c, struct py_node* n) {
 		unsigned i;
 		for(i = 0; i < n->count - 3; i += 2) {
 			if(i + 2 < n->count - 3) com_addbyte(c, PY_OP_DUP_TOP);
-			com_assign(c, &n->children[i], 1/*assign*/);
+			com_assign(c, &n->children[i]);
 		}
 	}
 }
@@ -1101,7 +1100,7 @@ static void com_for_stmt(struct py_compiler* c, struct py_node* n) {
 
 	com_addoparg(c, PY_OP_SET_LINENO, n->lineno);
 	com_addfwref(c, PY_OP_FOR_LOOP, &anchor);
-	com_assign(c, &n->children[1], 1/*assigning*/);
+	com_assign(c, &n->children[1]);
 
 	c->nesting++;
 	com_node(c, &n->children[5]);
@@ -1252,7 +1251,7 @@ static void com_try_stmt(struct py_compiler* c, struct py_node* n) {
 
 			com_addbyte(c, PY_OP_POP_TOP);
 
-			if(ch->count > 3) com_assign(c, &ch->children[3], 1);
+			if(ch->count > 3) com_assign(c, &ch->children[3]);
 			else com_addbyte(c, PY_OP_POP_TOP);
 
 			com_addbyte(c, PY_OP_POP_TOP);
