@@ -76,24 +76,18 @@ static struct py_object* py_class_get_attr(
 }
 
 struct py_type py_class_type = {
-		{ 1, 0, &py_type_type }, "class", sizeof(struct py_class),
+		{ 1, 0, &py_type_type }, sizeof(struct py_class),
 		py_class_dealloc, /* dealloc */
 		py_class_get_attr, /* get_attr */
-		0, /* set_attr */
 		0, /* cmp */
 		0, /* sequencemethods */
 };
 
 /* We're not done yet: next, we define class member objects... */
-typedef struct {
-	struct py_object ob;
-	struct py_class* cm_class;      /* The class object */
-	struct py_object* cm_attr;       /* A dictionary */
-} classmemberobject;
 
 struct py_object* py_classmember_new(class)struct py_object* class;
 {
-	classmemberobject* cm;
+	struct py_classmember* cm;
 	if(!py_is_class(class)) {
 		py_error_set_badcall();
 		return NULL;
@@ -103,9 +97,9 @@ struct py_object* py_classmember_new(class)struct py_object* class;
 		return NULL;
 	}
 	py_object_incref(class);
-	cm->cm_class = (struct py_class*) class;
-	cm->cm_attr = py_dict_new();
-	if(cm->cm_attr == NULL) {
+	cm->class = (struct py_class*) class;
+	cm->attr = py_dict_new();
+	if(cm->attr == NULL) {
 		py_object_decref(cm);
 		return NULL;
 	}
@@ -115,24 +109,24 @@ struct py_object* py_classmember_new(class)struct py_object* class;
 /* Class member methods */
 
 static void classmember_dealloc(struct py_object* op) {
-	classmemberobject* cm = (classmemberobject*) op;
+	struct py_classmember* cm = (struct py_classmember*) op;
 
-	py_object_decref(cm->cm_class);
-	py_object_decref(cm->cm_attr);
+	py_object_decref(cm->class);
+	py_object_decref(cm->attr);
 }
 
 static struct py_object* classmember_getattr(
 		struct py_object* op, const char* name) {
 
-	classmemberobject* cm = (classmemberobject*) op;
-	struct py_object* v = py_dict_lookup(cm->cm_attr, name);
+	struct py_classmember* cm = (struct py_classmember*) op;
+	struct py_object* v = py_dict_lookup(cm->attr, name);
 
 	if(v != NULL) {
 		py_object_incref(v);
 		return v;
 	}
 
-	v = py_class_get_attr((struct py_object*) cm->cm_class, name);
+	v = py_class_get_attr((struct py_object*) cm->class, name);
 	if(v == NULL) return v;
 
 	if(py_is_func(v)) {
@@ -146,23 +140,10 @@ static struct py_object* classmember_getattr(
 	return NULL;
 }
 
-static int classmember_setattr(cm, name, v)classmemberobject* cm;
-										   char* name;
-										   struct py_object* v;
-{
-	if(v == NULL) {
-		return py_dict_remove(cm->cm_attr, name);
-	}
-	else {
-		return py_dict_insert(cm->cm_attr, name, v);
-	}
-}
-
 struct py_type py_class_member_type = {
-		{ 1, 0, &py_type_type }, "class member",
-		sizeof(classmemberobject), classmember_dealloc, /* dealloc */
+		{ 1, 0, &py_type_type },
+		sizeof(struct py_classmember), classmember_dealloc, /* dealloc */
 		classmember_getattr, /* get_attr */
-		classmember_setattr, /* set_attr */
 		0, /* cmp */
 		0, /* sequencemethods */
 };
@@ -225,10 +206,9 @@ static void classmethod_dealloc(struct py_object* op) {
 }
 
 struct py_type py_class_method_type = {
-		{ 1, 0, &py_type_type }, "class method",
+		{ 1, 0, &py_type_type },
 		sizeof(classmethodobject), classmethod_dealloc, /* dealloc */
 		0, /* get_attr */
-		0, /* set_attr */
 		0, /* cmp */
 		0, /* sequencemethods */
 };

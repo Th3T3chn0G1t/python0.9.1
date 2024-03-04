@@ -116,14 +116,12 @@ enum py_print_mode {
 struct py_type {
 	struct py_varobject ob;
 
-	const char* name; /* For printing */
 	unsigned size; /* For allocation */
 
 	/* Methods to implement standard operations */
 	void (*dealloc)(struct py_object*);
 
 	struct py_object* (*get_attr)(struct py_object*, const char*);
-	int (*set_attr)(struct py_object*, const char*, struct py_object*);
 	int (*cmp)(const struct py_object*, const struct py_object*);
 
 	struct py_sequencemethods* sequencemethods;

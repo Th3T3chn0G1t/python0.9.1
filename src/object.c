@@ -34,7 +34,7 @@ int py_object_cmp(const struct py_object* v, const struct py_object* w) {
 	if(v == NULL) return -1;
 	if(w == NULL) return 1;
 
-	if((tp = v->type) != w->type) return strcmp(tp->name, w->type->name);
+	if((tp = v->type) != w->type) return (v < w) ? -1 : 1;
 	if(tp->cmp == NULL) return (v < w) ? -1 : 1;
 
 	return tp->cmp(v, w);
@@ -46,22 +46,6 @@ struct py_object* py_object_get_attr(struct py_object* v, const char* name) {
 		return NULL;
 	}
 	else return (*v->type->get_attr)(v, name);
-}
-
-int py_object_set_attr(
-		struct py_object* v, const char* name, struct py_object* w) {
-
-	if(v->type->set_attr == NULL) {
-		py_error_set_string(
-				py_type_error,
-				v->type->get_attr ?
-					"object has read-only attributes" :
-					"attribute-less object");
-
-		return -1;
-	}
-
-	return (*v->type->set_attr)(v, name, w);
 }
 
 unsigned py_varobject_size(const void* op) {
@@ -76,10 +60,9 @@ unsigned py_varobject_size(const void* op) {
 
 /* TODO: Python global state. */
 static struct py_type py_none_type = {
-		{ 1, 0, &py_type_type }, "None", 0,
-		0, /* dealloc */ /* never called */
+		{ 1, 0, &py_type_type }, 0,
+		0, /* dealloc */
 		0, /* get_attr */
-		0, /* set_attr */
 		0, /* cmp */
 		0, /* sequencemethods */
 };

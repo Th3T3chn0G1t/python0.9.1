@@ -16,6 +16,12 @@
  * but currently it isn't. We'll see if we can fix that later, sigh...
  */
 
+struct py_classmember {
+	struct py_object ob;
+	struct py_class* class; /* The class object */
+	struct py_object* attr; /* A dictionary */
+};
+
 /* TODO: Python global state. */
 extern struct py_type py_class_type;
 extern struct py_type py_class_member_type;

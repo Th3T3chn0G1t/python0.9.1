@@ -91,10 +91,9 @@ static int int_compare(v, w)struct py_int* v, * w;
 }
 
 struct py_type py_int_type = {
-		{ 1, 0, &py_type_type }, "int", sizeof(struct py_int),
+		{ 1, 0, &py_type_type }, sizeof(struct py_int),
 		int_dealloc, /* dealloc */
 		0, /* get_attr */
-		0, /* set_attr */
 		int_compare, /* cmp */
 		0, /* sequencemethods */
 };

@@ -66,10 +66,9 @@ static void meth_dealloc(struct py_object* op) {
 }
 
 struct py_type py_method_type = {
-		{ 1, 0, &py_type_type }, "method", sizeof(methodobject),
+		{ 1, 0, &py_type_type }, sizeof(methodobject),
 		meth_dealloc, /* dealloc */
 		0, /* get_attr */
-		0, /* set_attr */
 		0, /* cmp */
 		0, /* sequencemethods */
 };

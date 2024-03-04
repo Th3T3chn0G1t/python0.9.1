@@ -10,6 +10,12 @@
 
 #include <python/object.h>
 
+struct py_module {
+	struct py_object ob;
+	struct py_object* name;
+	struct py_object* attr;
+};
+
 extern struct py_type py_module_type;
 
 #define py_is_module(op) ((op)->type == &py_module_type)

@@ -445,10 +445,9 @@ void py_done_dict(void) {
 }
 
 struct py_type py_dict_type = {
-		{ 1, 0, &py_type_type }, "dictionary", sizeof(struct py_dict),
+		{ 1, 0, &py_type_type }, sizeof(struct py_dict),
 		dict_dealloc, /* dealloc */
 		dict_getattr, /* get_attr */
-		0, /* set_attr */
 		0, /* cmp */
 		0, /* sequencemethods */
 };

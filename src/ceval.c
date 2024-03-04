@@ -163,6 +163,23 @@ call_builtin(struct py_object* func, struct py_object* arg) {
 	return NULL;
 }
 
+int py_object_set_attr(
+		struct py_object* v, const char* name, struct py_object* w) {
+
+	struct py_object* attr;
+	if(py_is_classmember(v)) attr = ((struct py_classmember*) v)->attr;
+	else if(py_is_module(v)) attr = ((struct py_module*) v)->attr;
+	else {
+		py_error_set_string(
+				py_type_error,
+				"can only set attributes on classmember or module");
+		return -1;
+	}
+
+	if(w == NULL) return py_dict_remove(attr, name);
+	else return py_dict_insert(attr, name, w);
+}
+
 struct py_object* py_call_function(
 		struct py_object* func, struct py_object* arg) {
 
