@@ -9,6 +9,7 @@
 #define PY_TOKENIZER_H
 
 #include <python/std.h>
+#include <python/result.h>
 
 /* Max indentation level */
 #define PY_MAX_INDENT (100)
@@ -21,7 +22,7 @@ struct py_tokenizer {
 	char* cur; /* Next character in buffer */
 	char* inp; /* End of data in buffer */
 	char* end; /* End of input buffer */
-	int done; /* 0 normally, 1 at EOF, -1 after error */
+	enum py_result done;
 	FILE* fp; /* Rest of input; NULL if tokenizing a string */
 	int tabsize; /* Tab spacing */
 	int indent; /* Current indentation index */

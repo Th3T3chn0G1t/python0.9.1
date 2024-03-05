@@ -3,10 +3,12 @@
  * See `LICENCE' for more information.
  */
 
+/* Parser interface */
+
 #ifndef PY_PARSER_H
 #define PY_PARSER_H
 
-/* Parser interface */
+#include <python/result.h>
 
 #define PY_MAX_STACK (100)
 
@@ -30,6 +32,6 @@ struct py_parser {
 
 struct py_parser* py_parser_new(struct py_grammar*, int);
 void py_parser_delete(struct py_parser*);
-int py_parser_add(struct py_parser*, int, char*, int);
+enum py_result py_parser_add(struct py_parser*, int, char*, unsigned);
 
 #endif

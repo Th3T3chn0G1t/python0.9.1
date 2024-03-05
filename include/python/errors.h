@@ -24,8 +24,6 @@ extern struct py_object* py_system_error;
 
 #define PY_INDEX_ERROR py_runtime_error
 #define PY_KEY_ERROR py_runtime_error
-#define PY_ZERO_DIVISION_ERROR py_runtime_error
-#define PY_OVERFLOW_ERROR py_runtime_error
 
 void py_error_set(struct py_object*);
 void py_error_set_value(struct py_object*, struct py_object*);
@@ -38,7 +36,7 @@ void py_error_clear(void);
 int py_error_set_badarg(void);
 struct py_object* py_error_set_nomem(void);
 struct py_object* py_error_set_errno(struct py_object*);
-void py_error_set_input(int);
+void py_error_set_input(enum py_result);
 void py_error_set_badcall(void);
 
 /* TODO: Hook this. */

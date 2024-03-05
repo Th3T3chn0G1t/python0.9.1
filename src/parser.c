@@ -140,10 +140,7 @@ static int push(s, type, d, newstate, lineno)struct py_stack* s;
 
 /* PARSER PROPER */
 
-static int classify(g, type, str)struct py_grammar* g;
-								 int type;
-								 char* str;
-{
+static int classify(struct py_grammar* g, int type, char* str) {
 	int n = g->labels.count;
 
 	if(type == PY_NAME) {
@@ -152,7 +149,8 @@ static int classify(g, type, str)struct py_grammar* g;
 		int i;
 		for(i = n; i > 0; i--, l++) {
 			if(l->type == PY_NAME && l->str != NULL && l->str[0] == s[0] &&
-			   strcmp(l->str, s) == 0) {
+				strcmp(l->str, s) == 0) {
+
 				D(printf("It's a keyword\n"));
 				return n - i;
 			}
@@ -174,20 +172,16 @@ static int classify(g, type, str)struct py_grammar* g;
 	return -1;
 }
 
-int py_parser_add(ps, type, str, lineno)struct py_parser* ps;
-										int type;
-										char* str;
-										int lineno;
-{
+enum py_result py_parser_add(
+		struct py_parser* ps, int type, char* str, unsigned lineno) {
+
 	int ilabel;
 
 	D(printf("Token %s/'%s' ... ", py_token_names[type], str));
 
 	/* Find out which label this token is */
 	ilabel = classify(ps->grammar, type, str);
-	if(ilabel < 0) {
-		return PY_RESULT_SYNTAX;
-	}
+	if(ilabel < 0) return PY_RESULT_SYNTAX;
 
 	/* Loop until the token is shifted or an error occurred */
 	for(;;) {

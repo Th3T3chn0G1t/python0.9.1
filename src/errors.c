@@ -52,9 +52,7 @@
 static struct py_object* last_exception;
 static struct py_object* last_exc_val;
 
-void py_error_set_value(exception, value)struct py_object* exception;
-										 struct py_object* value;
-{
+void py_error_set_value(struct py_object* exception, struct py_object* value) {
 	py_object_decref(last_exception);
 	py_object_incref(exception);
 	last_exception = exception;
@@ -64,33 +62,28 @@ void py_error_set_value(exception, value)struct py_object* exception;
 	last_exc_val = value;
 }
 
-void py_error_set(exception)struct py_object* exception;
-{
+void py_error_set(struct py_object* exception) {
 	py_error_set_value(exception, (struct py_object*) NULL);
 }
 
-void py_error_set_string(exception, string)struct py_object* exception;
-										   const char* string;
-{
+void py_error_set_string(struct py_object* exception, const char* string) {
 	struct py_object* value = py_string_new(string);
 	py_error_set_value(exception, value);
 	py_object_decref(value);
 }
 
-int py_error_occurred() {
+int py_error_occurred(void) {
 	return last_exception != NULL;
 }
 
-void py_error_get(p_exc, p_val)struct py_object** p_exc;
-							   struct py_object** p_val;
-{
+void py_error_get(struct py_object** p_exc, struct py_object** p_val) {
 	*p_exc = last_exception;
 	last_exception = NULL;
 	*p_val = last_exc_val;
 	last_exc_val = NULL;
 }
 
-void py_error_clear() {
+void py_error_clear(void) {
 	py_object_decref(last_exception);
 	last_exception = NULL;
 	py_object_decref(last_exc_val);
@@ -99,53 +92,66 @@ void py_error_clear() {
 
 /* Convenience functions to set a type error exception and return 0 */
 
-int py_error_set_badarg() {
+int py_error_set_badarg(void) {
 	py_error_set_string(
 			py_type_error, "illegal argument type for built-in operation");
 	return 0;
 }
 
-struct py_object* py_error_set_nomem() {
+struct py_object* py_error_set_nomem(void) {
 	py_error_set(py_memory_error);
 	return NULL;
 }
 
-struct py_object* py_error_set_errno(exc)struct py_object* exc;
-{
-	struct py_object* v = py_tuple_new(2);
+struct py_object* py_error_set_errno(struct py_object* exc) {
+	struct py_object* v;
+
+	v = py_tuple_new(2);
 	if(v != NULL) {
 		py_tuple_set(v, 0, py_int_new((long) errno));
 		py_tuple_set(v, 1, py_string_new(strerror(errno)));
 	}
+
 	py_error_set_value(exc, v);
 	py_object_decref(v);
+
 	return NULL;
 }
 
-void py_error_set_badcall() {
+void py_error_set_badcall(void) {
 	py_error_set_string(py_system_error, "bad argument to internal function");
 }
 
 /* Set the error appropriate to the given input error code (see result.h) */
 
-void py_error_set_input(err)int err;
-{
+void py_error_set_input(enum py_result err) {
 	switch(err) {
-		case PY_RESULT_DONE:
-		case PY_RESULT_OK:break;
-		case PY_RESULT_SYNTAX:
-			py_error_set_string(
-					py_runtime_error, "syntax error");
+		case PY_RESULT_DONE: break;
+		case PY_RESULT_OK: break;
+
+		case PY_RESULT_SYNTAX: {
+			py_error_set_string(py_runtime_error, "syntax error");
 			break;
-		case PY_RESULT_TOKEN:
-			py_error_set_string(
-					py_runtime_error, "illegal token");
+		}
+
+		case PY_RESULT_TOKEN: {
+			py_error_set_string(py_runtime_error, "illegal token");
 			break;
-		case PY_RESULT_OOM:py_error_set_nomem();
+		}
+
+		case PY_RESULT_OOM: {
+			py_error_set_nomem();
 			break;
-		case PY_RESULT_EOF:py_error_set(py_eof_error);
+		}
+
+		case PY_RESULT_EOF: {
+			py_error_set(py_eof_error);
 			break;
-		default:py_error_set_string(py_runtime_error, "unknown input error");
+		}
+
+		default: {
+			py_error_set_string(py_runtime_error, "unknown input error");
 			break;
+		}
 	}
 }

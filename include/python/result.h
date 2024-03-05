@@ -12,11 +12,13 @@
 #define PY_RESULT_H
 
 /* TODO: Enum. */
-#define PY_RESULT_OK (10) /* No error */
-#define PY_RESULT_EOF (11) /* (Unexpected) EOF read */
-#define PY_RESULT_TOKEN (13) /* Bad token */
-#define PY_RESULT_SYNTAX (14) /* Syntax error */
-#define PY_RESULT_OOM (15) /* Ran out of memory */
-#define PY_RESULT_DONE (16) /* Parsing complete */
+enum py_result {
+	PY_RESULT_OK = 10, /* No error */
+	PY_RESULT_EOF = 11, /* (Unexpected) EOF read */
+	PY_RESULT_TOKEN = 13, /* Bad token */
+	PY_RESULT_SYNTAX = 14, /* Syntax error */
+	PY_RESULT_OOM = 15, /* Ran out of memory */
+	PY_RESULT_DONE = 16 /* Parsing complete */
+};
 
 #endif

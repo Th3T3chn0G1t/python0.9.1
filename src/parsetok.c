@@ -94,7 +94,7 @@ static int parsetok(tok, g, start, n_ret)struct py_tokenizer* tok;
 		}
 		strncpy(str, a < tok->buf ? tok->buf : a, len);
 		str[len] = '\0';
-		ret = py_parser_add(ps, (int) type, str, tok->lineno);
+		ret = py_parser_add(ps, type, str, tok->lineno);
 		if(ret != PY_RESULT_OK) {
 			if(ret == PY_RESULT_DONE) {
 				*n_ret = ps->tree;
