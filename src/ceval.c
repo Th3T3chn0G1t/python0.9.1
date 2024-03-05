@@ -28,6 +28,8 @@
 #include <python/classobject.h>
 #include <python/funcobject.h>
 
+#include <apro.h>
+
 struct py_frame* py_frame_current;
 
 struct py_object* py_get_locals(void) {
@@ -201,6 +203,8 @@ struct py_object* py_call_function(
 	struct py_object* co;
 	struct py_object* v;
 
+	apro_stamp_start(APRO_CEVAL_CALL_RISING);
+
 	if(py_is_classmethod(func)) {
 		struct py_object* self = py_classmethod_get_self(func);
 		func = py_classmethod_get_func(func);
@@ -243,7 +247,13 @@ struct py_object* py_call_function(
 	newglobals = py_func_get_globals(func);
 	py_object_incref(newglobals);
 
+	apro_stamp_end(APRO_CEVAL_CALL_RISING);
+
+	apro_stamp_start(APRO_CEVAL_CALL_EVAL);
+
 	v = py_code_eval((struct py_code*) co, newglobals, newlocals, arg);
+
+	apro_stamp_end(APRO_CEVAL_CALL_EVAL);
 
 	py_object_decref(newlocals);
 	py_object_decref(newglobals);
@@ -541,7 +551,7 @@ enum why_code {
 	WHY_BREAK       /* 'break' statement */
 };
 
-const char* getname(struct py_frame* f, int i) {
+static const char* getname(struct py_frame* f, int i) {
 	return py_string_get(py_list_get(f->code->names, i));
 }
 
@@ -551,6 +561,7 @@ struct py_object* py_code_eval(
 		struct py_code* co, struct py_object* globals, struct py_object* locals,
 		struct py_object* arg) {
 
+	py_byte_t* code;
 	py_byte_t* next_instr;
 	py_byte_t opcode; /* Current opcode */
 	int oparg; /* Current opcode argument, if any */
@@ -566,28 +577,14 @@ struct py_object* py_code_eval(
 	struct py_object* retval; /* Return value iff why == WHY_RETURN */
 	const char* name; /* Name used by some instructions */
 
-	/* Code access macros */
-
-#define GETNAME(i) getname(f, i)
-#define FIRST_INSTR() (f->code->code)
-#define INSTR_OFFSET() (next_instr - FIRST_INSTR())
-#define NEXTOP() (*next_instr++)
-#define NEXTARG() (next_instr += 2, (next_instr[-1]<<8) + next_instr[-2])
-#define JUMPTO(x) (next_instr = FIRST_INSTR() + (x))
-#define JUMPBY(x) (next_instr += (x))
-
 	/* Stack manipulation macros */
 
 /* TODO: These could largely be functions. */
 
 #define STACK_LEVEL() (stack_pointer - f->valuestack)
-#define EMPTY() (STACK_LEVEL() == 0)
 #define TOP() (stack_pointer[-1])
-#define BASIC_PUSH(v) (*stack_pointer++ = (v))
-#define BASIC_POP() (*--stack_pointer)
-
-#define PUSH(v) BASIC_PUSH(v)
-#define POP() BASIC_POP()
+#define PUSH(v) (*stack_pointer++ = (v))
+#define POP() (*--stack_pointer)
 
 	f = py_frame_new(
 			py_frame_current, /* back */
@@ -599,7 +596,8 @@ struct py_object* py_code_eval(
 	if(f == NULL) return NULL;
 
 	py_frame_current = f;
-	next_instr = f->code->code;
+	code = f->code->code;
+	next_instr = code;
 	stack_pointer = f->valuestack;
 
 	if(arg != NULL) {
@@ -616,7 +614,10 @@ struct py_object* py_code_eval(
 		/* Extract opcode and argument */
 
 		opcode = *next_instr++;
-		if(opcode >= PY_OP_HAVE_ARGUMENT) oparg = NEXTARG();
+		if(opcode >= PY_OP_HAVE_ARGUMENT) {
+			next_instr += 2;
+			oparg = (next_instr[-1] << 8) + next_instr[-2];
+		}
 
 		/* Main switch on opcode */
 
@@ -877,7 +878,7 @@ struct py_object* py_code_eval(
 			}
 
 			case PY_OP_REQUIRE_ARGS: {
-				if(EMPTY()) {
+				if(!STACK_LEVEL()) {
 					py_error_set_string(
 							py_type_error, "function expects argument(s)");
 					why = WHY_EXCEPTION;
@@ -887,7 +888,7 @@ struct py_object* py_code_eval(
 			}
 
 			case PY_OP_REFUSE_ARGS: {
-				if(!EMPTY()) {
+				if(STACK_LEVEL()) {
 					py_error_set_string(
 							py_type_error, "function expects no argument(s)");
 					why = WHY_EXCEPTION;
@@ -953,7 +954,7 @@ struct py_object* py_code_eval(
 			}
 
 			case PY_OP_STORE_NAME: {
-				name = GETNAME(oparg);
+				name = getname(f, oparg);
 				v = POP();
 				err = py_dict_insert(f->locals, name, v);
 				py_object_decref(v);
@@ -962,7 +963,7 @@ struct py_object* py_code_eval(
 			}
 
 			case PY_OP_DELETE_NAME: {
-				name = GETNAME(oparg);
+				name = getname(f, oparg);
 				if((err = py_dict_remove(f->locals, name)) != 0) {
 					py_error_set_string(py_name_error, name);
 				}
@@ -1020,7 +1021,7 @@ struct py_object* py_code_eval(
 			}
 
 			case PY_OP_STORE_ATTR: {
-				name = GETNAME(oparg);
+				name = getname(f, oparg);
 				v = POP();
 				u = POP();
 				err = py_object_set_attr(v, name, u); /* v.name = u */
@@ -1031,7 +1032,7 @@ struct py_object* py_code_eval(
 			}
 
 			case PY_OP_DELETE_ATTR: {
-				name = GETNAME(oparg);
+				name = getname(f, oparg);
 				v = POP();
 				err = py_object_set_attr(v, name, (struct py_object*) NULL);
 				/* del v.name */
@@ -1049,7 +1050,7 @@ struct py_object* py_code_eval(
 			}
 
 			case PY_OP_LOAD_NAME: {
-				name = GETNAME(oparg);
+				name = getname(f, oparg);
 				x = py_dict_lookup(f->locals, name);
 				if(x == NULL) {
 					x = py_dict_lookup(f->globals, name);
@@ -1110,7 +1111,7 @@ struct py_object* py_code_eval(
 			}
 
 			case PY_OP_LOAD_ATTR: {
-				name = GETNAME(oparg);
+				name = getname(f, oparg);
 				v = POP();
 				x = py_object_get_attr(v, name);
 				py_object_decref(v);
@@ -1127,32 +1128,36 @@ struct py_object* py_code_eval(
 				PUSH(x);
 				break;
 
-			case PY_OP_IMPORT_NAME:name = GETNAME(oparg);
+			case PY_OP_IMPORT_NAME:name = getname(f, oparg);
 				x = py_import_module(name);
 				py_object_incref(x);
 				PUSH(x);
 				break;
 
-			case PY_OP_IMPORT_FROM:name = GETNAME(oparg);
+			case PY_OP_IMPORT_FROM:name = getname(f, oparg);
 				v = TOP();
 				err = import_from(f->locals, v, name);
 				break;
 
-			case PY_OP_JUMP_FORWARD:JUMPBY(oparg);
+			case PY_OP_JUMP_FORWARD: {
+				next_instr += oparg;
 				break;
+			}
 
-			case PY_OP_JUMP_IF_FALSE:
-				if(!py_object_truthy(TOP()))
-					JUMPBY(oparg);
+			case PY_OP_JUMP_IF_FALSE: {
+				if(!py_object_truthy(TOP())) next_instr += oparg;
 				break;
+			}
 
-			case PY_OP_JUMP_IF_TRUE:
-				if(py_object_truthy(TOP()))
-					JUMPBY(oparg);
+			case PY_OP_JUMP_IF_TRUE: {
+				if(py_object_truthy(TOP())) next_instr += oparg;
 				break;
+			}
 
-			case PY_OP_JUMP_ABSOLUTE:JUMPTO(oparg);
+			case PY_OP_JUMP_ABSOLUTE: {
+				next_instr = code + oparg;
 				break;
+			}
 
 			case PY_OP_FOR_LOOP:
 				/* for v in s: ...
@@ -1173,13 +1178,9 @@ struct py_object* py_code_eval(
 				else {
 					py_object_decref(v);
 					py_object_decref(w);
-					/* A NULL can mean "s exhausted"
-					but also an error: */
-					if(py_error_occurred()) {
-						why = WHY_EXCEPTION;
-					}
-					else
-						JUMPBY(oparg);
+					/* A NULL can mean "s exhausted" but also an error: */
+					if(py_error_occurred()) why = WHY_EXCEPTION;
+					else next_instr += oparg;
 				}
 				break;
 
@@ -1187,7 +1188,7 @@ struct py_object* py_code_eval(
 			case PY_OP_SETUP_EXCEPT:
 			case PY_OP_SETUP_FINALLY:
 				py_block_setup(
-						f, opcode, INSTR_OFFSET() + oparg, STACK_LEVEL());
+						f, opcode, (next_instr - code) + oparg, STACK_LEVEL());
 				break;
 
 			case PY_OP_SET_LINENO:
@@ -1236,10 +1237,9 @@ struct py_object* py_code_eval(
 		/* Log traceback info if this is a real exception */
 
 		if(why == WHY_EXCEPTION) {
-			int lasti = INSTR_OFFSET() - 1;
-			if(opcode >= PY_OP_HAVE_ARGUMENT) {
-				lasti -= 2;
-			}
+			unsigned lasti = (next_instr - code) - 1;
+			if(opcode >= PY_OP_HAVE_ARGUMENT) lasti -= 2;
+
 			py_traceback_new(f, lasti, lineno);
 		}
 
@@ -1259,7 +1259,7 @@ struct py_object* py_code_eval(
 			}
 			if(b->type == PY_OP_SETUP_LOOP && why == WHY_BREAK) {
 				why = WHY_NOT;
-				JUMPTO(b->handler);
+				next_instr = code + b->handler;
 				break;
 			}
 			if(b->type == PY_OP_SETUP_FINALLY ||
@@ -1291,7 +1291,7 @@ struct py_object* py_code_eval(
 					PUSH(v);
 				}
 				why = WHY_NOT;
-				JUMPTO(b->handler);
+				next_instr = code + b->handler;
 				break;
 			}
 		} /* unwind stack */
@@ -1306,7 +1306,7 @@ struct py_object* py_code_eval(
 
 	/* Pop remaining stack entries */
 
-	while(!EMPTY()) {
+	while(STACK_LEVEL()) {
 		v = POP();
 		py_object_decref(v);
 	}

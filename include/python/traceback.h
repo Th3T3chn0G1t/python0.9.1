@@ -10,7 +10,7 @@
 
 #include <python/frameobject.h>
 
-int py_traceback_new(struct py_frame*, int, int);
+int py_traceback_new(struct py_frame*, unsigned, unsigned);
 int py_traceback_print(struct py_object*, FILE*);
 
 struct py_object* py_traceback_get(void);

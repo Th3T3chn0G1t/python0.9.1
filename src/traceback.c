@@ -63,10 +63,7 @@ static tracebackobject* newtracebackobject(next, frame, lasti, lineno)
 
 static tracebackobject* tb_current = NULL;
 
-int py_traceback_new(frame, lasti, lineno)struct py_frame* frame;
-										  int lasti;
-										  int lineno;
-{
+int py_traceback_new(struct py_frame* frame, unsigned lasti, unsigned lineno) {
 	tracebackobject* tb;
 	tb = newtracebackobject(tb_current, frame, lasti, lineno);
 	if(tb == NULL) {
