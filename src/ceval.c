@@ -1104,33 +1104,41 @@ struct py_object* py_code_eval(
 				}
 				break;
 
-			case PY_OP_SETUP_LOOP:
-			case PY_OP_SETUP_EXCEPT:
+			case PY_OP_SETUP_LOOP: {
+				PY_FALLTHROUGH;
+				/* FALLTHRU */
+			}
+			case PY_OP_SETUP_EXCEPT: {
 				py_block_setup(
 						f, opcode, (next - code) + oparg,
 						(stack_pointer - f->valuestack));
-				break;
 
-			case PY_OP_SET_LINENO:
+				break;
+			}
+
+			case PY_OP_SET_LINENO: {
 				lineno = oparg;
-				break;
 
-			default:
+				break;
+			}
+
+			default: {
 				fprintf(
 						stderr, "XXX lineno: %d, opcode: %d\n", lineno, opcode);
 				py_error_set_string(
 						py_system_error, "py_code_eval: unknown opcode");
 				why = PY_WHY_EXCEPTION;
+
 				break;
+			}
 		} /* switch */
 
 
 		/* Quickly continue if no error occurred */
 
 		if(why == PY_WHY_NOT) {
-			if(err == 0 && x != NULL) {
-				continue;
-			} /* Normal, fast path */
+			if(err == 0 && x != NULL) continue; /* Normal, fast path */
+
 			why = PY_WHY_EXCEPTION;
 			x = PY_NONE;
 			err = 0;
@@ -1196,10 +1204,6 @@ struct py_object* py_code_eval(
 	py_frame_current = f->back;
 	py_object_decref(f);
 
-	if(why == PY_WHY_RETURN) {
-		return retval;
-	}
-	else {
-		return NULL;
-	}
+	if(why == PY_WHY_RETURN) return retval;
+	else return NULL;
 }

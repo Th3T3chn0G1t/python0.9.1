@@ -9,11 +9,12 @@
 #define PY_FRAMEOBJECT_H
 
 #include <python/object.h>
+#include <python/opcode.h>
 
 struct py_block {
-	int type; /* what kind of block this is */
-	int handler; /* where to jump to find handler */
-	int level; /* value stack level to pop to */
+	enum py_opcode type; /* what kind of block this is */
+	unsigned handler; /* where to jump to find handler */
+	unsigned level; /* value stack level to pop to */
 };
 
 struct py_frame {
@@ -25,9 +26,9 @@ struct py_frame {
 	struct py_object* locals; /* local symbol table (struct py_dict) */
 	struct py_object** valuestack; /* malloc'ed array */
 	struct py_block* blockstack; /* malloc'ed array */
-	int nvalues; /* size of valuestack */
-	int nblocks; /* size of blockstack */
-	int iblock; /* index in blockstack */
+	unsigned nvalues; /* size of valuestack */
+	unsigned nblocks; /* size of blockstack */
+	unsigned iblock; /* index in blockstack */
 };
 
 /* Standard object interface */
@@ -37,12 +38,14 @@ extern struct py_type py_frame_type;
 
 #define py_is_frame(op) (((struct py_object*) (op))->type == &py_frame_type)
 
-struct py_frame* py_frame_new(struct py_frame*, struct py_code*, struct py_object*, struct py_object*, int, int);
+struct py_frame* py_frame_new(
+		struct py_frame*, struct py_code*, struct py_object*,
+		struct py_object*, unsigned, unsigned);
 
 /* The rest of the interface is specific for frame objects */
 
 /* Block management functions */
-void py_block_setup(struct py_frame*, int, int, int);
+void py_block_setup(struct py_frame*, enum py_opcode, unsigned, unsigned);
 struct py_block* py_block_pop(struct py_frame*);
 
 #endif

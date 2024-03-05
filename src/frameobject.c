@@ -31,18 +31,15 @@ struct py_type py_frame_type = {
 		0, /* sequencemethods */
 };
 
-struct py_frame* py_frame_new(back, code, globals, locals, nvalues, nblocks)
-		struct py_frame* back;
-		struct py_code* code;
-		struct py_object* globals;
-		struct py_object* locals;
-		int nvalues;
-		int nblocks;
-{
+struct py_frame* py_frame_new(
+		struct py_frame* back, struct py_code* code, struct py_object* globals,
+		struct py_object* locals, unsigned nvalues, unsigned nblocks) {
+
 	struct py_frame* f;
 	if((back != NULL && !py_is_frame(back)) || code == NULL ||
-	   !py_is_code(code) || globals == NULL || !py_is_dict(globals) ||
-	   locals == NULL || !py_is_dict(locals) || nvalues < 0 || nblocks < 0) {
+		!py_is_code(code) || globals == NULL || !py_is_dict(globals) ||
+		locals == NULL || !py_is_dict(locals)) {
+
 		py_error_set_badcall();
 		return NULL;
 	}
@@ -73,11 +70,9 @@ struct py_frame* py_frame_new(back, code, globals, locals, nvalues, nblocks)
 
 /* Block management */
 
-void py_block_setup(f, type, handler, level)struct py_frame* f;
-											int type;
-											int handler;
-											int level;
-{
+void py_block_setup(
+		struct py_frame* f, enum py_opcode type, unsigned handler, unsigned level) {
+
 	struct py_block* b;
 	if(f->iblock >= f->nblocks) {
 		fprintf(stderr, "XXX block stack overflow\n");

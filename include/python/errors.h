@@ -9,6 +9,7 @@
 #define PY_ERRORS_H
 
 #include <python/object.h>
+#include <python/result.h>
 
 /* Predefined exceptions */
 
