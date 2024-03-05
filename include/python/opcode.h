@@ -9,8 +9,6 @@
 #define PY_OPCODE_H
 
 enum py_opcode {
-	PY_OP_STOP = 0,
-
 	PY_OP_POP_TOP = 1,
 	PY_OP_ROT_TWO = 2,
 	PY_OP_ROT_THREE = 3,
@@ -32,31 +30,25 @@ enum py_opcode {
 	/* Also uses 31-33 */
 
 	PY_OP_STORE_SUBSCR = 60,
-	PY_OP_DELETE_SUBSCR = 61,
 
 	PY_OP_PRINT_EXPR = 70,
 
 	PY_OP_BREAK_LOOP = 80,
-	PY_OP_RAISE_EXCEPTION = 81,
 	PY_OP_LOAD_LOCALS = 82,
 	PY_OP_RETURN_VALUE = 83,
 	PY_OP_REQUIRE_ARGS = 84,
 	PY_OP_REFUSE_ARGS = 85,
 	PY_OP_BUILD_FUNCTION = 86,
 	PY_OP_POP_BLOCK = 87,
-	PY_OP_END_FINALLY = 88,
 	PY_OP_BUILD_CLASS = 89,
 
 	PY_OP_HAVE_ARGUMENT = 90, /* Opcodes from here have an argument: */
 
 	PY_OP_STORE_NAME = 90, /* Index in name list */
-	PY_OP_DELETE_NAME = 91, /* "" */
 	PY_OP_UNPACK_TUPLE = 92, /* Number of tuple items */
 	PY_OP_UNPACK_LIST = 93, /* Number of list items */
 
-	/* unused: 94 */
 	PY_OP_STORE_ATTR = 95, /* Index in name list */
-	PY_OP_DELETE_ATTR = 96, /* "" */
 
 	PY_OP_LOAD_CONST = 100, /* Index in const list */
 	PY_OP_LOAD_NAME = 101, /* Index in name list */
@@ -76,7 +68,6 @@ enum py_opcode {
 
 	PY_OP_SETUP_LOOP = 120, /* Target address (absolute) */
 	PY_OP_SETUP_EXCEPT = 121, /* "" */
-	PY_OP_SETUP_FINALLY = 122, /* "" */
 
 	PY_OP_SET_LINENO = 127 /* Current line number */
 };

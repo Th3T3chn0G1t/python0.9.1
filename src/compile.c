@@ -725,9 +725,7 @@ static void py_compile_assign_trailer(
 		}
 
 		case PY_DOT: { /* '.' PY_NAME */
-			py_compile_add_op_name(
-					c, c ? PY_OP_STORE_ATTR : PY_OP_DELETE_ATTR,
-					&n->children[1]);
+			py_compile_add_op_name(c, PY_OP_STORE_ATTR, &n->children[1]);
 
 			break;
 		}
@@ -738,7 +736,7 @@ static void py_compile_assign_trailer(
 			PY_REQ(n, PY_GRAMMAR_SUBSCRIPT); /* PY_GRAMMAR_SUBSCRIPT: PY_GRAMMAR_EXPRESSION | [PY_GRAMMAR_EXPRESSION] ':' [PY_GRAMMAR_EXPRESSION] */
 
 			py_compile_node(c, &n->children[0]);
-			py_compile_add_byte(c, c ? PY_OP_STORE_SUBSCR : PY_OP_DELETE_SUBSCR);
+			py_compile_add_byte(c, PY_OP_STORE_SUBSCR);
 
 			break;
 		}
@@ -990,18 +988,6 @@ static void py_compile_return_statement(
 	py_compile_add_byte(c, PY_OP_RETURN_VALUE);
 }
 
-static void py_compile_raise_statement(struct py_compiler* c, struct py_node* n) {
-	/* 'raise' PY_GRAMMAR_EXPRESSION [',' PY_GRAMMAR_EXPRESSION] PY_NEWLINE */
-	PY_REQ(n, PY_GRAMMAR_RAISE_STATEMENT);
-
-	py_compile_node(c, &n->children[1]);
-
-	if(n->count > 3) py_compile_node(c, &n->children[3]);
-	else py_compile_add_op_arg(c, PY_OP_LOAD_CONST, py_compile_add_const(c, PY_NONE));
-
-	py_compile_add_byte(c, PY_OP_RAISE_EXCEPTION);
-}
-
 static void py_compile_import_statement(
 		struct py_compiler* c, struct py_node* n) {
 
@@ -1234,23 +1220,13 @@ static void py_compile_for_statement(
 static void py_compile_try_statement(
 		struct py_compiler* c, struct py_node* n) {
 
-	unsigned finally_anchor = 0;
 	unsigned except_anchor = 0;
 
 	/*
 	 * 'try' ':' PY_GRAMMAR_SUITE
 	 * (PY_GRAMMAR_EXCEPT_CLAUSE ':' PY_GRAMMAR_SUITE)*
-	 * ['finally' ':' PY_GRAMMAR_SUITE]
 	 */
 	PY_REQ(n, PY_GRAMMAR_TRY_STATEMENT);
-
-	if(n->count > 3 &&
-		n->children[n->count - 3].type != PY_GRAMMAR_EXCEPT_CLAUSE) {
-
-		/* Have a 'finally' clause */
-		py_compile_add_forward_reference(
-				c, PY_OP_SETUP_FINALLY, &finally_anchor);
-	}
 
 	if(n->count > 3 &&
 		n->children[3].type == PY_GRAMMAR_EXCEPT_CLAUSE) {
@@ -1312,22 +1288,7 @@ static void py_compile_try_statement(
 			}
 		}
 
-		py_compile_add_byte(c, PY_OP_END_FINALLY);
 		py_compile_backpatch(c, end_anchor);
-	}
-
-	if(finally_anchor) {
-		struct py_node* ch;
-
-		py_compile_add_byte(c, PY_OP_POP_BLOCK);
-		py_compile_add_op_arg(c, PY_OP_LOAD_CONST, py_compile_add_const(c, PY_NONE));
-		py_compile_backpatch(c, finally_anchor);
-
-		ch = &n->children[n->count - 1];
-
-		py_compile_add_op_arg(c, PY_OP_SET_LINENO, ch->lineno);
-		py_compile_node(c, ch);
-		py_compile_add_byte(c, PY_OP_END_FINALLY);
 	}
 }
 
@@ -1470,12 +1431,6 @@ static void py_compile_node(struct py_compiler* c, struct py_node* n) {
 
 		case PY_GRAMMAR_RETURN_STATEMENT: {
 			py_compile_return_statement(c, n);
-
-			break;
-		}
-
-		case PY_GRAMMAR_RAISE_STATEMENT: {
-			py_compile_raise_statement(c, n);
 
 			break;
 		}
