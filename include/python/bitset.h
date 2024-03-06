@@ -10,7 +10,7 @@
 
 #include <python/std.h>
 
-#define PY_NBYTES(nbits) (((nbits) + CHAR_BIT - 1) / CHAR_BIT)
+#define PY_NBYTES(nbits) ((unsigned) (((nbits) + CHAR_BIT - 1) / CHAR_BIT))
 #define PY_BIT2MASK(ibit) (1 << ((ibit) % CHAR_BIT))
 #define PY_TESTBIT(ss, ibit) \
     (((ss)[(ibit) / CHAR_BIT] & PY_BIT2MASK(ibit)) != 0)

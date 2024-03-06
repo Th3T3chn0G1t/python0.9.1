@@ -8,8 +8,6 @@
 #include <python/grammar.h>
 
 /* Forward */
-static void printarcs(int, struct py_dfa*, FILE*);
-
 static void printstates(struct py_grammar*, FILE*);
 
 static void printdfas(struct py_grammar*, FILE*);
@@ -43,13 +41,10 @@ void py_grammar_print_nonterminals(g, fp)struct py_grammar* g;
 	}
 }
 
-static void printarcs(i, d, fp)int i;
-							   struct py_dfa* d;
-							   FILE* fp;
-{
+static void printarcs(unsigned i, struct py_dfa* d, FILE* fp) {
 	struct py_arc* a;
 	struct py_state* s;
-	int j, k;
+	unsigned j, k;
 
 	s = d->states;
 	for(j = 0; j < d->count; j++, s++) {
@@ -69,7 +64,7 @@ static void printstates(g, fp)struct py_grammar* g;
 {
 	struct py_state* s;
 	struct py_dfa* d;
-	int i, j;
+	unsigned i, j;
 
 	d = g->dfas;
 	for(i = 0; i < g->count; i++, d++) {
@@ -89,7 +84,7 @@ static void printdfas(g, fp)struct py_grammar* g;
 							FILE* fp;
 {
 	struct py_dfa* d;
-	int i, j;
+	unsigned i, j;
 
 	printstates(g, fp);
 	fprintf(fp, "static struct py_dfa dfas[%d] = {\n", g->count);
@@ -99,7 +94,7 @@ static void printdfas(g, fp)struct py_grammar* g;
 				fp, "\t{%d, \"%s\", %d, %d, states_%d,\n", d->type, d->name,
 				d->initial, d->count, i);
 		fprintf(fp, "\t (py_byte_t*) \"");
-		for(j = 0; j < (int) PY_NBYTES(g->labels.count); j++) {
+		for(j = 0; j < PY_NBYTES(g->labels.count); j++) {
 			fprintf(fp, "\\%03o", d->first[j] & 0xff);
 		}
 		fprintf(fp, "\"},\n");

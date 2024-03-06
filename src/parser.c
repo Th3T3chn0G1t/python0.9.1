@@ -18,6 +18,7 @@
 #include <python/parser.h>
 #include <python/result.h>
 
+/* TODO: Fix this with proper log sink. */
 #ifdef _DEBUG
 extern int debugging;
 #define D(x) if (!debugging); else x
@@ -28,52 +29,45 @@ extern int debugging;
 
 /* STACK DATA TYPE */
 
-static void s_reset(s)struct py_stack* s;
-{
+static void py_stack_reset(struct py_stack* s) {
 	s->top = &s->base[PY_MAX_STACK];
 }
 
-#define s_empty(s) ((s)->top == &(s)->base[PY_MAX_STACK])
+#define py_stack_is_empty(s) ((s)->top == &(s)->base[PY_MAX_STACK])
 
-static int s_push(s, d, parent)struct py_stack* s;
-							   struct py_dfa* d;
-							   struct py_node* parent;
-{
+static int py_stack_push(
+		struct py_stack* s, struct py_dfa* d, struct py_node* parent) {
+
 	struct py_stackentry* top;
 	if(s->top == s->base) {
-		fprintf(stderr, "s_push: parser stack overflow\n");
+		fprintf(stderr, "py_stack_push: parser stack overflow\n");
 		return -1;
 	}
+
 	top = --s->top;
 	top->dfa = d;
 	top->parent = parent;
 	top->state = 0;
+
 	return 0;
 }
 
 #ifdef _DEBUG
-
-static void s_pop(s)struct py_stack* s;
-{
-	if(s_empty(s)) {
-		fprintf(stderr, "s_pop: parser stack underflow -- FATAL\n");
+static void py_stack_pop(struct py_stack* s) {
+	if(py_stack_is_empty(s)) {
+		fprintf(stderr, "py_stack_pop: parser stack underflow -- FATAL\n");
 		abort();
 	}
 	s->top++;
 }
-
 #else /* !DEBUG */
-
-#define s_pop(s) (s)->top++
-
+#define py_stack_pop(s) (s)->top++
 #endif
 
 
 /* PARSER CREATION */
 
-struct py_parser* py_parser_new(g, start)struct py_grammar* g;
-										 int start;
-{
+struct py_parser* py_parser_new(struct py_grammar* g, int start) {
 	struct py_parser* ps;
 
 	if(!g->accel) {
@@ -89,15 +83,16 @@ struct py_parser* py_parser_new(g, start)struct py_grammar* g;
 		free(ps);
 		return NULL;
 	}
-	s_reset(&ps->stack);
-	(void) s_push(&ps->stack, py_grammar_find_dfa(g, start), ps->tree);
+	py_stack_reset(&ps->stack);
+	(void) py_stack_push(&ps->stack, py_grammar_find_dfa(g, start), ps->tree);
 	return ps;
 }
 
-void py_parser_delete(ps)struct py_parser* ps;
-{
-	/* NB If you want to save the parse tree,
-	   you must set tree to NULL before calling py_parser_delete! */
+void py_parser_delete(struct py_parser* ps) {
+	/*
+	 * NB If you want to save the parse tree, you must set tree to NULL before
+	 * calling py_parser_delete!
+	 */
 	py_tree_delete(ps->tree);
 	free(ps);
 }
@@ -105,42 +100,45 @@ void py_parser_delete(ps)struct py_parser* ps;
 
 /* PARSER STACK OPERATIONS */
 
-static int shift(s, type, str, newstate, lineno)struct py_stack* s;
-												int type;
-												char* str;
-												int newstate;
-												int lineno;
-{
-	assert(!s_empty(s));
+static int py_parser_shift(
+		struct py_stack* s, int type, char* str, int newstate, int lineno) {
+
+	assert(!py_stack_is_empty(s));
+
 	if(py_tree_add(s->top->parent, type, str, lineno) == NULL) {
-		fprintf(stderr, "shift: no mem in py_tree_add\n");
+		fprintf(stderr, "py_parser_shift: no mem in py_tree_add\n");
 		return -1;
 	}
+
 	s->top->state = newstate;
+
 	return 0;
 }
 
-static int push(s, type, d, newstate, lineno)struct py_stack* s;
-											 int type;
-											 struct py_dfa* d;
-											 int newstate;
-											 int lineno;
-{
+static int py_parser_push(
+		struct py_stack* s, int type, struct py_dfa* d, int newstate,
+		int lineno) {
+
 	struct py_node* n;
+
 	n = s->top->parent;
-	assert(!s_empty(s));
+	/* TODO: Better EH. */
+	assert(!py_stack_is_empty(s));
+
 	if(py_tree_add(n, type, NULL, lineno) == NULL) {
-		fprintf(stderr, "push: no mem in py_tree_add\n");
+		fprintf(stderr, "py_parser_push: no mem in py_tree_add\n");
 		return -1;
 	}
+
 	s->top->state = newstate;
-	return s_push(s, d, &n->children[n->count - 1]);
+
+	return py_stack_push(s, d, &n->children[n->count - 1]);
 }
 
 
 /* PARSER PROPER */
 
-static int classify(struct py_grammar* g, int type, char* str) {
+static int py_parser_classify(struct py_grammar* g, int type, char* str) {
 	int n = g->labels.count;
 
 	if(type == PY_NAME) {
@@ -180,10 +178,10 @@ enum py_result py_parser_add(
 	D(printf("Token %s/'%s' ... ", py_token_names[type], str));
 
 	/* Find out which label this token is */
-	ilabel = classify(ps->grammar, type, str);
+	ilabel = py_parser_classify(ps->grammar, type, str);
 	if(ilabel < 0) return PY_RESULT_SYNTAX;
 
-	/* Loop until the token is shifted or an error occurred */
+	/* Loop until the token is py_parser_shifted or an error occurred */
 	for(;;) {
 		/* Fetch the current dfa and state */
 		struct py_dfa* d = ps->stack.top->dfa;
@@ -201,9 +199,9 @@ enum py_result py_parser_add(
 					int nt = (x >> 8) + PY_NONTERMINAL;
 					int arrow = x & ((1 << 7) - 1);
 					struct py_dfa* d1 = py_grammar_find_dfa(ps->grammar, nt);
-					if(push(
+					if(py_parser_push(
 							&ps->stack, nt, d1, arrow, lineno) < 0) {
-						D(printf(" MemError: push.\n"));
+						D(printf(" MemError: py_parser_push.\n"));
 						return PY_RESULT_OOM;
 					}
 					D(printf(" Push ...\n"));
@@ -211,9 +209,9 @@ enum py_result py_parser_add(
 				}
 
 				/* Shift the token */
-				if(shift(
+				if(py_parser_shift(
 						&ps->stack, type, str, x, lineno) < 0) {
-					D(printf(" MemError: shift.\n"));
+					D(printf(" MemError: py_parser_shift.\n"));
 					return PY_RESULT_OOM;
 				}
 				D(printf(" Shift.\n"));
@@ -221,8 +219,8 @@ enum py_result py_parser_add(
 				while(s = &d->states[ps->stack.top->state], s->accept &&
 															s->count == 1) {
 					D(printf("  Direct pop.\n"));
-					s_pop(&ps->stack);
-					if(s_empty(&ps->stack)) {
+					py_stack_pop(&ps->stack);
+					if(py_stack_is_empty(&ps->stack)) {
 						D(printf("  ACCEPT.\n"));
 						return PY_RESULT_DONE;
 					}
@@ -234,9 +232,9 @@ enum py_result py_parser_add(
 
 		if(s->accept) {
 			/* Pop this dfa and try again */
-			s_pop(&ps->stack);
+			py_stack_pop(&ps->stack);
 			D(printf(" Pop ...\n"));
-			if(s_empty(&ps->stack)) {
+			if(py_stack_is_empty(&ps->stack)) {
 				D(printf(" Error: bottom of stack.\n"));
 				return PY_RESULT_SYNTAX;
 			}
@@ -254,14 +252,10 @@ enum py_result py_parser_add(
 
 /* DEBUG OUTPUT */
 
-void dumptree(g, n)struct py_grammar* g;
-				   struct py_node* n;
-{
+void py_tree_dump(struct py_node* n) {
 	unsigned i;
 
-	if(n == NULL) {
-		printf("NIL");
-	}
+	if(n == NULL) printf("NIL");
 	else {
 		struct py_label l;
 		l.type = n->type;
@@ -273,46 +267,37 @@ void dumptree(g, n)struct py_grammar* g;
 				if(i > 0) {
 					printf(",");
 				}
-				dumptree(g, &n->children[i]);
+				py_tree_dump(&n->children[i]);
 			}
 			printf(")");
 		}
 	}
 }
 
-void showtree(g, n)struct py_grammar* g;
-				   struct py_node* n;
-{
+void py_tree_show(struct py_node* n) {
 	unsigned i;
 
-	if(n == NULL) {
-		return;
-	}
+	if(n == NULL) return;
+
 	if(n->type >= PY_NONTERMINAL) {
-		for(i = 0; i < n->count; i++) {
-			showtree(g, &n->children[i]);
-		}
+		for(i = 0; i < n->count; i++) py_tree_show(&n->children[i]);
 	}
 	else if(n->type < PY_NONTERMINAL) {
 		printf("%s", py_token_names[n->type]);
-		if(n->type == PY_NUMBER || n->type == PY_NAME) {
-			printf("(%s)", n->str);
-		}
+		if(n->type == PY_NUMBER || n->type == PY_NAME) printf("(%s)", n->str);
 		printf(" ");
 	}
-	else {
-		printf("? ");
-	}
+	else printf("? ");
 }
 
-void printtree(ps)struct py_parser* ps;
-{
+/* TODO: Unused? */
+void py_parser_print(struct py_parser* ps) {
 	if(debugging) {
 		printf("Parse tree:\n");
-		dumptree(ps->grammar, ps->tree);
+		py_tree_dump(ps->tree);
 		printf("\n");
 		printf("Tokens:\n");
-		showtree(ps->grammar, ps->tree);
+		py_tree_show(ps->tree);
 		printf("\n");
 	}
 	printf("Listing:\n");

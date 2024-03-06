@@ -24,7 +24,6 @@ struct py_tokenizer {
 	char* end; /* End of input buffer */
 	enum py_result done;
 	FILE* fp; /* Rest of input; NULL if tokenizing a string */
-	int tabsize; /* Tab spacing */
 	int indent; /* Current indentation index */
 	int indstack[PY_MAX_INDENT]; /* Stack of indents */
 	int atbol; /* Nonzero if at begin of new line */

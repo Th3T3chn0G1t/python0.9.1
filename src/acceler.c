@@ -40,7 +40,7 @@ void py_grammar_add_accels(struct py_grammar* g) {
 
 static void fixdfa(struct py_grammar* g, struct py_dfa* d) {
 	struct py_state* s;
-	int j;
+	unsigned j;
 
 	s = d->states;
 	for(j = 0; j < d->count; j++, s++) fixstate(g, s);
@@ -76,7 +76,7 @@ static int fixstate(struct py_grammar* g, struct py_state* s) {
 
 		if(type >= PY_NONTERMINAL) {
 			struct py_dfa* d1 = py_grammar_find_dfa(g, type);
-			int ibit;
+			unsigned ibit;
 
 			if(type - PY_NONTERMINAL >= (1 << 7)) {
 				printf("XXX too high nonterminal number!\n");

@@ -22,19 +22,20 @@ struct py_label {
 
 /* A list of labels */
 struct py_labellist {
-	int count;
+	unsigned count;
 	struct py_label* label;
 };
 
 /* An arc from one state to another */
+/* TODO: Does these being shorts have any purpose? */
 struct py_arc {
-	short label; /* Label of this arc */
-	short arrow; /* State where this arc goes to */
+	unsigned short label; /* Label of this arc */
+	unsigned short arrow; /* State where this arc goes to */
 };
 
 /* A state in a DFA */
 struct py_state {
-	int count;
+	unsigned count;
 	struct py_arc* arcs; /* Array of arcs */
 
 	/* Optional accelerators */
@@ -50,14 +51,14 @@ struct py_dfa {
 	char* name; /* For printing */
 	int initial; /* Initial state */
 
-	int count;
+	unsigned count;
 	struct py_state* states; /* Array of states */
 	py_bitset_t first;
 };
 
 /* A grammar */
 struct py_grammar {
-	int count;
+	unsigned count;
 	struct py_dfa* dfas; /* Array of DFAs */
 
 	struct py_labellist labels;
@@ -78,10 +79,10 @@ void py_grammar_print(struct py_grammar*, FILE*);
 void py_grammar_print_nonterminals(struct py_grammar*, FILE*);
 
 int py_dfa_add_state(struct py_dfa*);
-void py_dfa_add_arc(struct py_dfa*, int, int, int);
+void py_dfa_add_arc(struct py_dfa*, unsigned, unsigned, unsigned);
 
 int py_labellist_add(struct py_labellist*, int, char*);
-int py_labellist_find(struct py_labellist*, int, char*);
+unsigned py_labellist_find(struct py_labellist*, int, char*);
 
 char* py_label_repr(struct py_label*);
 

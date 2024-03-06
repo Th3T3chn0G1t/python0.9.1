@@ -12,31 +12,31 @@
 extern int debugging;
 
 /* Forward */
-static void calcfirstset(struct py_grammar*, struct py_dfa*);
+static void py_grammar_calculate_first_set(struct py_grammar*, struct py_dfa*);
 
-void py_grammar_add_firsts(g)struct py_grammar* g;
-{
-	int i;
+void py_grammar_add_firsts(struct py_grammar* g) {
+	unsigned i;
 	struct py_dfa* d;
 
 	fprintf(stderr, "Adding FIRST sets ...\n");
 	for(i = 0; i < g->count; i++) {
 		d = &g->dfas[i];
 		if(d->first == NULL) {
-			calcfirstset(g, d);
+			py_grammar_calculate_first_set(g, d);
 		}
 	}
 }
 
-static void calcfirstset(g, d)struct py_grammar* g;
-							  struct py_dfa* d;
-{
-	int i, j;
+/* TODO: Give this a cleanup. */
+static void py_grammar_calculate_first_set(
+		struct py_grammar* g, struct py_dfa* d) {
+
+	unsigned i, j;
 	struct py_state* s;
 	struct py_arc* a;
-	int nsyms;
+	unsigned nbits;
+	unsigned nsyms;
 	int* sym;
-	int nbits;
 	static py_bitset_t dummy;
 	py_bitset_t result;
 	int type;
@@ -66,7 +66,7 @@ static void calcfirstset(g, d)struct py_grammar* g;
 
 	sym = malloc(sizeof(int));
 	if(sym == NULL) {
-		py_fatal("no mem for new sym in calcfirstset");
+		py_fatal("no mem for new sym in py_grammar_calculate_first_set");
 	}
 	nsyms = 1;
 	sym[0] = py_labellist_find(&g->labels, d->type, NULL);
@@ -83,7 +83,7 @@ static void calcfirstset(g, d)struct py_grammar* g;
 			/* TODO: Leaky realloc. */
 			sym = realloc(sym, (nsyms + 1) * sizeof(int));
 			if(sym == NULL) {
-				py_fatal("no mem to resize sym in calcfirstset");
+				py_fatal("no mem to resize sym in py_grammar_calculate_first_set");
 			}
 			sym[nsyms++] = a->label;
 			type = l0[a->label].type;
@@ -95,7 +95,7 @@ static void calcfirstset(g, d)struct py_grammar* g;
 				}
 				else {
 					if(d1->first == NULL) {
-						calcfirstset(g, d1);
+						py_grammar_calculate_first_set(g, d1);
 					}
 					py_bitset_merge(result, d1->first, nbits);
 				}

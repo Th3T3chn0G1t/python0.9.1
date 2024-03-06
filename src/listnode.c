@@ -3,35 +3,22 @@
  * See `LICENCE' for more information.
  */
 
+/* TODO: This file can probably be merged. */
+
 /* List a node on a file */
 
 #include <python/token.h>
 #include <python/node.h>
 
-/* Forward */
-static void list1node(FILE*, struct py_node*);
-
+/* TODO: Python global state. */
 static int level, atbol;
 
-void py_tree_list(fp, n)FILE* fp;
-						struct py_node* n;
-{
-	level = 0;
-	atbol = 1;
-	list1node(fp, n);
-}
+static void py_node_list(FILE* fp, struct py_node* n) {
+	if(n == 0) return;
 
-static void list1node(fp, n)FILE* fp;
-							struct py_node* n;
-{
-	if(n == 0) {
-		return;
-	}
 	if(n->type >= PY_NONTERMINAL) {
 		unsigned i;
-		for(i = 0; i < n->count; i++) {
-			list1node(fp, &n->children[i]);
-		}
+		for(i = 0; i < n->count; i++) py_node_list(fp, &n->children[i]);
 	}
 	else {
 		switch(n->type) {
@@ -60,4 +47,10 @@ static void list1node(fp, n)FILE* fp;
 				break;
 		}
 	}
+}
+
+void py_tree_list(FILE* fp, struct py_node* n) {
+	level = 0;
+	atbol = 1;
+	py_node_list(fp, n);
 }

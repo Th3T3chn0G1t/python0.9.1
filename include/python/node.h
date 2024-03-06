@@ -23,7 +23,7 @@ struct py_node* py_tree_new(int);
 
 void py_tree_delete(struct py_node* n);
 
-struct py_node* py_tree_add(struct py_node*, int, char*, int);
+struct py_node* py_tree_add(struct py_node*, int, char*, unsigned);
 
 void py_tree_list(FILE*, struct py_node*);
 

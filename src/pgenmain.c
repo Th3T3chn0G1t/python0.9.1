@@ -23,11 +23,9 @@
 int debugging;
 
 /* Forward */
-struct py_grammar* getgrammar(char* filename);
+struct py_grammar* py_load_grammar(const char*);
 
-int main(argc, argv)int argc;
-					char** argv;
-{
+int main(int argc, char** argv) {
 	struct py_grammar* g;
 	FILE* fp;
 	char* filename;
@@ -37,7 +35,7 @@ int main(argc, argv)int argc;
 		exit(2);
 	}
 	filename = argv[1];
-	g = getgrammar(filename);
+	g = py_load_grammar(filename);
 	fp = fopen(argv[2], "w");
 	if(fp == NULL) {
 		perror("graminit.c");
@@ -57,8 +55,7 @@ int main(argc, argv)int argc;
 	exit(0);
 }
 
-struct py_grammar* getgrammar(filename)char* filename;
-{
+struct py_grammar* py_load_grammar(const char* filename) {
 	FILE* fp;
 	struct py_node* n;
 	struct py_grammar* g0, * g;
