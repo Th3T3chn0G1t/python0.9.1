@@ -52,13 +52,13 @@ unsigned py_varobject_size(const void* op) {
 
 /* TODO: Python global state. */
 static struct py_type py_none_type = {
-		{ 1, &py_type_type }, 0,
+		{ &py_type_type, 1 }, 0,
 		0, /* dealloc */
 		0, /* cmp */
 		0, /* sequencemethods */
 };
 
-struct py_object py_none_object = { 1, &py_none_type };
+struct py_object py_none_object = { &py_none_type, 1 };
 
 void py_object_delete(struct py_object* p) { free(p); }
 

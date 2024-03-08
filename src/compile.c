@@ -1699,7 +1699,7 @@ static void code_dealloc(struct py_object* op) {
 }
 
 struct py_type py_code_type = {
-		{ 1, &py_type_type }, sizeof(struct py_code),
+		{ &py_type_type, 1 }, sizeof(struct py_code),
 		code_dealloc, /* dealloc */
 		0, /* cmp */
 		0, /* sequencemethods */

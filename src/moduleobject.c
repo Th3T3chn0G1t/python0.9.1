@@ -73,7 +73,7 @@ struct py_object* py_module_get_attr(struct py_object* op, const char* name) {
 }
 
 struct py_type py_module_type = {
-		{ 1, &py_type_type }, /* size */
+		{ &py_type_type, 1 }, /* size */
 		sizeof(struct py_module), /* tp_size */
 		py_module_dealloc, /* dealloc */
 		0, /* cmp */

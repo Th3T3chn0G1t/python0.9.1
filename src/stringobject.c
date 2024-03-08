@@ -146,7 +146,7 @@ static struct py_sequencemethods py_string_sequence = {
 };
 
 struct py_type py_string_type = {
-		{ 1, &py_type_type }, sizeof(struct py_string),
+		{ &py_type_type, 1 }, sizeof(struct py_string),
 		py_object_delete, /* dealloc */
 		py_string_cmp, /* cmp */
 		&py_string_sequence, /* sequencemethods */

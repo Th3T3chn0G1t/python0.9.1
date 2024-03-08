@@ -69,9 +69,10 @@ struct py_type;
 /* TODO: Object pool to avoid malloc/free constantly. */
 
 struct py_object {
-	unsigned refcount;
 	/* TODO: Type as index into type table (8 byte objects!) */
 	struct py_type* type;
+
+	unsigned refcount;
 
 #ifdef PY_REF_TRACE
 	struct py_object* next;
@@ -79,11 +80,12 @@ struct py_object {
 #endif
 };
 
+/* TODO: This might not need to exist (and entails a gap). */
 struct py_varobject {
+	struct py_type* type;
+
 	unsigned refcount;
 	unsigned size;
-
-	struct py_type* type;
 
 #ifdef PY_REF_TRACE
 	struct py_object* next;

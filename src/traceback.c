@@ -129,7 +129,7 @@ static void py_traceback_dealloc(struct py_object* op) {
 }
 
 struct py_type py_traceback_type = {
-		{ 1, &py_type_type }, sizeof(struct py_traceback),
+		{ &py_type_type, 1 }, sizeof(struct py_traceback),
 		py_traceback_dealloc, /* dealloc */
 		0, /* cmp */
 		0, /* sequencemethods */

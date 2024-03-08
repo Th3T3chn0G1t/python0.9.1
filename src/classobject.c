@@ -46,7 +46,7 @@ struct py_object* py_class_get_attr(struct py_object* op, const char* name) {
 }
 
 struct py_type py_class_type = {
-		{ 1, &py_type_type }, sizeof(struct py_class),
+		{ &py_type_type, 1 }, sizeof(struct py_class),
 		py_class_dealloc, /* dealloc */
 		0, /* cmp */
 		0, /* sequencemethods */
@@ -112,7 +112,7 @@ struct py_object* py_classmember_get_attr(
 }
 
 struct py_type py_class_member_type = {
-		{ 1, &py_type_type },
+		{ &py_type_type, 1 },
 		sizeof(struct py_classmember), py_classmember_dealloc, /* dealloc */
 		0, /* cmp */
 		0, /* sequencemethods */
@@ -171,7 +171,7 @@ static void py_classmethod_dealloc(struct py_object* op) {
 }
 
 struct py_type py_class_method_type = {
-		{ 1, &py_type_type },
+		{ &py_type_type, 1 },
 		sizeof(struct py_classmethod), py_classmethod_dealloc, /* dealloc */
 		0, /* cmp */
 		0, /* sequencemethods */

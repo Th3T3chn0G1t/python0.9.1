@@ -19,7 +19,7 @@ struct py_traceback {
 };
 
 /* TODO: Python global state. */
-struct py_type py_traceback_type;
+extern struct py_type py_traceback_type;
 
 #define py_is_traceback(op) \
 	 (((struct py_object*) (op))->type == &py_traceback_type)

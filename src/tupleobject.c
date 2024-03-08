@@ -180,7 +180,7 @@ static struct py_sequencemethods tuple_as_sequence = {
 };
 
 struct py_type py_tuple_type = {
-		{ 1, &py_type_type },
+		{ &py_type_type, 1 },
 		sizeof(struct py_tuple) - sizeof(struct py_object*),
 		tupledealloc, /* dealloc */
 		tuplecompare,  /* cmp*/

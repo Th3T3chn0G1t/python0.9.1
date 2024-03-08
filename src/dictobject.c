@@ -379,7 +379,7 @@ void py_done_dict(void) {
 }
 
 struct py_type py_dict_type = {
-		{ 1, &py_type_type }, sizeof(struct py_dict),
+		{ &py_type_type, 1 }, sizeof(struct py_dict),
 		dict_dealloc, /* dealloc */
 		0, /* cmp */
 		0, /* sequencemethods */

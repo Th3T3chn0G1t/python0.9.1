@@ -12,8 +12,8 @@
 #include <python/stringobject.h>
 
 /* Standard Booleans */
-struct py_int py_true_object = { { 1, &py_int_type }, 1 };
-struct py_int py_false_object = { { 1, &py_int_type }, 0 };
+struct py_int py_true_object = { { &py_int_type, 1 }, 1 };
+struct py_int py_false_object = { { &py_int_type, 1 }, 0 };
 
 /* TODO: Use "weird pointers" for integers. */
 /*
@@ -89,7 +89,7 @@ static int py_int_cmp(const struct py_object* v, const struct py_object* w) {
 }
 
 struct py_type py_int_type = {
-		{ 1, &py_type_type }, sizeof(struct py_int),
+		{ &py_type_type, 1 }, sizeof(struct py_int),
 		py_int_dealloc, /* dealloc */
 		py_int_cmp, /* cmp */
 		0, /* sequencemethods */
