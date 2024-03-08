@@ -77,9 +77,7 @@ struct py_object* py_module_add(const char* name) {
 	}
 
 	m = py_module_new(name);
-	if(m == NULL) {
-		return NULL;
-	}
+	if(m == NULL) return NULL;
 
 	if(py_dict_insert(modules, name, m) != 0) {
 		py_object_decref(m);

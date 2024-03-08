@@ -243,6 +243,8 @@ int py_dict_insert(
 		return -1;
 	}
 
+	if(!py_is_string(keyobj)) puts("???");
+
 	err = py_dict_insert_impl(op, keyobj, value);
 	py_object_decref(keyobj);
 

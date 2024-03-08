@@ -9,9 +9,7 @@
 
 /* XXX To do: error recovery */
 
-#include <stdlib.h>
-#include <assert.h>
-
+#include <python/std.h>
 #include <python/token.h>
 #include <python/grammar.h>
 #include <python/node.h>

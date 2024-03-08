@@ -28,7 +28,7 @@ struct py_tuple {
 /* TODO: Python global state. */
 extern struct py_type py_tuple_type;
 
-#define py_is_tuple(op) (((struct py_object*) (op))->type == &py_tuple_type)
+#define py_is_tuple(op) (((struct py_varobject*) (op))->type == &py_tuple_type)
 
 struct py_object* py_tuple_new(unsigned);
 struct py_object* py_tuple_get(struct py_object*, unsigned);

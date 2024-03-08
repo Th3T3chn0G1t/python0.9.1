@@ -14,8 +14,7 @@
    are not part of the static data structure written on graminit.[ch]
    by the parser generator. */
 
-#include <stdlib.h>
-
+#include <python/std.h>
 #include <python/grammar.h>
 #include <python/token.h>
 #include <python/parser.h>

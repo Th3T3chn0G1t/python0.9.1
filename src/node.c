@@ -5,8 +5,7 @@
 
 /* Parse tree node implementation */
 
-#include <stdlib.h>
-
+#include <python/std.h>
 #include <python/node.h>
 
 struct py_node* py_tree_new(int type) {
