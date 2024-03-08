@@ -26,7 +26,7 @@ static int freelist_len = 0;
 /* Forward references */
 static void fixdfa(struct py_grammar*, struct py_dfa*);
 
-static int fixstate(struct py_grammar*, struct py_state*);
+static void fixstate(struct py_grammar*, struct py_state*);
 
 void py_grammar_add_accels(struct py_grammar* g) {
 	struct py_dfa* d;
@@ -51,7 +51,7 @@ void py_grammar_delete_accels(void) {
 	free(freelist);
 }
 
-static int fixstate(struct py_grammar* g, struct py_state* s) {
+static void fixstate(struct py_grammar* g, struct py_state* s) {
 	struct py_arc* a;
 	int k;
 	int* accel;
@@ -118,6 +118,4 @@ static int fixstate(struct py_grammar* g, struct py_state* s) {
 	}
 
 	free(accel);
-
-	return 0;
 }

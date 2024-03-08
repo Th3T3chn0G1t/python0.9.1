@@ -1168,7 +1168,7 @@ struct py_object* py_code_eval(
 
 		/* Unwind stacks if a (pseudo) exception occurred */
 
-		while(why != PY_WHY_NOT && f->iblock > 0) {
+		while(f->iblock > 0) {
 			struct py_block* b = py_block_pop(f);
 			while((stack_pointer - f->valuestack) > (int) b->level) {
 				v = *--stack_pointer;

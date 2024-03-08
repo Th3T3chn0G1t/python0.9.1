@@ -23,8 +23,8 @@ py_bitset_t py_bitset_new(unsigned nbits) {
 
 void py_bitset_delete(py_bitset_t ss) { free(ss); }
 
-int py_bitset_add(py_bitset_t ss, int ibit) {
-	int ibyte = ibit / CHAR_BIT;
+int py_bitset_add(py_bitset_t ss, unsigned ibit) {
+	unsigned ibyte = ibit / CHAR_BIT;
 	py_byte_t mask = PY_BIT2MASK(ibit);
 
 	if(ss[ibyte] & mask) return 0; /* Bit already set */
@@ -33,18 +33,18 @@ int py_bitset_add(py_bitset_t ss, int ibit) {
 	return 1;
 }
 
-int py_bitset_cmp(py_bitset_t ss1, py_bitset_t ss2, int nbits) {
-	int i;
+int py_bitset_cmp(py_bitset_t ss1, py_bitset_t ss2, unsigned nbits) {
+	unsigned i;
 
-	for(i = PY_NBYTES(nbits); --i >= 0;) {
+	for(i = 0; i < PY_NBYTES(nbits); ++i) {
 		if(*ss1++ != *ss2++) return 0;
 	}
 
 	return 1;
 }
 
-void py_bitset_merge(py_bitset_t ss1, py_bitset_t ss2, int nbits) {
-	int i;
+void py_bitset_merge(py_bitset_t ss1, py_bitset_t ss2, unsigned nbits) {
+	unsigned i;
 
-	for(i = PY_NBYTES(nbits); --i >= 0;) *ss1++ |= *ss2++;
+	for(i = 0; i < PY_NBYTES(nbits); ++i) *ss1++ |= *ss2++;
 }

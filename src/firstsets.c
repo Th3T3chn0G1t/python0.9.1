@@ -43,21 +43,19 @@ static void py_grammar_calculate_first_set(
 	struct py_dfa* d1;
 	struct py_label* l0;
 
-	if(debugging) {
-		printf("Calculate FIRST set for '%s'\n", d->name);
-	}
+	if(debugging) printf("Calculate FIRST set for '%s'\n", d->name);
 
-	if(dummy == NULL) {
-		dummy = py_bitset_new(1);
-	}
+	if(dummy == NULL) dummy = py_bitset_new(1);
+
 	if(d->first == dummy) {
 		fprintf(stderr, "Left-recursion for '%s'\n", d->name);
 		return;
 	}
+
 	if(d->first != NULL) {
-		fprintf(
-				stderr, "Re-calculating FIRST set for '%s' ???\n", d->name);
+		fprintf(stderr, "Re-calculating FIRST set for '%s' ???\n", d->name);
 	}
+
 	d->first = dummy;
 
 	l0 = g->labels.label;
@@ -68,30 +66,36 @@ static void py_grammar_calculate_first_set(
 	if(sym == NULL) {
 		py_fatal("no mem for new sym in py_grammar_calculate_first_set");
 	}
+
 	nsyms = 1;
 	sym[0] = py_labellist_find(&g->labels, d->type, NULL);
 
 	s = &d->states[d->initial];
+
 	for(i = 0; i < s->count; i++) {
 		a = &s->arcs[i];
+
 		for(j = 0; j < nsyms; j++) {
-			if(sym[j] == a->label) {
-				break;
-			}
+			if(sym[j] == a->label) break;
 		}
+
 		if(j >= nsyms) { /* New label */
 			/* TODO: Leaky realloc. */
 			sym = realloc(sym, (nsyms + 1) * sizeof(int));
 			if(sym == NULL) {
-				py_fatal("no mem to resize sym in py_grammar_calculate_first_set");
+				py_fatal(
+						"no mem to resize sym in "
+						"py_grammar_calculate_first_set");
 			}
+
 			sym[nsyms++] = a->label;
 			type = l0[a->label].type;
+
 			if(type >= PY_NONTERMINAL) {
 				d1 = py_grammar_find_dfa(g, type);
+
 				if(d1->first == dummy) {
-					fprintf(
-							stderr, "Left-recursion below '%s'\n", d->name);
+					fprintf(stderr, "Left-recursion below '%s'\n", d->name);
 				}
 				else {
 					if(d1->first == NULL) {
@@ -100,9 +104,7 @@ static void py_grammar_calculate_first_set(
 					py_bitset_merge(result, d1->first, nbits);
 				}
 			}
-			else if(type < PY_NONTERMINAL) {
-				py_bitset_add(result, a->label);
-			}
+			else py_bitset_add(result, a->label);
 		}
 	}
 	d->first = result;

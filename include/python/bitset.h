@@ -22,9 +22,9 @@ py_bitset_t py_bitset_new(unsigned);
 
 void py_bitset_delete(py_bitset_t);
 
-int py_bitset_add(py_bitset_t, int); /* Returns 0 if already set */
-int py_bitset_cmp(py_bitset_t, py_bitset_t, int);
+int py_bitset_add(py_bitset_t, unsigned); /* Returns 0 if already set */
+int py_bitset_cmp(py_bitset_t, py_bitset_t, unsigned);
 
-void py_bitset_merge(py_bitset_t, py_bitset_t, int);
+void py_bitset_merge(py_bitset_t, py_bitset_t, unsigned);
 
 #endif
