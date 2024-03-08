@@ -266,7 +266,7 @@ struct py_object* py_call_function(
 static struct py_object* py_object_ind(
 		struct py_object* v, struct py_object* w) {
 
-	struct py_type* tp = v->type;
+	const struct py_type* tp = v->type;
 
 	if(!py_is_sequence(v) && !py_is_dict(v)) {
 		py_error_set_string(py_type_error, "unsubscriptable object");
@@ -319,7 +319,7 @@ static int slice_index(struct py_object* v, unsigned* pi) {
 /* return u[v:w] */
 static struct py_object*
 apply_slice(struct py_object* u, struct py_object* v, struct py_object* w) {
-	struct py_type* tp = u->type;
+	const struct py_type* tp = u->type;
 	unsigned ilow, ihigh;
 
 	if(!py_is_sequence(u)) {

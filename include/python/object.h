@@ -70,7 +70,7 @@ struct py_type;
 
 struct py_object {
 	/* TODO: Type as index into type table (8 byte objects!) */
-	struct py_type* type;
+	const struct py_type* type;
 
 	unsigned refcount;
 
@@ -144,7 +144,9 @@ extern struct py_type py_type_type; /* The type of type objects */
  * The size of the object is actually determined by the size field
  * of the type object.
  */
-void* py_object_new(struct py_type*); /* `void*' for convenience's sake. */
+
+/* `void*' for convenience's sake. */
+void* py_object_new(const struct py_type*);
 void py_object_delete(struct py_object* p);
 int py_object_cmp(const struct py_object*, const struct py_object*);
 struct py_object* py_object_get_attr(struct py_object*, const char*);

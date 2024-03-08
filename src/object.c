@@ -17,7 +17,7 @@ long py_ref_total;
  * These are used by the individual routines for object creation.
  * Do not call them otherwise, they do not initialize the object!
  */
-void* py_object_new(struct py_type* tp) {
+void* py_object_new(const struct py_type* tp) {
 	struct py_object* op = malloc(tp->size);
 	if(op == NULL) return py_error_set_nomem();
 
@@ -28,7 +28,7 @@ void* py_object_new(struct py_type* tp) {
 }
 
 int py_object_cmp(const struct py_object* v, const struct py_object* w) {
-	struct py_type* tp;
+	const struct py_type* tp;
 
 	if(v == w) return 0;
 	if(v == NULL) return -1;
