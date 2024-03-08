@@ -5,36 +5,18 @@
 
 /* Method object implementation */
 
-#include <python/token.h>
 #include <python/errors.h>
-
-#include <python/object.h>
-#include <python/stringobject.h>
 #include <python/methodobject.h>
 
-typedef struct {
-	struct py_object ob;
-	char* m_name;
-	unsigned m_heap_name;
-	py_method_t m_meth;
-	struct py_object* m_self;
-} methodobject;
-
-struct py_object* py_method_new(name, meth, self, heapname)
-		char* name; /* static string */
-		py_method_t meth;
-		struct py_object* self;
-		unsigned heapname;
-{
-	methodobject* op = py_object_new(&py_method_type);
+struct py_object* py_method_new(py_method_t meth, struct py_object* self) {
+	struct py_method* op = py_object_new(&py_method_type);
 	if(op != NULL) {
-		op->m_heap_name = heapname;
-		op->m_name = name;
-		op->m_meth = meth;
-		if(self != NULL)
-			py_object_incref(self);
-		op->m_self = self;
+		op->method = meth;
+		op->self = self;
+
+		if(self != NULL) py_object_incref(self);
 	}
+
 	return (struct py_object*) op;
 }
 
@@ -44,7 +26,7 @@ py_method_t py_method_get(struct py_object* op) {
 		return NULL;
 	}
 
-	return ((methodobject*) op)->m_meth;
+	return ((struct py_method*) op)->method;
 }
 
 struct py_object* py_method_get_self(struct py_object* op) {
@@ -53,39 +35,20 @@ struct py_object* py_method_get_self(struct py_object* op) {
 		return NULL;
 	}
 
-	return ((methodobject*) op)->m_self;
+	return ((struct py_method*) op)->self;
 }
 
 /* Methods (the standard built-in methods, that is) */
 
-static void meth_dealloc(struct py_object* op) {
-	methodobject* m = (methodobject*) op;
+static void py_method_dealloc(struct py_object* op) {
+	struct py_method* m = (struct py_method*) op;
 
-	if(m->m_heap_name) free(m->m_name);
-	py_object_decref(m->m_self);
+	py_object_decref(m->self);
 }
 
 struct py_type py_method_type = {
-		{ 1, &py_type_type }, sizeof(methodobject),
-		meth_dealloc, /* dealloc */
+		{ 1, &py_type_type }, sizeof(struct py_method),
+		py_method_dealloc, /* dealloc */
 		0, /* cmp */
 		0, /* sequencemethods */
 };
-
-/*
- * Find a method in a module's method table.
- * Usually called from an object's get_attr method.
- */
-
-struct py_object* py_methodlist_find(
-		struct py_methodlist* ml, struct py_object* op, const char* name) {
-
-	for(; ml->name != NULL; ml++) {
-		if(strcmp(name, ml->name) == 0) {
-			return py_method_new(ml->name, ml->method, op, 0);
-		}
-	}
-
-	py_error_set_string(py_name_error, name);
-	return NULL;
-}

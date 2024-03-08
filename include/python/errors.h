@@ -40,7 +40,13 @@ struct py_object* py_error_set_errno(struct py_object*);
 void py_error_set_input(enum py_result);
 void py_error_set_badcall(void);
 
-/* TODO: Hook this. */
+#ifdef __has_attribute
+# if __has_attribute(noreturn)
+__attribute__((noreturn))
+# endif
+#elif defined(_MSC_VER)
+__declspec(noreturn)
+#endif
 void py_fatal(const char*);
 
 #endif

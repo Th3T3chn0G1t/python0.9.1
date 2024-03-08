@@ -25,6 +25,6 @@ extern struct py_type py_float_type;
 #define py_is_float(op) ((op)->type == &py_float_type)
 
 struct py_object* py_float_new(double);
-double py_float_get(struct py_object*);
+double py_float_get(const struct py_object*);
 
 #endif

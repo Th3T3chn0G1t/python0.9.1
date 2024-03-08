@@ -14,139 +14,123 @@
 #include <python/stringobject.h>
 #include <python/frameobject.h>
 
-typedef struct _tracebackobject {
-	struct py_object ob;
-	struct _tracebackobject* tb_next;
-	struct py_frame* tb_frame;
-	int tb_lasti;
-	int tb_lineno;
-} tracebackobject;
+/* TODO: Python global state. */
+static struct py_traceback* py_traceback_current = NULL;
 
-static void tb_dealloc(tb)tracebackobject* tb;
-{
-	py_object_decref(tb->tb_next);
-	py_object_decref(tb->tb_frame);
-}
+static struct py_traceback* py_traceback_new_frame(
+		struct py_traceback* next, struct py_frame* frame, unsigned lineno) {
 
-static struct py_type Tracebacktype = {
-		{ 1, &py_type_type }, sizeof(tracebackobject),
-		tb_dealloc, /* dealloc */
-		0, /* cmp */
-		0, /* sequencemethods */
-};
+	struct py_traceback* tb;
 
-#define is_tracebackobject(v) \
-	(((struct py_object*) (v))->type == &Tracebacktype)
+	if((next != NULL && !py_is_traceback(next)) ||
+		frame == NULL || !py_is_frame(frame)) {
 
-static tracebackobject* newtracebackobject(next, frame, lasti, lineno)
-		tracebackobject* next;
-		struct py_frame* frame;
-		int lasti, lineno;
-{
-	tracebackobject* tb;
-	if((next != NULL && !is_tracebackobject(next)) || frame == NULL ||
-	   !py_is_frame(frame)) {
 		py_error_set_badcall();
 		return NULL;
 	}
-	tb = py_object_new(&Tracebacktype);
-	if(tb != NULL) {
-		py_object_incref(next);
-		tb->tb_next = next;
-		py_object_incref(frame);
-		tb->tb_frame = frame;
-		tb->tb_lasti = lasti;
-		tb->tb_lineno = lineno;
-	}
+
+	tb = py_object_new(&py_traceback_type);
+	if(tb == NULL) return NULL;
+
+	py_object_incref(next);
+	tb->next = next;
+	py_object_incref(frame);
+	tb->frame = frame;
+
+	tb->lineno = lineno;
+
 	return tb;
 }
 
-static tracebackobject* tb_current = NULL;
+int py_traceback_new(struct py_frame* frame, unsigned lineno) {
+	struct py_traceback* tb;
 
-int py_traceback_new(struct py_frame* frame, unsigned lasti, unsigned lineno) {
-	tracebackobject* tb;
-	tb = newtracebackobject(tb_current, frame, lasti, lineno);
-	if(tb == NULL) {
-		return -1;
-	}
-	py_object_decref(tb_current);
-	tb_current = tb;
+	tb = py_traceback_new_frame(py_traceback_current, frame, lineno);
+	if(tb == NULL) return -1;
+
+	py_object_decref(py_traceback_current);
+	py_traceback_current = tb;
+
 	return 0;
 }
 
-struct py_object* py_traceback_get() {
+struct py_object* py_traceback_get(void) {
 	struct py_object* v;
-	v = (struct py_object*) tb_current;
-	tb_current = NULL;
+
+	v = (struct py_object*) py_traceback_current; /* TODO: decref current? */
+	py_traceback_current = NULL;
+
 	return v;
 }
 
-int py_traceback_set(v)struct py_object* v;
-{
-	if(v != NULL && !is_tracebackobject(v)) {
-		py_error_set_badcall();
-		return -1;
-	}
-	py_object_decref(tb_current);
-	py_object_incref(v);
-	tb_current = (tracebackobject*) v;
-	return 0;
-}
+/* TODO: Questionable stream EH. */
+static void py_traceback_print_line(
+		FILE* fp, const char* filename, unsigned lineno) {
 
-static void tb_displayline(FILE* fp, const char* filename, int lineno) {
 	FILE* xfp;
+	/* TODO: Suspicious buffer. */
 	char buf[1024];
-	int i;
-	if(filename[0] == '<' && filename[strlen(filename) - 1] == '>') {
-		return;
-	}
+	unsigned i;
+
+	/* TODO: Debug info to not require sources for tb. */
 	xfp = pyopen_r(filename);
 	if(xfp == NULL) {
 		fprintf(fp, "    (cannot open \"%s\")\n", filename);
 		return;
 	}
+
 	for(i = 0; i < lineno; i++) {
-		if(fgets(buf, sizeof buf, xfp) == NULL) {
-			break;
-		}
+		if(fgets(buf, sizeof(buf), xfp) == NULL) break;
 	}
+
 	if(i == lineno) {
 		char* p = buf;
-		while(*p == ' ' || *p == '\t')
-			p++;
+		while(*p == ' ' || *p == '\t') p++;
+
 		fprintf(fp, "    %s", p);
-		if(strchr(p, '\n') == NULL) {
-			fprintf(fp, "\n");
-		}
+		if(strchr(p, '\n') == NULL) fprintf(fp, "\n");
 	}
-	pyclose(xfp);
+
+	pyclose(xfp); /* TODO: Reopening file every tb? */
 }
 
-static void tb_printinternal(tracebackobject* tb, FILE* fp) {
+static void py_traceback_print_impl(struct py_traceback* tb, FILE* fp) {
 	while(tb != NULL) {
 		fprintf(
 				fp, "  File \"%s\", line %d\n",
-				py_string_get(tb->tb_frame->code->filename), tb->tb_lineno);
+				py_string_get(tb->frame->code->filename), tb->lineno);
 
-		tb_displayline(
-				fp, py_string_get(tb->tb_frame->code->filename),
-				tb->tb_lineno);
+		py_traceback_print_line(
+				fp, py_string_get(tb->frame->code->filename),
+				tb->lineno);
 
-		tb = tb->tb_next;
+		tb = tb->next;
 	}
 }
 
-int py_traceback_print(v, fp)struct py_object* v;
-							 FILE* fp;
-{
-	if(v == NULL) {
-		return 0;
-	}
-	if(!is_tracebackobject(v)) {
+int py_traceback_print(struct py_object* v, FILE* fp) {
+	if(v == NULL) return 0;
+
+	if(!py_is_traceback(v)) {
 		py_error_set_badcall();
 		return -1;
 	}
 
-	tb_printinternal((tracebackobject*) v, fp);
+	py_traceback_print_impl((struct py_traceback*) v, fp);
+
 	return 0;
 }
+
+static void py_traceback_dealloc(struct py_object* op) {
+	struct py_traceback* tb = (struct py_traceback*) op;
+
+	py_object_decref(tb->next);
+	py_object_decref(tb->frame);
+}
+
+struct py_type py_traceback_type = {
+		{ 1, &py_type_type }, sizeof(struct py_traceback),
+		py_traceback_dealloc, /* dealloc */
+		0, /* cmp */
+		0, /* sequencemethods */
+};

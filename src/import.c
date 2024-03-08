@@ -69,7 +69,7 @@ void py_import_init(void) {
 	}
 }
 
-struct py_object* py_add_module(const char* name) {
+struct py_object* py_module_add(const char* name) {
 	struct py_object* m;
 
 	if((m = py_dict_lookup(modules, name)) != NULL && py_is_module(m)) {
@@ -152,7 +152,7 @@ static struct py_object* get_module(
 		return NULL;
 	}
 	if(m == NULL) {
-		m = py_add_module(name);
+		m = py_module_add(name);
 		if(m == NULL) {
 			py_tree_delete(n);
 			return NULL;
@@ -181,39 +181,41 @@ struct py_object* py_import_module(const char* name) {
 	return m;
 }
 
-static void cleardict(d)struct py_object* d;
-{
+/* TODO: Signedness. */
+static void py_dict_clear(struct py_object* d) {
 	int i;
-	for(i = py_dict_size(d); --i >= 0;) {
-		char* k;
-		k = py_dict_get_key(d, i);
-		if(k != NULL) {
-			(void) py_dict_remove(d, k);
-		}
+
+	for(i = (int) py_dict_size(d); --i >= 0;) {
+		const char* k = py_dict_get_key(d, i);
+		if(k != NULL) (void) py_dict_remove(d, k);
 	}
 }
 
 void py_import_done(void) {
 	if(modules != NULL) {
 		int i;
-		/* Explicitly erase all modules; this is the safest way
-		   to get rid of at least *some* circular dependencies */
-		for(i = py_dict_size(modules); --i >= 0;) {
-			char* k;
-			k = py_dict_get_key(modules, i);
+
+		/*
+		 * Explicitly erase all modules; this is the safest way to get rid of
+		 * at least *some* circular dependencies
+		 */
+		/* TODO: Signedness. */
+		for(i = (int) py_dict_size(modules); --i >= 0;) {
+			const char* k = py_dict_get_key(modules, i);
+
 			if(k != NULL) {
-				struct py_object* m;
-				m = py_dict_lookup(modules, k);
+				struct py_object* m = py_dict_lookup(modules, k);
+
 				if(m != NULL && py_is_module(m)) {
-					struct py_object* d;
-					d = py_module_get_dict(m);
-					if(d != NULL && py_is_dict(d)) {
-						cleardict(d);
-					}
+					struct py_object* d = py_module_get_dict(m);
+
+					if(d != NULL && py_is_dict(d)) py_dict_clear(d);
 				}
 			}
 		}
-		cleardict(modules);
+
+		py_dict_clear(modules);
 	}
+
 	py_object_decref(modules);
 }

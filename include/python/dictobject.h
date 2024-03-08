@@ -18,22 +18,24 @@
 #include <python/object.h>
 
 /*
- * Invariant for entries: when in use, de_value is not NULL and de_key is
- * not NULL and not dummy; when not in use, de_value is NULL and de_key
+ * Invariant for entries: when in use, value is not NULL and key is
+ * not NULL and not dummy; when not in use, value is NULL and key
  * is either NULL or dummy. A dummy key value cannot be replaced by NULL,
  * since otherwise other keys may be lost.
  */
 struct py_dictentry {
-	struct py_string* de_key;
-	struct py_object* de_value;
+	struct py_object* key;
+	struct py_object* value;
 };
 
 struct py_dict {
 	struct py_object ob;
-	unsigned di_fill;
-	unsigned di_used;
-	unsigned di_size;
-	struct py_dictentry* di_table;
+
+	unsigned fill;
+	unsigned used;
+	unsigned size;
+
+	struct py_dictentry* table;
 };
 
 /* TODO: Python global state. */
@@ -49,8 +51,7 @@ int py_dict_assign(struct py_object*, struct py_object*, struct py_object*);
 int py_dict_insert(struct py_object*, const char*, struct py_object*);
 int py_dict_remove(struct py_object*, const char*);
 unsigned py_dict_size(struct py_object*);
-char* py_dict_get_key(struct py_object*, unsigned);
-struct py_object* py_dict_get_keys(struct py_object*);
+const char* py_dict_get_key(struct py_object*, unsigned);
 
 void py_done_dict(void);
 

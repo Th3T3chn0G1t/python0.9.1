@@ -27,72 +27,70 @@ struct py_int py_false_object = { { 1, &py_int_type }, 0 };
  * dedicated free list, filled when necessary with memory from malloc().
  */
 
-#define BLOCK_SIZE (1024) /* 1K less typical malloc overhead */
-#define N_INTOBJECTS (BLOCK_SIZE / sizeof(struct py_int))
+#define PY_INT_BLOCK_SIZE (1024) /* 1K less typical malloc overhead */
+#define PY_INT_COUNT (PY_INT_BLOCK_SIZE / sizeof(struct py_int))
 
-static struct py_int* fill_free_list(void) {
+/* TODO: Python global state. */
+static struct py_int* py_int_freelist = NULL;
+
+static struct py_int* py_int_freelist_fill(void) {
 	struct py_int* p;
 	struct py_int* q;
 
-	p = malloc(N_INTOBJECTS * sizeof(struct py_int));
+	p = malloc(PY_INT_COUNT * sizeof(struct py_int));
 	if(p == NULL) return (struct py_int*) py_error_set_nomem();
 
-	q = p + N_INTOBJECTS;
+	q = p + PY_INT_COUNT;
 
 	while(--q > p) *(struct py_int**) q = q - 1;
 
 	*(struct py_int**) q = NULL;
 
-	return p + N_INTOBJECTS - 1;
+	return p + PY_INT_COUNT - 1;
 }
 
-static struct py_int* free_list = NULL;
-
-/* TODO: `int' and `double' for their respective object types. */
 struct py_object* py_int_new(long ival) {
 	struct py_int* v;
-	if(free_list == NULL) {
-		if((free_list = fill_free_list()) == NULL) {
-			return NULL;
-		}
+
+	if(py_int_freelist == NULL) {
+		if((py_int_freelist = py_int_freelist_fill()) == NULL) return NULL;
 	}
-	v = free_list;
-	free_list = *(struct py_int**) free_list;
+
+	v = py_int_freelist;
+	py_int_freelist = *(struct py_int**) py_int_freelist;
 	py_object_newref(v);
+
 	v->ob.type = &py_int_type;
 	v->value = ival;
+
 	return (struct py_object*) v;
 }
 
-static void int_dealloc(v)struct py_int* v;
-{
-	*(struct py_int**) v = free_list;
-	free_list = v;
+static void py_int_dealloc(struct py_object* v) {
+	*(struct py_int**) v = py_int_freelist;
+	py_int_freelist = (struct py_int*) v;
 }
 
-long py_int_get(op)struct py_object* op;
-{
+long py_int_get(const struct py_object* op) {
 	if(!py_is_int(op)) {
 		py_error_set_badcall();
 		return -1;
 	}
-	else {
-		return ((struct py_int*) op)->value;
-	}
+	else return ((struct py_int*) op)->value;
 }
 
 /* Methods */
 
-static int int_compare(v, w)struct py_int* v, * w;
-{
-	long i = v->value;
-	long j = w->value;
+static int py_int_cmp(const struct py_object* v, const struct py_object* w) {
+	long i = py_int_get(v);
+	long j = py_int_get(w);
+
 	return (i < j) ? -1 : (i > j) ? 1 : 0;
 }
 
 struct py_type py_int_type = {
 		{ 1, &py_type_type }, sizeof(struct py_int),
-		int_dealloc, /* dealloc */
-		int_compare, /* cmp */
+		py_int_dealloc, /* dealloc */
+		py_int_cmp, /* cmp */
 		0, /* sequencemethods */
 };

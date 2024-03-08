@@ -10,21 +10,16 @@
 #include <python/compile.h>
 #include <python/ceval.h>
 
-struct py_object* py_tree_run(n, filename, globals, locals)struct py_node* n;
-														   char* filename;
-		/*dict*/struct py_object* globals, * locals;
-{
+struct py_object* py_tree_run(
+		struct py_node* n, char* filename, struct py_object* globals,
+		struct py_object* locals) {
+
 	if(globals == NULL) {
 		globals = py_get_globals();
-		if(locals == NULL) {
-			locals = py_get_locals();
-		}
+		if(locals == NULL) locals = py_get_locals();
 	}
-	else {
-		if(locals == NULL) {
-			locals = globals;
-		}
-	}
+	else if(locals == NULL) locals = globals;
+
 	return py_tree_eval(n, filename, globals, locals);
 }
 

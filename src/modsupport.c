@@ -16,27 +16,33 @@
 #include <python/intobject.h>
 #include <python/floatobject.h>
 
-struct py_object* py_module_init(name, methods)char* name;
-											   const struct py_methodlist* methods;
-{
-	struct py_object* m, * d, * v;
+/* TODO: Better EH. */
+struct py_object* py_module_new_methods(
+		const char* name, const struct py_methodlist* methods) {
+
+	struct py_object* m;
+	struct py_object* d;
+	struct py_object* v;
 	const struct py_methodlist* ml;
-	char namebuf[256];
-	if((m = py_add_module(name)) == NULL) {
+
+	if((m = py_module_add(name)) == NULL) {
 		fprintf(stderr, "initializing module: %s\n", name);
 		py_fatal("can't create a module");
 	}
+
 	d = py_module_get_dict(m);
+
 	for(ml = methods; ml->name != NULL; ml++) {
-		sprintf(namebuf, "%s.%s", name, ml->name);
-		v = py_method_new(
-				strdup(namebuf), ml->method, (struct py_object*) NULL, 1);
+		v = py_method_new(ml->method, (struct py_object*) NULL);
+
 		if(v == NULL || py_dict_insert(d, ml->name, v) != 0) {
 			fprintf(stderr, "initializing module: %s\n", name);
 			py_fatal("can't initialize module");
 		}
+
 		py_object_decref(v);
 	}
+
 	return m;
 }
 

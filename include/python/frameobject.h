@@ -20,6 +20,7 @@ struct py_block {
 struct py_frame {
 	struct py_object ob;
 
+	/* TODO: Do all of these need to be objects? */
 	struct py_frame* back; /* previous frame, or NULL */
 	struct py_code* code; /* code segment */
 	struct py_object* globals; /* global symbol table (struct py_dict) */

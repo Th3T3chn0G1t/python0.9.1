@@ -18,7 +18,7 @@
 typedef unsigned char py_byte_t;
 typedef py_byte_t* py_bitset_t;
 
-py_bitset_t py_bitset_new(int);
+py_bitset_t py_bitset_new(unsigned);
 
 void py_bitset_delete(py_bitset_t);
 

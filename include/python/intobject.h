@@ -19,7 +19,7 @@
  * returns -1 and sets errno to EBADF if the object is not an struct py_int.
  * PY_NONE of the functions should be applied to nil objects.
  *
- * The type struct py_int is (unfortunately) exposed bere so we can declare
+ * The type struct py_int is (unfortunately) exposed here so we can declare
  * py_true_object and py_false_object below; don't use this.
  */
 
@@ -34,7 +34,7 @@ extern struct py_type py_int_type;
 #define py_is_int(op) ((op)->type == &py_int_type)
 
 struct py_object* py_int_new(long);
-long py_int_get(struct py_object*);
+long py_int_get(const struct py_object*);
 
 /*
  * False and True are special intobjects used by Boolean expressions.

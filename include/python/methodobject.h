@@ -10,22 +10,28 @@
 
 #include <python/object.h>
 
+typedef struct py_object* (*py_method_t)(struct py_object*, struct py_object*);
+
+struct py_method {
+	struct py_object ob;
+
+	py_method_t method;
+	struct py_object* self;
+};
+
 /* TODO: Python global state */
 extern struct py_type py_method_type;
 
 #define py_is_method(op) ((op)->type == &py_method_type)
-
-typedef struct py_object* (*py_method_t)(struct py_object*, struct py_object*);
 
 struct py_methodlist {
 	char* name;
 	py_method_t method;
 };
 
-struct py_object* py_method_new(char*, py_method_t, struct py_object*, unsigned);
+struct py_object* py_method_new(py_method_t, struct py_object*);
+
 py_method_t py_method_get(struct py_object*);
 struct py_object* py_method_get_self(struct py_object*);
-
-struct py_object* py_methodlist_find(struct py_methodlist*, struct py_object*, const char*);
 
 #endif

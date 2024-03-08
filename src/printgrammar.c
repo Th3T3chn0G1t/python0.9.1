@@ -8,18 +8,18 @@
 #include <python/grammar.h>
 
 /* Forward */
-static void printstates(struct py_grammar*, FILE*);
+static void py_grammar_print_states(struct py_grammar*, FILE*);
 
-static void printdfas(struct py_grammar*, FILE*);
+static void py_grammar_print_dfas(struct py_grammar*, FILE*);
 
-static void printlabels(struct py_grammar*, FILE*);
+static void py_grammar_print_labels(struct py_grammar*, FILE*);
 
-void py_grammar_print(g, fp)struct py_grammar* g;
-							FILE* fp;
-{
+/* TODO: Stream EH. */
+
+void py_grammar_print(struct py_grammar* g, FILE* fp) {
 	fprintf(fp, "#include <python/grammar.h>\n");
-	printdfas(g, fp);
-	printlabels(g, fp);
+	py_grammar_print_dfas(g, fp);
+	py_grammar_print_labels(g, fp);
 	fprintf(fp, "struct py_grammar py_grammar = {\n");
 	fprintf(fp, "\t%d,\n", g->count);
 	fprintf(fp, "\tdfas,\n");
@@ -29,19 +29,17 @@ void py_grammar_print(g, fp)struct py_grammar* g;
 	fprintf(fp, "};\n");
 }
 
-void py_grammar_print_nonterminals(g, fp)struct py_grammar* g;
-										 FILE* fp;
-{
+void py_grammar_print_nonterminals(struct py_grammar* g, FILE* fp) {
 	struct py_dfa* d;
-	int i;
+	unsigned i;
 
 	d = g->dfas;
-	for(i = g->count; --i >= 0; d++) {
+	for(i = 0; i < g->count; i++, d++) {
 		fprintf(fp, "#define %s (%d)\n", d->name, d->type);
 	}
 }
 
-static void printarcs(unsigned i, struct py_dfa* d, FILE* fp) {
+static void py_dfa_print_arcs(unsigned i, struct py_dfa* d, FILE* fp) {
 	struct py_arc* a;
 	struct py_state* s;
 	unsigned j, k;
@@ -59,65 +57,58 @@ static void printarcs(unsigned i, struct py_dfa* d, FILE* fp) {
 	}
 }
 
-static void printstates(g, fp)struct py_grammar* g;
-							  FILE* fp;
-{
+static void py_grammar_print_states(struct py_grammar* g, FILE* fp) {
 	struct py_state* s;
 	struct py_dfa* d;
 	unsigned i, j;
 
 	d = g->dfas;
 	for(i = 0; i < g->count; i++, d++) {
-		printarcs(i, d, fp);
-		fprintf(
-				fp, "static struct py_state states_%d[%d] = {\n", i, d->count);
+		py_dfa_print_arcs(i, d, fp);
+		fprintf(fp, "static struct py_state states_%d[%d] = {\n", i, d->count);
 		s = d->states;
 		for(j = 0; j < d->count; j++, s++) {
-			fprintf(
-					fp, "\t{%d, arcs_%d_%d, 0, 0, 0, 0},\n", s->count, i, j);
+			fprintf(fp, "\t{%d, arcs_%d_%d, 0, 0, 0, 0},\n", s->count, i, j);
 		}
 		fprintf(fp, "};\n");
 	}
 }
 
-static void printdfas(g, fp)struct py_grammar* g;
-							FILE* fp;
-{
+static void py_grammar_print_dfas(struct py_grammar* g, FILE* fp) {
 	struct py_dfa* d;
 	unsigned i, j;
 
-	printstates(g, fp);
+	py_grammar_print_states(g, fp);
 	fprintf(fp, "static struct py_dfa dfas[%d] = {\n", g->count);
 	d = g->dfas;
+
 	for(i = 0; i < g->count; i++, d++) {
 		fprintf(
 				fp, "\t{%d, \"%s\", %d, %d, states_%d,\n", d->type, d->name,
 				d->initial, d->count, i);
 		fprintf(fp, "\t (py_byte_t*) \"");
+
 		for(j = 0; j < PY_NBYTES(g->labels.count); j++) {
 			fprintf(fp, "\\%03o", d->first[j] & 0xff);
 		}
+
 		fprintf(fp, "\"},\n");
 	}
+
 	fprintf(fp, "};\n");
 }
 
-static void printlabels(g, fp)struct py_grammar* g;
-							  FILE* fp;
-{
+static void py_grammar_print_labels(struct py_grammar* g, FILE* fp) {
 	struct py_label* l;
-	int i;
+	unsigned i;
 
 	fprintf(fp, "static struct py_label labels[%d] = {\n", g->labels.count);
 	l = g->labels.label;
-	for(i = g->labels.count; --i >= 0; l++) {
-		if(l->str == NULL) {
-			fprintf(fp, "\t{%d, 0},\n", l->type);
-		}
-		else {
-			fprintf(
-					fp, "\t{%d, \"%s\"},\n", l->type, l->str);
-		}
+
+	for(i = 0; i < g->labels.count; i++, l++) {
+		if(l->str == NULL) fprintf(fp, "\t{%d, 0},\n", l->type);
+		else fprintf(fp, "\t{%d, \"%s\"},\n", l->type, l->str);
 	}
+
 	fprintf(fp, "};\n");
 }

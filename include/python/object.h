@@ -66,8 +66,11 @@
 
 struct py_type;
 
+/* TODO: Object pool to avoid malloc/free constantly. */
+
 struct py_object {
 	unsigned refcount;
+	/* TODO: Type as index into type table (8 byte objects!) */
 	struct py_type* type;
 
 #ifdef PY_REF_TRACE

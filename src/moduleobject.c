@@ -18,8 +18,14 @@ struct py_object* py_module_new(const char* name) {
 	if(m == NULL) return NULL;
 
 	m->name = py_string_new(name);
+	if(m->name == NULL) {
+		py_object_decref(m);
+		return NULL;
+	}
+
 	m->attr = py_dict_new();
-	if(m->name == NULL || m->attr == NULL) {
+	if(m->attr == NULL) {
+		py_object_decref(m->name);
 		py_object_decref(m);
 		return NULL;
 	}
@@ -27,23 +33,22 @@ struct py_object* py_module_new(const char* name) {
 	return (struct py_object*) m;
 }
 
-struct py_object* py_module_get_dict(m)struct py_object* m;
-{
+struct py_object* py_module_get_dict(struct py_object* m) {
+	/* TODO: Unchecked get. */
 	if(!py_is_module(m)) {
 		py_error_set_badcall();
 		return NULL;
 	}
+
 	return ((struct py_module*) m)->attr;
 }
 
 /* Methods */
 
-static void module_dealloc(m)struct py_module* m;
-{
-	if(m->name != NULL)
-		py_object_decref(m->name);
-	if(m->attr != NULL)
-		py_object_decref(m->attr);
+static void py_module_dealloc(struct py_object* op) {
+	struct py_module* m = (struct py_module*) op;
+	py_object_decref(m->name);
+	py_object_decref(m->attr);
 }
 
 struct py_object* py_module_get_attr(struct py_object* op, const char* name) {
@@ -70,6 +75,6 @@ struct py_object* py_module_get_attr(struct py_object* op, const char* name) {
 struct py_type py_module_type = {
 		{ 1, &py_type_type }, /* size */
 		sizeof(struct py_module), /* tp_size */
-		module_dealloc, /* dealloc */
+		py_module_dealloc, /* dealloc */
 		0, /* cmp */
 		0 };

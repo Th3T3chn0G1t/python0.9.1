@@ -122,5 +122,5 @@ void py_math_init(void) {
 	};
 #undef _
 
-	py_module_init("math", math_methods);
+	py_module_new_methods("math", math_methods);
 }

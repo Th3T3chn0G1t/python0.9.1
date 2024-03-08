@@ -54,30 +54,32 @@ struct py_type py_class_type = {
 
 /* We're not done yet: next, we define class member objects... */
 
-struct py_object* py_classmember_new(class)struct py_object* class;
-{
+struct py_object* py_classmember_new(struct py_object* class) {
 	struct py_classmember* cm;
+
 	if(!py_is_class(class)) {
 		py_error_set_badcall();
 		return NULL;
 	}
+
 	cm = py_object_new(&py_class_member_type);
-	if(cm == NULL) {
-		return NULL;
-	}
+	if(cm == NULL) return NULL;
+
 	py_object_incref(class);
 	cm->class = (struct py_class*) class;
 	cm->attr = py_dict_new();
+
 	if(cm->attr == NULL) {
 		py_object_decref(cm);
 		return NULL;
 	}
+
 	return (struct py_object*) cm;
 }
 
 /* Class member methods */
 
-static void classmember_dealloc(struct py_object* op) {
+static void py_classmember_dealloc(struct py_object* op) {
 	struct py_classmember* cm = (struct py_classmember*) op;
 
 	py_object_decref(cm->class);
@@ -111,71 +113,66 @@ struct py_object* py_classmember_get_attr(
 
 struct py_type py_class_member_type = {
 		{ 1, &py_type_type },
-		sizeof(struct py_classmember), classmember_dealloc, /* dealloc */
+		sizeof(struct py_classmember), py_classmember_dealloc, /* dealloc */
 		0, /* cmp */
 		0, /* sequencemethods */
 };
 
 
 /* And finally, here are class method objects */
-
 /* (Really methods of class members) */
 
-typedef struct {
-	struct py_object ob;
-	struct py_object* cm_func;       /* The method function */
-	struct py_object* cm_self;       /* The object to which this applies */
-} classmethodobject;
+struct py_object* py_classmethod_new(
+		struct py_object* func, struct py_object* self) {
 
-struct py_object* py_classmethod_new(func, self)struct py_object* func;
-												struct py_object* self;
-{
-	classmethodobject* cm;
+	struct py_classmethod* cm;
+
 	if(!py_is_func(func)) {
 		py_error_set_badcall();
 		return NULL;
 	}
+
 	cm = py_object_new(&py_class_method_type);
-	if(cm == NULL) {
-		return NULL;
-	}
+	if(cm == NULL) return NULL;
+
 	py_object_incref(func);
-	cm->cm_func = func;
+	cm->func = func;
 	py_object_incref(self);
-	cm->cm_self = self;
+	cm->self = self;
+
 	return (struct py_object*) cm;
 }
 
-struct py_object* py_classmethod_get_func(cm)struct py_object* cm;
-{
+struct py_object* py_classmethod_get_func(struct py_object* cm) {
 	if(!py_is_classmethod(cm)) {
 		py_error_set_badcall();
 		return NULL;
 	}
-	return ((classmethodobject*) cm)->cm_func;
+
+	return ((struct py_classmethod*) cm)->func;
 }
 
-struct py_object* py_classmethod_get_self(cm)struct py_object* cm;
-{
+struct py_object* py_classmethod_get_self(struct py_object* cm) {
 	if(!py_is_classmethod(cm)) {
 		py_error_set_badcall();
 		return NULL;
 	}
-	return ((classmethodobject*) cm)->cm_self;
+
+	return ((struct py_classmethod*) cm)->self;
 }
 
 /* Class method methods */
 
-static void classmethod_dealloc(struct py_object* op) {
-	classmethodobject* cm = (classmethodobject*) op;
+static void py_classmethod_dealloc(struct py_object* op) {
+	struct py_classmethod* cm = (struct py_classmethod*) op;
 
-	py_object_decref(cm->cm_func);
-	py_object_decref(cm->cm_self);
+	py_object_decref(cm->func);
+	py_object_decref(cm->self);
 }
 
 struct py_type py_class_method_type = {
 		{ 1, &py_type_type },
-		sizeof(classmethodobject), classmethod_dealloc, /* dealloc */
+		sizeof(struct py_classmethod), py_classmethod_dealloc, /* dealloc */
 		0, /* cmp */
 		0, /* sequencemethods */
 };

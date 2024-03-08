@@ -84,13 +84,16 @@ void py_block_setup(
 	b->handler = handler;
 }
 
-struct py_block* py_block_pop(f)struct py_frame* f;
-{
+struct py_block* py_block_pop(struct py_frame* f) {
 	struct py_block* b;
+
 	if(f->iblock <= 0) {
+		/* TODO: Better EH. */
 		fprintf(stderr, "XXX block stack underflow\n");
 		abort();
 	}
+
 	b = &f->blockstack[--f->iblock];
+
 	return b;
 }

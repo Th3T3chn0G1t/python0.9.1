@@ -14,36 +14,32 @@
 #include <python/floatobject.h>
 #include <python/stringobject.h>
 
-struct py_object* py_float_new(fval)double fval;
-{
+struct py_object* py_float_new(double fval) {
 	/* For efficiency, this code is copied from py_object_new() */
 	struct py_float* op = malloc(sizeof(struct py_float));
-	if(op == NULL) {
-		return py_error_set_nomem();
-	}
+	if(op == NULL) return py_error_set_nomem();
+
 	py_object_newref(op);
 	op->ob.type = &py_float_type;
 	op->value = fval;
+
 	return (struct py_object*) op;
 }
 
-double py_float_get(op)struct py_object* op;
-{
+double py_float_get(const struct py_object* op) {
 	if(!py_is_float(op)) {
 		py_error_set_badarg();
-		return -1;
+		return -1; /* TODO: This EH mechanism just doesn't work - use NaN? */
 	}
-	else {
-		return ((struct py_float*) op)->value;
-	}
+	else return ((struct py_float*) op)->value;
 }
 
 /* Methods */
 
-static int float_compare(v, w)struct py_float* v, * w;
-{
-	double i = v->value;
-	double j = w->value;
+static int float_compare(const struct py_object* v, const struct py_object* w) {
+	double i = py_float_get(v);
+	double j = py_float_get(w);
+
 	return (i < j) ? -1 : (i > j) ? 1 : 0;
 }
 

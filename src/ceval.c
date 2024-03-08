@@ -49,7 +49,7 @@ int py_object_truthy(struct py_object* v) {
 	if(py_is_int(v)) return py_int_get(v) != 0;
 	else if(py_is_float(v)) return py_float_get(v) != 0.0;
 	else if(py_is_sequence(v)) return py_varobject_size(v) != 0;
-	else if(py_is_dict(v)) return ((struct py_dict*) v)->di_used != 0;
+	else if(py_is_dict(v)) return ((struct py_dict*) v)->used != 0;
 	else if(v == PY_NONE) return 0;
 
 	/* All other objects are 'true' */
@@ -565,10 +565,10 @@ struct py_object* py_code_eval(
 	py_byte_t* next;
 
 	py_byte_t opcode; /* Current opcode */
-	int oparg; /* Current opcode argument, if any */
+	int oparg = 0; /* Current opcode argument, if any */
 
 	struct py_object** stack_pointer;
-	unsigned lineno = -1; /* Current line number */
+	unsigned lineno = UINT_MAX; /* Current line number */
 
 	struct py_object* x = PY_NONE; /* Result object -- NULL if error */
 	struct py_object* v; /* Temporary objects popped off stack */
@@ -577,7 +577,7 @@ struct py_object* py_code_eval(
 
 	struct py_frame* f; /* Current frame */
 
-	struct py_object* retval; /* Return value if why == PY_WHY_RETURN */
+	struct py_object* retval = 0; /* Return value if why == PY_WHY_RETURN */
 	enum py_ceval_why why = PY_WHY_NOT; /* Reason for block stack unwind */
 	int err = 0; /* Error status -- nonzero if error */
 
@@ -870,7 +870,7 @@ struct py_object* py_code_eval(
 			case PY_OP_POP_BLOCK: {
 				struct py_block* b = py_block_pop(f);
 
-				while((stack_pointer - f->valuestack) > b->level) {
+				while((stack_pointer - f->valuestack) > (int) b->level) {
 					v = *--stack_pointer;
 					py_object_decref(v);
 				}
@@ -1164,18 +1164,13 @@ struct py_object* py_code_eval(
 
 		/* Log traceback info if this is a real exception */
 
-		if(why == PY_WHY_EXCEPTION) {
-			unsigned lasti = (next - code) - 1;
-			if(opcode >= PY_OP_HAVE_ARGUMENT) lasti -= 2;
-
-			py_traceback_new(f, lasti, lineno);
-		}
+		if(why == PY_WHY_EXCEPTION) py_traceback_new(f, lineno);
 
 		/* Unwind stacks if a (pseudo) exception occurred */
 
 		while(why != PY_WHY_NOT && f->iblock > 0) {
 			struct py_block* b = py_block_pop(f);
-			while((stack_pointer - f->valuestack) > b->level) {
+			while((stack_pointer - f->valuestack) > (int) b->level) {
 				v = *--stack_pointer;
 				py_object_decref(v);
 			}

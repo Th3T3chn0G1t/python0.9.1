@@ -27,6 +27,12 @@ struct py_classmember {
 	struct py_object* attr; /* A dictionary */
 };
 
+struct py_classmethod {
+	struct py_object ob;
+	struct py_object* func; /* The method function */
+	struct py_object* self; /* The object to which this applies */
+};
+
 /* TODO: Python global state. */
 extern struct py_type py_class_type;
 extern struct py_type py_class_member_type;

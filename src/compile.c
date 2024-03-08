@@ -117,8 +117,8 @@ static void py_compile_add_byte(struct py_compiler* c, py_byte_t byte) {
 }
 
 static void py_compile_add_int(struct py_compiler* c, unsigned x) {
-	py_compile_add_byte(c, x & 0xff);
-	py_compile_add_byte(c, x >> 8);
+	py_compile_add_byte(c, (py_byte_t) (x & 0xFF));
+	py_compile_add_byte(c, (py_byte_t) (x >> 8));
 }
 
 static void py_compile_add_op_arg(
@@ -151,10 +151,10 @@ static void py_compile_backpatch(struct py_compiler* c, unsigned anchor) {
 		/* Make the JUMP instruction at anchor point to target */
 		prev = c->code[anchor] + (c->code[anchor + 1] << 8);
 
-		dist = (int) target - (int) (anchor + 2);
+		dist = (int) (target - (anchor + 2));
 
-		c->code[anchor] = dist & 0xff;
-		c->code[anchor + 1] = dist >> 8;
+		c->code[anchor] = (py_byte_t) (dist & 0xFF);
+		c->code[anchor + 1] = (py_byte_t) (dist >> 8);
 
 		if(!prev) break;
 		anchor -= prev;
@@ -437,7 +437,7 @@ static void py_compile_factor(struct py_compiler* c, struct py_node* n) {
 
 static void py_compile_term(struct py_compiler* c, struct py_node* n) {
 	unsigned i;
-	unsigned op;
+	enum py_opcode op;
 
 	PY_REQ(n, PY_GRAMMAR_TERM);
 

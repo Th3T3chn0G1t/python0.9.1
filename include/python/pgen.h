@@ -15,6 +15,6 @@
 extern struct py_grammar py_grammar;
 extern struct py_grammar py_meta_grammar;
 
-struct py_grammar* pgen(struct py_node*);
+struct py_grammar* py_grammar_gen(struct py_node*);
 
 #endif

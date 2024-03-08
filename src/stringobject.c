@@ -18,10 +18,11 @@ struct py_object* py_string_new_size(const char* str, unsigned size) {
 	py_object_newref(op);
 	op->ob.type = &py_string_type;
 	op->ob.size = size;
-	if(str != NULL) {
-		memcpy(op->value, str, size);
-	}
+
+	if(str != NULL) memcpy(op->value, str, size);
+
 	op->value[size] = '\0';
+
 	return (struct py_object*) op;
 }
 
@@ -29,13 +30,16 @@ struct py_object* py_string_new(const char* str) {
 	unsigned size = strlen(str);
 	struct py_string* op = malloc(
 			sizeof(struct py_string) + size * sizeof(char));
-	if(op == NULL) {
-		return py_error_set_nomem();
-	}
+
+	if(op == NULL) return py_error_set_nomem();
+
 	py_object_newref(op);
+
 	op->ob.type = &py_string_type;
 	op->ob.size = size;
-	strcpy(op->value, str);
+
+	strcpy(op->value, str); /* TODO: What is this for? */
+
 	return (struct py_object*) op;
 }
 
@@ -50,48 +54,53 @@ const char* py_string_get(const struct py_object* op) {
 
 /* Methods */
 
-static struct py_object* stringconcat(a, bb)struct py_string* a;
-											struct py_object* bb;
-{
-	unsigned size;
+static struct py_object* py_string_cat(struct py_object* a, struct py_object* b) {
 	struct py_string* op;
-	struct py_string* b;
-	if(!py_is_string(bb)) {
+	unsigned size;
+
+	if(!py_is_string(b)) {
 		py_error_set_badarg();
 		return NULL;
 	}
-	b = ((struct py_string*) bb);
+
 	/* Optimize cases with empty left or right operand */
-	if(a->ob.size == 0) {
-		py_object_incref(bb);
-		return bb;
+	if(py_varobject_size(a) == 0) {
+		py_object_incref(b);
+		return b;
 	}
-	if(b->ob.size == 0) {
+
+	if(py_varobject_size(b) == 0) {
 		py_object_incref(a);
-		return (struct py_object*) a;
+		return a;
 	}
-	size = a->ob.size + b->ob.size;
+
+	size = py_varobject_size(a) + py_varobject_size(b);
+
+	/* TODO: Not using _new_size? */
 	op = malloc(sizeof(struct py_string) + size * sizeof(char));
-	if(op == NULL) {
-		return py_error_set_nomem();
-	}
+	if(op == NULL) return py_error_set_nomem();
+
 	py_object_newref(op);
+
 	op->ob.type = &py_string_type;
 	op->ob.size = size;
-	memcpy(op->value, a->value, (int) a->ob.size);
-	memcpy(op->value + a->ob.size, b->value, (int) b->ob.size);
+
+	memcpy(op->value, py_string_get(a), py_varobject_size(a));
+	memcpy(
+			op->value + py_varobject_size(a), py_string_get(b),
+			py_varobject_size(b));
+
 	op->value[size] = '\0';
+
 	return (struct py_object*) op;
 }
 
 /* String slice a[i:j] consists of characters a[i] ... a[j-1] */
 
-static struct py_object* stringslice(
+static struct py_object* py_string_slice(
 		struct py_object* op, unsigned i, unsigned j) {
 
-	if(j > py_varobject_size(op)) {
-		j = py_varobject_size(op);
-	}
+	if(j > py_varobject_size(op)) j = py_varobject_size(op);
 
 	/* It's the same as op */
 	if(i == 0 && j == py_varobject_size(op)) {
@@ -104,16 +113,17 @@ static struct py_object* stringslice(
 	return py_string_new_size(py_string_get(op) + i, j - i);
 }
 
-static struct py_object* stringitem(struct py_object* a, unsigned i) {
+static struct py_object* py_string_ind(struct py_object* a, unsigned i) {
+	/* TODO: Unchecked. */
 	if(i >= py_varobject_size(a)) {
 		py_error_set_string(PY_INDEX_ERROR, "string index out of range");
 		return NULL;
 	}
 
-	return stringslice(a, i, i + 1);
+	return py_string_slice(a, i, i + 1);
 }
 
-static int stringcompare(
+static int py_string_cmp(
 		const struct py_object* a, const struct py_object* b) {
 
 	unsigned len_a = py_varobject_size(a);
@@ -129,15 +139,15 @@ static int stringcompare(
 	return 0;
 }
 
-static struct py_sequencemethods string_as_sequence = {
-		stringconcat, /* tp_concat */
-		stringitem, /* tp_ind */
-		stringslice, /* tp_slice */
+static struct py_sequencemethods py_string_sequence = {
+		py_string_cat, /* tp_concat */
+		py_string_ind, /* tp_ind */
+		py_string_slice, /* tp_slice */
 };
 
 struct py_type py_string_type = {
 		{ 1, &py_type_type }, sizeof(struct py_string),
 		py_object_delete, /* dealloc */
-		stringcompare, /* cmp */
-		&string_as_sequence, /* sequencemethods */
+		py_string_cmp, /* cmp */
+		&py_string_sequence, /* sequencemethods */
 };

@@ -91,7 +91,7 @@ static struct py_object* builtin_len(
 	}
 
 	if(py_is_sequence(v)) len = py_varobject_size(v);
-	else if(py_is_dict(v)) len = ((struct py_dict*) v)->di_used;
+	else if(py_is_dict(v)) len = ((struct py_dict*) v)->used;
 	else {
 		py_error_set_string(py_type_error, "len() of unsized object");
 		return NULL;
@@ -267,7 +267,7 @@ void py_errors_done(void) {
 void py_builtin_init(void) {
 	struct py_object* m;
 
-	m = py_module_init("builtin", builtin_methods);
+	m = py_module_new_methods("builtin", builtin_methods);
 	builtin_dict = py_module_get_dict(m);
 	py_object_incref(builtin_dict);
 

@@ -29,7 +29,7 @@
 
 struct py_string {
 	struct py_varobject ob;
-	char value[1];
+	char value[1]; /* TODO: Is this supposed to be sized? FAM? */
 };
 
 /* TODO: Python global state. */
@@ -40,8 +40,5 @@ extern struct py_type py_string_type;
 struct py_object* py_string_new_size(const char*, unsigned);
 struct py_object* py_string_new(const char*);
 const char* py_string_get(const struct py_object*);
-
-/* Macro, trading safety for speed */
-#define GETSTRINGVALUE(op) ((op)->value)
 
 #endif

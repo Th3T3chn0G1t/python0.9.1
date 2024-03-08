@@ -315,10 +315,9 @@ void compile_atom(
 		PY_REQ(n, PY_NAME);
 }
 
-static void dumpstate(ll, nf, istate)struct py_labellist* ll;
-									 struct py_nfa* nf;
-									 int istate;
-{
+static void py_nfa_dump_state(
+		struct py_labellist* ll, struct py_nfa* nf, int istate) {
+
 	struct py_nfa_state* st;
 	struct py_nfa_arc* ar;
 	unsigned i;
@@ -326,39 +325,36 @@ static void dumpstate(ll, nf, istate)struct py_labellist* ll;
 	printf(
 			"%c%2d%c", istate == nf->start ? '*' : ' ', istate,
 			istate == nf->finish ? '.' : ' ');
+
 	st = &nf->states[istate];
 	ar = st->arcs;
+
 	for(i = 0; i < st->count; i++) {
-		if(i > 0) {
-			printf("\n    ");
-		}
+		if(i > 0) printf("\n    ");
+
 		printf(
 				"-> %2d  %s", ar->arrow,
 				py_label_repr(&ll->label[ar->label]));
 		ar++;
 	}
+
 	printf("\n");
 }
 
-static void dumpnfa(ll, nf)struct py_labellist* ll;
-						   struct py_nfa* nf;
-{
+static void py_nfa_dump(struct py_labellist* ll, struct py_nfa* nf) {
 	unsigned i;
 
 	printf(
 			"NFA '%s' has %d states; start %d, finish %d\n", nf->name,
 			nf->count, nf->start, nf->finish);
 
-	for(i = 0; i < nf->count; i++) dumpstate(ll, nf, i);
+	for(i = 0; i < nf->count; i++) py_nfa_dump_state(ll, nf, i);
 }
 
 
 /* PART TWO -- CONSTRUCT DFA -- Algorithm 3.1 from [Aho&Ullman 77] */
 
-static void addclosure(ss, nf, istate)py_bitset_t ss;
-									  struct py_nfa* nf;
-									  int istate;
-{
+static void py_nfa_add_closure(py_bitset_t ss, struct py_nfa* nf, int istate) {
 	if(py_bitset_add(ss, istate)) {
 		struct py_nfa_state* st = &nf->states[istate];
 		struct py_nfa_arc* ar = st->arcs;
@@ -366,68 +362,67 @@ static void addclosure(ss, nf, istate)py_bitset_t ss;
 
 		for(i = st->count; --i >= 0;) {
 			if(ar->label == PY_LABEL_EMPTY) {
-				addclosure(ss, nf, ar->arrow);
+				py_nfa_add_closure(ss, nf, ar->arrow);
 			}
+
 			ar++;
 		}
 	}
 }
 
-typedef struct _ss_arc {
-	py_bitset_t sa_bitset;
-	unsigned sa_arrow;
-	unsigned sa_label;
-} ss_arc;
+/* TODO: Figure out what `ss' means and name these better. */
 
-typedef struct _ss_state {
-	py_bitset_t ss_ss;
-	unsigned ss_narcs;
-	ss_arc* ss_arc;
-	int ss_deleted;
-	int ss_finish;
-	int ss_rename;
-} ss_state;
+struct py_ss_arc {
+	py_bitset_t bitset;
+	unsigned arrow;
+	unsigned label;
+};
 
-typedef struct _ss_dfa {
-	int sd_nstates;
-	ss_state* sd_state;
-} ss_dfa;
+struct py_ss_state {
+	py_bitset_t bitset;
 
-void printssdfa(
-		unsigned xx_nstates, ss_state* xx_state, unsigned nbits,
-		struct py_labellist* ll, char* msg);
+	unsigned count;
+	struct py_ss_arc* arcs;
 
-void simplify(int xx_nstates, ss_state* xx_state);
+	int deleted;
+	int finish;
+	int rename;
+};
 
-void convert(struct py_dfa* d, unsigned xx_nstates, ss_state* xx_state);
+void py_ss_dfa_print(
+		unsigned, struct py_ss_state*, unsigned, struct py_labellist*, char*);
 
-static void makedfa(gr, nf, d)struct py_nfa_grammar* gr;
-							  struct py_nfa* nf;
-							  struct py_dfa* d;
-{
-	int nbits = nf->count;
+void py_ss_state_simplify(unsigned, struct py_ss_state*);
+
+void py_dfa_convert(struct py_dfa*, unsigned, struct py_ss_state*);
+
+static void py_dfa_new(
+		struct py_nfa_grammar* gr, struct py_nfa* nf, struct py_dfa* d) {
+
+	unsigned nbits = nf->count;
 	py_bitset_t ss;
-	unsigned xx_nstates;
-	ss_state* xx_state, * yy;
-	ss_arc* zz;
+	unsigned nstates;
+	struct py_ss_state* states;
+	struct py_ss_state* current;
+	struct py_ss_arc* ss_arc;
 	unsigned istate, jstate, iarc, jarc, ibit;
 	struct py_nfa_state* st;
 	struct py_nfa_arc* ar;
 
 	ss = py_bitset_new(nbits);
-	addclosure(ss, nf, nf->start);
-	xx_state = malloc(sizeof(ss_state));
-	if(xx_state == NULL) {
-		py_fatal("no mem for xx_state in makedfa");
-	}
-	xx_nstates = 1;
-	yy = &xx_state[0];
-	yy->ss_ss = ss;
-	yy->ss_narcs = 0;
-	yy->ss_arc = NULL;
-	yy->ss_deleted = 0;
-	yy->ss_finish = PY_TESTBIT(ss, nf->finish);
-	if(yy->ss_finish) {
+	py_nfa_add_closure(ss, nf, nf->start);
+	states = malloc(sizeof(struct py_ss_state));
+	if(states == NULL) py_fatal("no mem for state in py_dfa_new");
+
+	nstates = 1;
+	current = &states[0];
+	current->bitset = ss;
+	current->count = 0;
+	current->arcs = NULL;
+	current->deleted = 0;
+	current->finish = PY_TESTBIT(ss, nf->finish);
+
+	if(current->finish) {
 		printf(
 				"Error: nonterminal '%s' may produce empty.\n", nf->name);
 	}
@@ -436,9 +431,9 @@ static void makedfa(gr, nf, d)struct py_nfa_grammar* gr;
 	   the invention of structured programming... */
 
 	/* For each unmarked state... */
-	for(istate = 0; istate < xx_nstates; ++istate) {
-		yy = &xx_state[istate];
-		ss = yy->ss_ss;
+	for(istate = 0; istate < nstates; ++istate) {
+		current = &states[istate];
+		ss = current->bitset;
 		/* For all its states... */
 		for(ibit = 0; ibit < nf->count; ++ibit) {
 			if(!PY_TESTBIT(ss, ibit)) {
@@ -452,100 +447,105 @@ static void makedfa(gr, nf, d)struct py_nfa_grammar* gr;
 					continue;
 				}
 				/* Look up in list of arcs from this state */
-				for(jarc = 0; jarc < yy->ss_narcs; ++jarc) {
-					zz = &yy->ss_arc[jarc];
-					if(ar->label == zz->sa_label) {
+				for(jarc = 0; jarc < current->count; ++jarc) {
+					ss_arc = &current->arcs[jarc];
+					if(ar->label == ss_arc->label) {
 						goto found;
 					}
 				}
 				/* Add new arc for this state */
 				/* TODO: Leaky realloc. */
-				yy->ss_arc = realloc(
-						yy->ss_arc, (yy->ss_narcs + 1) * sizeof(ss_arc));
-				if(yy->ss_arc == NULL) {
+				current->arcs = realloc(
+						current->arcs, (current->count + 1) * sizeof(struct py_ss_arc));
+				if(current->arcs == NULL) {
 					py_fatal("out of mem");
 				}
-				zz = &yy->ss_arc[yy->ss_narcs++];
-				zz->sa_label = ar->label;
-				zz->sa_bitset = py_bitset_new(nbits);
-				zz->sa_arrow = -1;
+				ss_arc = &current->arcs[current->count++];
+				ss_arc->label = ar->label;
+				ss_arc->bitset = py_bitset_new(nbits);
+				ss_arc->arrow = UINT_MAX;
+
 				found:;
 				/* Add destination */
-				addclosure(zz->sa_bitset, nf, ar->arrow);
+				py_nfa_add_closure(ss_arc->bitset, nf, ar->arrow);
 			}
 		}
+
 		/* Now look up all the arrow states */
-		for(jarc = 0; jarc < xx_state[istate].ss_narcs; jarc++) {
-			zz = &xx_state[istate].ss_arc[jarc];
-			for(jstate = 0; jstate < xx_nstates; jstate++) {
+		for(jarc = 0; jarc < states[istate].count; jarc++) {
+			ss_arc = &states[istate].arcs[jarc];
+
+			for(jstate = 0; jstate < nstates; jstate++) {
 				if(py_bitset_cmp(
-						zz->sa_bitset, xx_state[jstate].ss_ss, nbits)) {
-					zz->sa_arrow = jstate;
+						ss_arc->bitset, states[jstate].bitset, nbits)) {
+
+					ss_arc->arrow = jstate;
 					goto done;
 				}
 			}
-			xx_state = realloc(xx_state, (xx_nstates + 1) * sizeof(ss_state));
-			if(xx_state == NULL) {
-				py_fatal("out of mem");
-			}
-			zz->sa_arrow = xx_nstates;
-			yy = &xx_state[xx_nstates++];
-			yy->ss_ss = zz->sa_bitset;
-			yy->ss_narcs = 0;
-			yy->ss_arc = NULL;
-			yy->ss_deleted = 0;
-			yy->ss_finish = PY_TESTBIT(yy->ss_ss, nf->finish);
+
+			/* TODO: Leaky realloc. */
+			states = realloc(states, (nstates + 1) * sizeof(struct py_ss_state));
+			if(states == NULL) py_fatal("out of mem");
+
+			ss_arc->arrow = nstates;
+			current = &states[nstates++];
+			current->bitset = ss_arc->bitset;
+			current->count = 0;
+			current->arcs = NULL;
+			current->deleted = 0;
+			current->finish = PY_TESTBIT(current->bitset, nf->finish);
 			done:;
 		}
 	}
 
 	if(debugging) {
-		printssdfa(
-				xx_nstates, xx_state, nbits, &gr->labellist, "before minimizing");
+		py_ss_dfa_print(
+				nstates, states, nbits, &gr->labellist, "before minimizing");
 	}
 
-	simplify(xx_nstates, xx_state);
+	py_ss_state_simplify(nstates, states);
 
 	if(debugging) {
-		printssdfa(
-				xx_nstates, xx_state, nbits, &gr->labellist, "after minimizing");
+		py_ss_dfa_print(
+				nstates, states, nbits, &gr->labellist, "after minimizing");
 	}
 
-	convert(d, xx_nstates, xx_state);
+	py_dfa_convert(d, nstates, states);
 
 	/* XXX cleanup */
 }
 
-void printssdfa(
-		unsigned xx_nstates, ss_state* xx_state, unsigned nbits,
+void py_ss_dfa_print(
+		unsigned nstates, struct py_ss_state* state, unsigned nbits,
 		struct py_labellist* ll, char* msg) {
 
 	unsigned i, ibit, iarc;
-	ss_state* yy;
-	ss_arc* zz;
+	struct py_ss_state* current;
+	struct py_ss_arc* ss_arc;
 
 	printf("Subset DFA %s\n", msg);
-	for(i = 0; i < xx_nstates; i++) {
-		yy = &xx_state[i];
-		if(yy->ss_deleted) {
+	for(i = 0; i < nstates; i++) {
+		current = &state[i];
+		if(current->deleted) {
 			continue;
 		}
 		printf(" Subset %d", i);
-		if(yy->ss_finish) {
+		if(current->finish) {
 			printf(" (finish)");
 		}
 		printf(" { ");
 		for(ibit = 0; ibit < nbits; ibit++) {
-			if(PY_TESTBIT(yy->ss_ss, ibit)) {
+			if(PY_TESTBIT(current->bitset, ibit)) {
 				printf("%d ", ibit);
 			}
 		}
 		printf("}\n");
-		for(iarc = 0; iarc < yy->ss_narcs; iarc++) {
-			zz = &yy->ss_arc[iarc];
+		for(iarc = 0; iarc < current->count; iarc++) {
+			ss_arc = &current->arcs[iarc];
 			printf(
-					"  Arc to state %d, label %s\n", zz->sa_arrow,
-					py_label_repr(&ll->label[zz->sa_label]));
+					"  Arc to state %d, label %s\n", ss_arc->arrow,
+					py_label_repr(&ll->label[ss_arc->label]));
 		}
 	}
 }
@@ -553,67 +553,66 @@ void printssdfa(
 
 /* PART THREE -- SIMPLIFY DFA */
 
-/* Simplify the DFA by repeatedly eliminating states that are
-   equivalent to another oner. This is NOT Algorithm 3.3 from
-   [Aho&Ullman 77]. It does not always finds the minimal DFA,
-   but it does usually make a much smaller one...  (For an example
-   of sub-optimal behaviour, try S: x a b+ | y a b+.)
-*/
+/*
+ * Simplify the DFA by repeatedly eliminating states that are
+ * equivalent to another one. This is NOT Algorithm 3.3 from
+ * [Aho&Ullman 77]. It does not always finds the minimal DFA,
+ * but it does usually make a much smaller one...  (For an example
+ * of sub-optimal behaviour, try S: x a b+ | y a b+.)
+ */
 
-static int samestate(s1, s2)ss_state* s1, * s2;
-{
+static int py_ss_state_cmp(struct py_ss_state* s1, struct py_ss_state* s2) {
 	unsigned i;
 
-	if(s1->ss_narcs != s2->ss_narcs || s1->ss_finish != s2->ss_finish) {
+	if(s1->count != s2->count || s1->finish != s2->finish) {
 		return 0;
 	}
-	for(i = 0; i < s1->ss_narcs; i++) {
-		if(s1->ss_arc[i].sa_arrow != s2->ss_arc[i].sa_arrow ||
-		   s1->ss_arc[i].sa_label != s2->ss_arc[i].sa_label) {
+	for(i = 0; i < s1->count; i++) {
+		if(s1->arcs[i].arrow != s2->arcs[i].arrow ||
+		   s1->arcs[i].label != s2->arcs[i].label) {
 			return 0;
 		}
 	}
+
 	return 1;
 }
 
-static void renamestates(xx_nstates, xx_state, from, to)unsigned xx_nstates;
-														ss_state* xx_state;
-														unsigned from, to;
-{
+static void py_ss_state_rename(
+		unsigned nstates, struct py_ss_state* state, unsigned from,
+		unsigned to) {
+
 	unsigned i, j;
 
-	if(debugging) {
-		printf("Rename state %d to %d.\n", from, to);
-	}
-	for(i = 0; i < xx_nstates; i++) {
-		if(xx_state[i].ss_deleted) {
+	if(debugging) printf("Rename state %d to %d.\n", from, to);
+
+	for(i = 0; i < nstates; i++) {
+		if(state[i].deleted) {
 			continue;
 		}
-		for(j = 0; j < xx_state[i].ss_narcs; j++) {
-			if(xx_state[i].ss_arc[j].sa_arrow == from) {
-				xx_state[i].ss_arc[j].sa_arrow = to;
+		for(j = 0; j < state[i].count; j++) {
+			if(state[i].arcs[j].arrow == from) {
+				state[i].arcs[j].arrow = to;
 			}
 		}
 	}
 }
 
-void simplify(int xx_nstates, ss_state* xx_state) {
+void py_ss_state_simplify(unsigned nstates, struct py_ss_state* state) {
 	int changes;
-	int i, j;
+	unsigned i, j;
 
 	do {
 		changes = 0;
-		for(i = 1; i < xx_nstates; i++) {
-			if(xx_state[i].ss_deleted) {
-				continue;
-			}
+		for(i = 1; i < nstates; i++) {
+			if(state[i].deleted) continue;
+
 			for(j = 0; j < i; j++) {
-				if(xx_state[j].ss_deleted) {
+				if(state[j].deleted) {
 					continue;
 				}
-				if(samestate(&xx_state[i], &xx_state[j])) {
-					xx_state[i].ss_deleted++;
-					renamestates(xx_nstates, xx_state, i, j);
+				if(py_ss_state_cmp(&state[i], &state[j])) {
+					state[i].deleted++;
+					py_ss_state_rename(nstates, state, i, j);
 					changes++;
 					break;
 				}
@@ -627,32 +626,36 @@ void simplify(int xx_nstates, ss_state* xx_state) {
 
 /* Convert the DFA into a grammar that can be used by our parser */
 
-void convert(struct py_dfa* d, unsigned xx_nstates, ss_state* xx_state) {
-	unsigned i, j;
-	ss_state* yy;
-	ss_arc* zz;
+void py_dfa_convert(
+		struct py_dfa* d, unsigned nstates, struct py_ss_state* state) {
 
-	for(i = 0; i < xx_nstates; i++) {
-		yy = &xx_state[i];
-		if(yy->ss_deleted) {
-			continue;
-		}
-		yy->ss_rename = py_dfa_add_state(d);
+	unsigned i, j;
+	struct py_ss_state* current;
+	struct py_ss_arc* ss_arc;
+
+	for(i = 0; i < nstates; i++) {
+		current = &state[i];
+
+		if(current->deleted) continue;
+
+		current->rename = py_dfa_add_state(d);
 	}
 
-	for(i = 0; i < xx_nstates; i++) {
-		yy = &xx_state[i];
-		if(yy->ss_deleted) {
-			continue;
-		}
-		for(j = 0; j < yy->ss_narcs; j++) {
-			zz = &yy->ss_arc[j];
+	for(i = 0; i < nstates; i++) {
+		current = &state[i];
+
+		if(current->deleted) continue;
+
+		for(j = 0; j < current->count; j++) {
+			ss_arc = &current->arcs[j];
+
 			py_dfa_add_arc(
-					d, yy->ss_rename, xx_state[zz->sa_arrow].ss_rename,
-					zz->sa_label);
+					d, current->rename, state[ss_arc->arrow].rename,
+					ss_arc->label);
 		}
-		if(yy->ss_finish) {
-			py_dfa_add_arc(d, yy->ss_rename, yy->ss_rename, 0);
+
+		if(current->finish) {
+			py_dfa_add_arc(d, current->rename, current->rename, 0);
 		}
 	}
 
@@ -662,49 +665,48 @@ void convert(struct py_dfa* d, unsigned xx_nstates, ss_state* xx_state) {
 
 /* PART FIVE -- GLUE IT ALL TOGETHER */
 
-static struct py_grammar* maketables(gr)struct py_nfa_grammar* gr;
-{
+static struct py_grammar* py_nfa_grammar_tables(struct py_nfa_grammar* gr) {
 	unsigned i;
 	struct py_nfa* nf;
 	struct py_dfa* d;
 	struct py_grammar* g;
 
-	if(gr->count == 0) {
-		return NULL;
-	}
+	if(gr->count == 0) return NULL;
+
 	g = py_grammar_new(gr->nfas[0]->type);
 	/* XXX first rule must be start rule */
 	g->labels = gr->labellist;
 
 	for(i = 0; i < gr->count; i++) {
 		nf = gr->nfas[i];
+
 		if(debugging) {
 			printf("Dump of NFA for '%s' ...\n", nf->name);
-			dumpnfa(&gr->labellist, nf);
+			py_nfa_dump(&gr->labellist, nf);
 		}
+
 		fprintf(stderr, "Making DFA for '%s' ...\n", nf->name);
 		d = py_grammar_add_dfa(g, nf->type, nf->name);
-		makedfa(gr, gr->nfas[i], d);
+		py_dfa_new(gr, gr->nfas[i], d);
 	}
 
 	return g;
 }
 
-struct py_grammar* pgen(n)struct py_node* n;
-{
+struct py_grammar* py_grammar_gen(struct py_node* n) {
 	struct py_nfa_grammar* gr;
 	struct py_grammar* g;
 
 	gr = py_node_compile_meta(n);
-	g = maketables(gr);
+	g = py_nfa_grammar_tables(gr);
 	py_grammar_translate(g);
 	py_grammar_add_firsts(g);
+
 	return g;
 }
 
 
 /*
-
 Description
 -----------
 
@@ -730,5 +732,4 @@ Reference
 [Aho&Ullman 77]
        Aho&Ullman, Principles of Compiler Design, Addison-Wesley 1977
        (first edition)
-
 */

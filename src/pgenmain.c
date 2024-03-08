@@ -73,7 +73,7 @@ struct py_grammar* py_load_grammar(const char* filename) {
 		fprintf(stderr, "Parsing error.\n");
 		exit(1);
 	}
-	g = pgen(n);
+	g = py_grammar_gen(n);
 	if(g == NULL) {
 		fprintf(stderr, "Bad grammar.\n");
 		exit(1);

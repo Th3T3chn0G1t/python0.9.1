@@ -8,14 +8,15 @@
 #include <python/errors.h>
 #include <python/bitset.h>
 
-py_bitset_t py_bitset_new(int nbits) {
-	int nbytes = PY_NBYTES(nbits);
+py_bitset_t py_bitset_new(unsigned nbits) {
+	unsigned i;
+	unsigned nbytes = PY_NBYTES(nbits);
 	py_bitset_t ss = malloc(nbytes * sizeof(py_byte_t));
 
 	if(ss == NULL) py_fatal("no mem for bitset");
 
 	ss += nbytes;
-	while(--nbytes >= 0) *--ss = 0;
+	for(i = 0; i < nbytes; ++i) *--ss = 0;
 
 	return ss;
 }
