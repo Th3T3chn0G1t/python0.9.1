@@ -14,7 +14,12 @@
 #include <python/floatobject.h>
 #include <python/stringobject.h>
 
+int py_is_float(const void* op) {
+	return ((struct py_object*) op)->type == &py_float_type;
+}
+
 struct py_object* py_float_new(double fval) {
+	/* TODO: Is this useful? */
 	/* For efficiency, this code is copied from py_object_new() */
 	struct py_float* op = malloc(sizeof(struct py_float));
 	if(op == NULL) return py_error_set_nomem();

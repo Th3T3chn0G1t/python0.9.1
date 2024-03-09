@@ -55,6 +55,10 @@ static struct py_object* dummy;
  * when it is more than half filled.
  */
 
+int py_is_dict(const void* op) {
+	return ((struct py_object*) op)->type == &py_dict_type;
+}
+
 struct py_object* py_dict_new(void) {
 	struct py_dict* dp;
 

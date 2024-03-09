@@ -157,7 +157,7 @@ static struct py_object* get_module(
 		}
 		*m_ret = m;
 	}
-	d = py_module_get_dict(m);
+	d = ((struct py_module*) m)->attr;
 	return py_tree_run(n, namebuf, d, d);
 }
 
@@ -205,7 +205,7 @@ void py_import_done(void) {
 				struct py_object* m = py_dict_lookup(modules, k);
 
 				if(m != NULL && py_is_module(m)) {
-					struct py_object* d = py_module_get_dict(m);
+					struct py_object* d = ((struct py_module*) m)->attr;
 
 					if(d != NULL && py_is_dict(d)) py_dict_clear(d);
 				}

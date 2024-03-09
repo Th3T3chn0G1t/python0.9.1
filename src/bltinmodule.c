@@ -265,7 +265,7 @@ void py_builtin_init(void) {
 	struct py_object* m;
 
 	m = py_module_new_methods("builtin", builtin_methods);
-	builtin_dict = py_module_get_dict(m);
+	builtin_dict = ((struct py_module*) m)->attr;
 	py_object_incref(builtin_dict);
 
 	if(py_dict_insert(builtin_dict, "true", PY_TRUE) == -1) {

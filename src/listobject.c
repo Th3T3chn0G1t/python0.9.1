@@ -7,11 +7,12 @@
 
 #include <python/std.h>
 #include <python/errors.h>
-#include <python/modsupport.h>
 
 #include <python/listobject.h>
-#include <python/stringobject.h>
-#include <python/tupleobject.h>
+
+int py_is_list(const void* op) {
+	return ((struct py_varobject*) op)->type == &py_list_type;
+}
 
 struct py_object* py_list_new(unsigned size) {
 	unsigned i;

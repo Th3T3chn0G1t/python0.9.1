@@ -12,6 +12,10 @@
 #include <python/stringobject.h>
 #include <python/intobject.h>
 
+int py_is_tuple(const void* op) {
+	return ((struct py_varobject*) op)->type == &py_tuple_type;
+}
+
 struct py_object* py_tuple_new(unsigned size) {
 	unsigned i;
 	struct py_tuple* op;

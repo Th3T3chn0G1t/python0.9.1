@@ -31,7 +31,7 @@ struct py_int {
 /* TODO: Python global state */
 extern struct py_type py_int_type;
 
-#define py_is_int(op) ((op)->type == &py_int_type)
+int py_is_int(const void*);
 
 struct py_object* py_int_new(long);
 long py_int_get(const struct py_object*);

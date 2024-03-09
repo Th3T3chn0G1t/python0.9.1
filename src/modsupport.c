@@ -30,7 +30,7 @@ struct py_object* py_module_new_methods(
 		py_fatal("can't create a module");
 	}
 
-	d = py_module_get_dict(m);
+	d = ((struct py_module*) m)->attr;
 
 	for(ml = methods; ml->name != NULL; ml++) {
 		v = py_method_new(ml->method, (struct py_object*) NULL);

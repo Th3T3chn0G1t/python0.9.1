@@ -8,6 +8,10 @@
 #include <python/errors.h>
 #include <python/methodobject.h>
 
+int py_is_method(const void* op) {
+	return ((struct py_object*) op)->type == &py_method_type;
+}
+
 struct py_object* py_method_new(py_method_t meth, struct py_object* self) {
 	struct py_method* op = py_object_new(&py_method_type);
 	if(op != NULL) {
@@ -18,24 +22,6 @@ struct py_object* py_method_new(py_method_t meth, struct py_object* self) {
 	}
 
 	return (struct py_object*) op;
-}
-
-py_method_t py_method_get(struct py_object* op) {
-	if(!py_is_method(op)) {
-		py_error_set_badcall();
-		return NULL;
-	}
-
-	return ((struct py_method*) op)->method;
-}
-
-struct py_object* py_method_get_self(struct py_object* op) {
-	if(!py_is_method(op)) {
-		py_error_set_badcall();
-		return NULL;
-	}
-
-	return ((struct py_method*) op)->self;
 }
 
 /* Methods (the standard built-in methods, that is) */

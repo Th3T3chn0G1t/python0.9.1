@@ -12,10 +12,13 @@
 #include <python/env.h>
 
 #include <python/stringobject.h>
-#include <python/frameobject.h>
 
 /* TODO: Python global state. */
 static struct py_traceback* py_traceback_current = NULL;
+
+int py_is_traceback(const void* op) {
+	return ((struct py_object*) op)->type == &py_traceback_type;
+}
 
 static struct py_traceback* py_traceback_new_frame(
 		struct py_traceback* next, struct py_frame* frame, unsigned lineno) {

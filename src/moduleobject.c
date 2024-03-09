@@ -13,6 +13,10 @@
 #include <python/stringobject.h>
 #include <python/moduleobject.h>
 
+int py_is_module(const void* op) {
+	return ((struct py_object*) op)->type == &py_module_type;
+}
+
 struct py_object* py_module_new(const char* name) {
 	struct py_module* m = py_object_new(&py_module_type);
 	if(m == NULL) return NULL;
@@ -31,16 +35,6 @@ struct py_object* py_module_new(const char* name) {
 	}
 
 	return (struct py_object*) m;
-}
-
-struct py_object* py_module_get_dict(struct py_object* m) {
-	/* TODO: Unchecked get. */
-	if(!py_is_module(m)) {
-		py_error_set_badcall();
-		return NULL;
-	}
-
-	return ((struct py_module*) m)->attr;
 }
 
 /* Methods */

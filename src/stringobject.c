@@ -9,6 +9,10 @@
 #include <python/stringobject.h>
 #include <python/errors.h>
 
+int py_is_string(const void* op) {
+	return ((struct py_varobject*) op)->type == &py_string_type;
+}
+
 struct py_object* py_string_new_size(const char* str, unsigned size) {
 
 	struct py_string* op = malloc(

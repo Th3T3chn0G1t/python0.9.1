@@ -42,6 +42,10 @@ struct py_compiler {
 	unsigned nesting; /* counts nested loops */
 };
 
+int py_is_code(const void* op) {
+	return ((struct py_object*) op)->type == &py_code_type;
+}
+
 static struct py_code* py_code_new(
 		py_byte_t* code, struct py_object* consts,
 		struct py_object* names, const char* filename) {

@@ -13,15 +13,18 @@
 
 #include <python/object.h>
 
-/* An intermediate code fragment contains:
-   - a string that encodes the instructions,
-   - a list of the constants,
-   - and a list of the names used. */
+/*
+ * An intermediate code fragment contains:
+ * - a string that encodes the instructions,
+ * - a list of the constants,
+ * - and a list of the names used.
+ */
 
 struct py_code {
 	struct py_object ob;
 
 	py_byte_t* code; /* instruction opcodes */
+	/* TODO: Do these need to be objects? */
 	struct py_object* consts; /* list of immutable constant objects */
 	struct py_object* names; /* list of stringobjects */
 	struct py_object* filename; /* string */
@@ -30,7 +33,7 @@ struct py_code {
 /* TODO: Python global state. */
 extern struct py_type py_code_type;
 
-#define py_is_code(op) (((struct py_object*) (op))->type == &py_code_type)
+int py_is_code(const void*);
 
 struct py_code* py_compile(struct py_node*, const char*);
 

@@ -19,19 +19,16 @@ struct py_method {
 	struct py_object* self;
 };
 
-/* TODO: Python global state */
-extern struct py_type py_method_type;
-
-#define py_is_method(op) ((op)->type == &py_method_type)
-
 struct py_methodlist {
 	char* name;
 	py_method_t method;
 };
 
-struct py_object* py_method_new(py_method_t, struct py_object*);
+/* TODO: Python global state */
+extern struct py_type py_method_type;
 
-py_method_t py_method_get(struct py_object*);
-struct py_object* py_method_get_self(struct py_object*);
+int py_is_method(const void*);
+
+struct py_object* py_method_new(py_method_t, struct py_object*);
 
 #endif

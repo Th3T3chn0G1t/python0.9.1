@@ -13,23 +13,9 @@
 #include <python/frameobject.h>
 #include <python/dictobject.h>
 
-static void frame_dealloc(struct py_object* op) {
-	struct py_frame* f = (struct py_frame*) op;
-
-	py_object_decref(f->back);
-	py_object_decref(f->code);
-	py_object_decref(f->globals);
-	py_object_decref(f->locals);
-	free(f->valuestack);
-	free(f->blockstack);
+int py_is_frame(const void* op) {
+	return ((struct py_object*) op)->type == &py_frame_type;
 }
-
-struct py_type py_frame_type = {
-		{ &py_type_type, 1 }, sizeof(struct py_frame),
-		frame_dealloc, /* dealloc */
-		0, /* cmp */
-		0, /* sequencemethods */
-};
 
 struct py_frame* py_frame_new(
 		struct py_frame* back, struct py_code* code, struct py_object* globals,
@@ -97,3 +83,21 @@ struct py_block* py_block_pop(struct py_frame* f) {
 
 	return b;
 }
+
+static void frame_dealloc(struct py_object* op) {
+	struct py_frame* f = (struct py_frame*) op;
+
+	py_object_decref(f->back);
+	py_object_decref(f->code);
+	py_object_decref(f->globals);
+	py_object_decref(f->locals);
+	free(f->valuestack);
+	free(f->blockstack);
+}
+
+struct py_type py_frame_type = {
+		{ &py_type_type, 1 }, sizeof(struct py_frame),
+		frame_dealloc, /* dealloc */
+		0, /* cmp */
+		0, /* sequencemethods */
+};

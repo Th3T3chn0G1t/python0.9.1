@@ -21,8 +21,7 @@ struct py_traceback {
 /* TODO: Python global state. */
 extern struct py_type py_traceback_type;
 
-#define py_is_traceback(op) \
-	 (((struct py_object*) (op))->type == &py_traceback_type)
+int py_is_traceback(const void*);
 
 int py_traceback_new(struct py_frame*, unsigned);
 int py_traceback_print(struct py_object*, FILE*);

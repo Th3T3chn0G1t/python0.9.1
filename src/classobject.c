@@ -14,6 +14,18 @@
 #include <python/tupleobject.h>
 #include <python/funcobject.h>
 
+int py_is_class(const void* op) {
+	return ((struct py_object*) op)->type == &py_class_type;
+}
+
+int py_is_class_member(const void* op) {
+	return ((struct py_object*) op)->type == &py_class_member_type;
+}
+
+int py_is_class_method(const void* op) {
+	return ((struct py_object*) op)->type == &py_class_method_type;
+}
+
 struct py_object* py_class_new(struct py_object* methods) {
 
 	struct py_class* op;
@@ -54,8 +66,8 @@ struct py_type py_class_type = {
 
 /* We're not done yet: next, we define class member objects... */
 
-struct py_object* py_classmember_new(struct py_object* class) {
-	struct py_classmember* cm;
+struct py_object* py_class_member_new(struct py_object* class) {
+	struct py_class_member* cm;
 
 	if(!py_is_class(class)) {
 		py_error_set_badcall();
@@ -79,17 +91,17 @@ struct py_object* py_classmember_new(struct py_object* class) {
 
 /* Class member methods */
 
-static void py_classmember_dealloc(struct py_object* op) {
-	struct py_classmember* cm = (struct py_classmember*) op;
+static void py_class_member_dealloc(struct py_object* op) {
+	struct py_class_member* cm = (struct py_class_member*) op;
 
 	py_object_decref(cm->class);
 	py_object_decref(cm->attr);
 }
 
-struct py_object* py_classmember_get_attr(
+struct py_object* py_class_member_get_attr(
 		struct py_object* op, const char* name) {
 
-	struct py_classmember* cm = (struct py_classmember*) op;
+	struct py_class_member* cm = (struct py_class_member*) op;
 	struct py_object* v = py_dict_lookup(cm->attr, name);
 
 	if(v != NULL) {
@@ -101,7 +113,7 @@ struct py_object* py_classmember_get_attr(
 	if(v == NULL) return v;
 
 	if(py_is_func(v)) {
-		struct py_object* w = py_classmethod_new(v, (struct py_object*) cm);
+		struct py_object* w = py_class_method_new(v, (struct py_object*) cm);
 		py_object_decref(v);
 		return w;
 	}
@@ -113,7 +125,7 @@ struct py_object* py_classmember_get_attr(
 
 struct py_type py_class_member_type = {
 		{ &py_type_type, 1 },
-		sizeof(struct py_classmember), py_classmember_dealloc, /* dealloc */
+		sizeof(struct py_class_member), py_class_member_dealloc, /* dealloc */
 		0, /* cmp */
 		0, /* sequencemethods */
 };
@@ -122,10 +134,10 @@ struct py_type py_class_member_type = {
 /* And finally, here are class method objects */
 /* (Really methods of class members) */
 
-struct py_object* py_classmethod_new(
+struct py_object* py_class_method_new(
 		struct py_object* func, struct py_object* self) {
 
-	struct py_classmethod* cm;
+	struct py_class_method* cm;
 
 	if(!py_is_func(func)) {
 		py_error_set_badcall();
@@ -143,28 +155,28 @@ struct py_object* py_classmethod_new(
 	return (struct py_object*) cm;
 }
 
-struct py_object* py_classmethod_get_func(struct py_object* cm) {
-	if(!py_is_classmethod(cm)) {
+struct py_object* py_class_method_get_func(struct py_object* cm) {
+	if(!py_is_class_method(cm)) {
 		py_error_set_badcall();
 		return NULL;
 	}
 
-	return ((struct py_classmethod*) cm)->func;
+	return ((struct py_class_method*) cm)->func;
 }
 
-struct py_object* py_classmethod_get_self(struct py_object* cm) {
-	if(!py_is_classmethod(cm)) {
+struct py_object* py_class_method_get_self(struct py_object* cm) {
+	if(!py_is_class_method(cm)) {
 		py_error_set_badcall();
 		return NULL;
 	}
 
-	return ((struct py_classmethod*) cm)->self;
+	return ((struct py_class_method*) cm)->self;
 }
 
 /* Class method methods */
 
-static void py_classmethod_dealloc(struct py_object* op) {
-	struct py_classmethod* cm = (struct py_classmethod*) op;
+static void py_class_method_dealloc(struct py_object* op) {
+	struct py_class_method* cm = (struct py_class_method*) op;
 
 	py_object_decref(cm->func);
 	py_object_decref(cm->self);
@@ -172,7 +184,7 @@ static void py_classmethod_dealloc(struct py_object* op) {
 
 struct py_type py_class_method_type = {
 		{ &py_type_type, 1 },
-		sizeof(struct py_classmethod), py_classmethod_dealloc, /* dealloc */
+		sizeof(struct py_class_method), py_class_method_dealloc, /* dealloc */
 		0, /* cmp */
 		0, /* sequencemethods */
 };

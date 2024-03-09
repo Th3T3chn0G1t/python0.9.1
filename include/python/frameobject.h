@@ -37,7 +37,7 @@ struct py_frame {
 /* TODO: Python global state. */
 extern struct py_type py_frame_type;
 
-#define py_is_frame(op) (((struct py_object*) (op))->type == &py_frame_type)
+int py_is_frame(const void*);
 
 struct py_frame* py_frame_new(
 		struct py_frame*, struct py_code*, struct py_object*,

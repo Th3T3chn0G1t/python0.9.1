@@ -21,13 +21,13 @@ struct py_class {
 	struct py_object* attr; /* A dictionary */
 };
 
-struct py_classmember {
+struct py_class_member {
 	struct py_object ob;
 	struct py_class* class; /* The class object */
 	struct py_object* attr; /* A dictionary */
 };
 
-struct py_classmethod {
+struct py_class_method {
 	struct py_object ob;
 	struct py_object* func; /* The method function */
 	struct py_object* self; /* The object to which this applies */
@@ -38,18 +38,18 @@ extern struct py_type py_class_type;
 extern struct py_type py_class_member_type;
 extern struct py_type py_class_method_type;
 
-#define py_is_class(op) ((op)->type == &py_class_type)
-#define py_is_classmember(op) ((op)->type == &py_class_member_type)
-#define py_is_classmethod(op) ((op)->type == &py_class_method_type)
+int py_is_class(const void*);
+int py_is_class_member(const void*);
+int py_is_class_method(const void*);
 
 struct py_object* py_class_new(struct py_object*);
 struct py_object* py_class_get_attr(struct py_object*, const char*);
 
-struct py_object* py_classmember_new(struct py_object*);
-struct py_object* py_classmember_get_attr(struct py_object*, const char*);
+struct py_object* py_class_member_new(struct py_object*);
+struct py_object* py_class_member_get_attr(struct py_object*, const char*);
 
-struct py_object* py_classmethod_new(struct py_object*, struct py_object*);
-struct py_object* py_classmethod_get_func(struct py_object*);
-struct py_object* py_classmethod_get_self(struct py_object*);
+struct py_object* py_class_method_new(struct py_object*, struct py_object*);
+struct py_object* py_class_method_get_func(struct py_object*);
+struct py_object* py_class_method_get_self(struct py_object*);
 
 #endif

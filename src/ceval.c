@@ -142,11 +142,12 @@ static struct py_object* py_object_not(struct py_object* v) {
 	return w;
 }
 
-static struct py_object*
-call_builtin(struct py_object* func, struct py_object* arg) {
+static struct py_object* call_builtin(
+		struct py_object* func, struct py_object* arg) {
+
 	if(py_is_method(func)) {
-		py_method_t meth = py_method_get(func);
-		struct py_object* self = py_method_get_self(func);
+		py_method_t meth = ((struct py_method*) func)->method;
+		struct py_object* self = ((struct py_method*) func)->self;
 
 		return (*meth)(self, arg);
 	}
@@ -158,7 +159,7 @@ call_builtin(struct py_object* func, struct py_object* arg) {
 			return NULL;
 		}
 
-		return py_classmember_new(func);
+		return py_class_member_new(func);
 	}
 
 	py_error_set_string(py_type_error, "call of non-function");
@@ -166,13 +167,13 @@ call_builtin(struct py_object* func, struct py_object* arg) {
 }
 
 struct py_object* py_object_get_attr(struct py_object* v, const char* name) {
-	if(py_is_classmember(v)) return py_classmember_get_attr(v, name);
+	if(py_is_class_member(v)) return py_class_member_get_attr(v, name);
 	else if(py_is_class(v)) return py_class_get_attr(v, name);
 	else if(py_is_module(v)) return py_module_get_attr(v, name);
 	else {
 		py_error_set_string(
 				py_type_error,
-				"can only set attributes on classmember or module");
+				"can only set attributes on class_member or module");
 		return 0;
 	}
 }
@@ -181,12 +182,12 @@ static int py_object_set_attr(
 		struct py_object* v, const char* name, struct py_object* w) {
 
 	struct py_object* attr;
-	if(py_is_classmember(v)) attr = ((struct py_classmember*) v)->attr;
+	if(py_is_class_member(v)) attr = ((struct py_class_member*) v)->attr;
 	else if(py_is_module(v)) attr = ((struct py_module*) v)->attr;
 	else {
 		py_error_set_string(
 				py_type_error,
-				"can only set attributes on classmember or module");
+				"can only set attributes on class_member or module");
 		return -1;
 	}
 
@@ -205,9 +206,9 @@ struct py_object* py_call_function(
 
 	apro_stamp_start(APRO_CEVAL_CALL_RISING);
 
-	if(py_is_classmethod(func)) {
-		struct py_object* self = py_classmethod_get_self(func);
-		func = py_classmethod_get_func(func);
+	if(py_is_class_method(func)) {
+		struct py_object* self = py_class_method_get_self(func);
+		func = py_class_method_get_func(func);
 
 		if(arg == NULL) arg = self;
 		else {
@@ -227,11 +228,7 @@ struct py_object* py_call_function(
 		return NULL;
 	}
 
-	co = py_func_get_code(func);
-	if(co == NULL) {
-		py_object_decref(newarg);
-		return NULL;
-	}
+	co = ((struct py_func*) func)->code;
 
 	if(!py_is_code(co)) {
 		fprintf(stderr, "XXX Bad code\n");
@@ -244,7 +241,7 @@ struct py_object* py_call_function(
 		return NULL;
 	}
 
-	newglobals = py_func_get_globals(func);
+	newglobals = ((struct py_func*) func)->globals;
 	py_object_incref(newglobals);
 
 	apro_stamp_end(APRO_CEVAL_CALL_RISING);
@@ -497,7 +494,7 @@ static int import_from(
 	struct py_object* w;
 	struct py_object* x;
 
-	w = py_module_get_dict(v);
+	w = ((struct py_module*) v)->attr;
 
 	if(name[0] == '*') {
 		unsigned i;
@@ -675,7 +672,7 @@ struct py_object* py_code_eval(
 			case PY_OP_UNARY_CALL: {
 				v = *--stack_pointer;
 
-				if(py_is_classmethod(v) || py_is_func(v)) {
+				if(py_is_class_method(v) || py_is_func(v)) {
 					x = py_call_function(v, (struct py_object*) NULL);
 				}
 				else x = call_builtin(v, (struct py_object*) NULL);
@@ -756,7 +753,7 @@ struct py_object* py_code_eval(
 				w = *--stack_pointer;
 				v = *--stack_pointer;
 
-				if(py_is_classmethod(v) || py_is_func(v)) {
+				if(py_is_class_method(v) || py_is_func(v)) {
 					x = py_call_function(v, w);
 				}
 				else x = call_builtin(v, w);

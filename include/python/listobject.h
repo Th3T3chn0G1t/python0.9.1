@@ -30,7 +30,7 @@ struct py_list {
 /* TODO: Python global state */
 extern struct py_type py_list_type;
 
-#define py_is_list(op) (((struct py_varobject*) (op))->type == &py_list_type)
+int py_is_list(const void*);
 
 struct py_object* py_list_new(unsigned);
 struct py_object* py_list_get(struct py_object*, unsigned);

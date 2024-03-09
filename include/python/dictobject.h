@@ -41,7 +41,7 @@ struct py_dict {
 /* TODO: Python global state. */
 extern struct py_type py_dict_type;
 
-#define py_is_dict(op) ((op)->type == &py_dict_type)
+int py_is_dict(const void*);
 
 struct py_object* py_dict_new(void);
 

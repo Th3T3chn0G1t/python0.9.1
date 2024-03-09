@@ -35,8 +35,7 @@ struct py_string {
 /* TODO: Python global state. */
 extern struct py_type py_string_type;
 
-#define py_is_string(op) \
-	(((struct py_varobject*) (op))->type == &py_string_type)
+int py_is_string(const void* op);
 
 struct py_object* py_string_new_size(const char*, unsigned);
 struct py_object* py_string_new(const char*);

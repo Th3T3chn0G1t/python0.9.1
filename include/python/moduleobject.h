@@ -18,10 +18,9 @@ struct py_module {
 
 extern struct py_type py_module_type;
 
-#define py_is_module(op) ((op)->type == &py_module_type)
+int py_is_module(const void*);
 
 struct py_object* py_module_new(const char*);
-struct py_object* py_module_get_dict(struct py_object*);
 struct py_object* py_module_get_attr(struct py_object*, const char*);
 
 #endif

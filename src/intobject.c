@@ -49,6 +49,10 @@ static struct py_int* py_int_freelist_fill(void) {
 	return p + PY_INT_COUNT - 1;
 }
 
+int py_is_int(const void* op) {
+	return ((struct py_object*) op)->type == &py_int_type;
+}
+
 struct py_object* py_int_new(long ival) {
 	struct py_int* v;
 
