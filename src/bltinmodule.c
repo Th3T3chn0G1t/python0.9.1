@@ -6,11 +6,8 @@
 /* Built-in functions */
 
 #include <python/node.h>
-#include <python/graminit.h>
 #include <python/import.h>
 #include <python/modsupport.h>
-#include <python/result.h>
-#include <python/ceval.h>
 #include <python/errors.h>
 
 #include <python/bltinmodule.h>
@@ -270,6 +267,14 @@ void py_builtin_init(void) {
 	m = py_module_new_methods("builtin", builtin_methods);
 	builtin_dict = py_module_get_dict(m);
 	py_object_incref(builtin_dict);
+
+	if(py_dict_insert(builtin_dict, "true", PY_TRUE) == -1) {
+		py_fatal("could not add `true' object");
+	}
+
+	if(py_dict_insert(builtin_dict, "false", PY_FALSE) == -1) {
+		py_fatal("could not add `false' object");
+	}
 
 	initerrors();
 	(void) py_dict_insert(builtin_dict, "PY_NONE", PY_NONE);
