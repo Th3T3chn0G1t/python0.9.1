@@ -55,10 +55,6 @@ static struct py_object* dummy;
  * when it is more than half filled.
  */
 
-int py_is_dict(const void* op) {
-	return ((struct py_object*) op)->type == &py_dict_type;
-}
-
 struct py_object* py_dict_new(void) {
 	struct py_dict* dp;
 
@@ -68,7 +64,7 @@ struct py_object* py_dict_new(void) {
 		if(dummy == NULL) return NULL;
 	}
 
-	dp = py_object_new(&py_dict_type);
+	dp = py_object_new(PY_TYPE_DICT);
 	if(dp == NULL) return NULL;
 
 	dp->size = primes[0];
@@ -196,7 +192,7 @@ static int py_dict_resize(struct py_dict* dp) {
 }
 
 struct py_object* py_dict_lookup(struct py_object* op, const char* key) {
-	if(!py_is_dict(op)) py_fatal("py_dict_lookup on non-dictionary");
+	if(!(op->type == PY_TYPE_DICT)) py_fatal("py_dict_lookup on non-dictionary");
 
 	return py_dict_look((struct py_dict*) op, key)->value;
 }
@@ -208,13 +204,13 @@ static int py_dict_insert_impl(
 	struct py_object* keyobj;
 
 	/* TODO: Non-typechecked builds. */
-	if(!py_is_dict(op)) {
+	if(!(op->type == PY_TYPE_DICT)) {
 		py_error_set_badcall();
 		return -1;
 	}
 
 	dp = (struct py_dict*) op;
-	if(!py_is_string(key)) {
+	if(!(key->type == PY_TYPE_STRING)) {
 		py_error_set_badarg();
 		return -1;
 	}
@@ -247,7 +243,7 @@ int py_dict_insert(
 		return -1;
 	}
 
-	if(!py_is_string(keyobj)) puts("???");
+	if(!(keyobj->type == PY_TYPE_STRING)) puts("???");
 
 	err = py_dict_insert_impl(op, keyobj, value);
 	py_object_decref(keyobj);
@@ -259,7 +255,7 @@ int py_dict_remove(struct py_object* op, const char* key) {
 	struct py_dict* dp;
 	struct py_dictentry* ep;
 
-	if(!py_is_dict(op)) {
+	if(!(op->type == PY_TYPE_DICT)) {
 		py_error_set_badcall();
 		return -1;
 	}
@@ -284,7 +280,7 @@ int py_dict_remove(struct py_object* op, const char* key) {
 }
 
 static int py_dict_remove_impl(struct py_object* op, struct py_object* key) {
-	if(!py_is_string(key)) {
+	if(!(key->type == PY_TYPE_STRING)) {
 		py_error_set_badarg();
 		return -1;
 	}
@@ -294,7 +290,7 @@ static int py_dict_remove_impl(struct py_object* op, struct py_object* key) {
 
 /* TODO: Dicts as varobjects? */
 unsigned py_dict_size(struct py_object* op) {
-	if(!py_is_dict(op)) {
+	if(!(op->type == PY_TYPE_DICT)) {
 		py_error_set_badcall();
 		return UINT_MAX; /* TODO: No one seems to check this? */
 	}
@@ -313,7 +309,7 @@ static struct py_object* py_dict_get_key_impl(
 
 	struct py_dict* dp;
 
-	if(!py_is_dict(op)) {
+	if(!(op->type == PY_TYPE_DICT)) {
 		/* py_error_set_badcall(); */
 		return NULL;
 	}
@@ -342,7 +338,7 @@ const char* py_dict_get_key(struct py_object* op, unsigned i) {
 
 /* Methods */
 
-static void dict_dealloc(struct py_object* op) {
+void py_dict_dealloc(struct py_object* op) {
 	struct py_dict* dp = (struct py_dict*) op;
 	struct py_dictentry* ep;
 	unsigned i;
@@ -358,7 +354,7 @@ static void dict_dealloc(struct py_object* op) {
 struct py_object* py_dict_lookup_object(
 		struct py_object* dp, struct py_object* v) {
 
-	if(!py_is_string(v)) {
+	if(!(v->type == PY_TYPE_STRING)) {
 		py_error_set_badarg();
 		return NULL;
 	}
@@ -381,10 +377,3 @@ int py_dict_assign(
 void py_done_dict(void) {
 	py_object_decref(dummy);
 }
-
-struct py_type py_dict_type = {
-		{ &py_type_type, 1 }, sizeof(struct py_dict),
-		dict_dealloc, /* dealloc */
-		0, /* cmp */
-		0, /* sequencemethods */
-};

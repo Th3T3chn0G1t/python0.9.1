@@ -14,23 +14,10 @@
 #include <python/tupleobject.h>
 #include <python/funcobject.h>
 
-int py_is_class(const void* op) {
-	return ((struct py_object*) op)->type == &py_class_type;
-}
-
-int py_is_class_member(const void* op) {
-	return ((struct py_object*) op)->type == &py_class_member_type;
-}
-
-int py_is_class_method(const void* op) {
-	return ((struct py_object*) op)->type == &py_class_method_type;
-}
-
 struct py_object* py_class_new(struct py_object* methods) {
-
 	struct py_class* op;
 
-	op = py_object_new(&py_class_type);
+	op = py_object_new(PY_TYPE_CLASS);
 	if(op == NULL) return NULL;
 
 	py_object_incref(methods);
@@ -41,7 +28,7 @@ struct py_object* py_class_new(struct py_object* methods) {
 
 /* Class methods */
 
-static void py_class_dealloc(struct py_object* op) {
+void py_class_dealloc(struct py_object* op) {
 	py_object_decref(((struct py_class*) op)->attr);
 }
 
@@ -57,24 +44,17 @@ struct py_object* py_class_get_attr(struct py_object* op, const char* name) {
 	return NULL;
 }
 
-struct py_type py_class_type = {
-		{ &py_type_type, 1 }, sizeof(struct py_class),
-		py_class_dealloc, /* dealloc */
-		0, /* cmp */
-		0, /* sequencemethods */
-};
-
 /* We're not done yet: next, we define class member objects... */
 
 struct py_object* py_class_member_new(struct py_object* class) {
 	struct py_class_member* cm;
 
-	if(!py_is_class(class)) {
+	if(!(class->type == PY_TYPE_CLASS)) {
 		py_error_set_badcall();
 		return NULL;
 	}
 
-	cm = py_object_new(&py_class_member_type);
+	cm = py_object_new(PY_TYPE_CLASS_MEMBER);
 	if(cm == NULL) return NULL;
 
 	py_object_incref(class);
@@ -91,7 +71,7 @@ struct py_object* py_class_member_new(struct py_object* class) {
 
 /* Class member methods */
 
-static void py_class_member_dealloc(struct py_object* op) {
+void py_class_member_dealloc(struct py_object* op) {
 	struct py_class_member* cm = (struct py_class_member*) op;
 
 	py_object_decref(cm->class);
@@ -112,7 +92,7 @@ struct py_object* py_class_member_get_attr(
 	v = py_class_get_attr((struct py_object*) cm->class, name);
 	if(v == NULL) return v;
 
-	if(py_is_func(v)) {
+	if((v->type == PY_TYPE_FUNC)) {
 		struct py_object* w = py_class_method_new(v, (struct py_object*) cm);
 		py_object_decref(v);
 		return w;
@@ -123,14 +103,6 @@ struct py_object* py_class_member_get_attr(
 	return NULL;
 }
 
-struct py_type py_class_member_type = {
-		{ &py_type_type, 1 },
-		sizeof(struct py_class_member), py_class_member_dealloc, /* dealloc */
-		0, /* cmp */
-		0, /* sequencemethods */
-};
-
-
 /* And finally, here are class method objects */
 /* (Really methods of class members) */
 
@@ -139,12 +111,12 @@ struct py_object* py_class_method_new(
 
 	struct py_class_method* cm;
 
-	if(!py_is_func(func)) {
+	if(!(func->type == PY_TYPE_FUNC)) {
 		py_error_set_badcall();
 		return NULL;
 	}
 
-	cm = py_object_new(&py_class_method_type);
+	cm = py_object_new(PY_TYPE_CLASS_METHOD);
 	if(cm == NULL) return NULL;
 
 	py_object_incref(func);
@@ -156,7 +128,7 @@ struct py_object* py_class_method_new(
 }
 
 struct py_object* py_class_method_get_func(struct py_object* cm) {
-	if(!py_is_class_method(cm)) {
+	if(!(cm->type == PY_TYPE_CLASS_METHOD)) {
 		py_error_set_badcall();
 		return NULL;
 	}
@@ -165,7 +137,7 @@ struct py_object* py_class_method_get_func(struct py_object* cm) {
 }
 
 struct py_object* py_class_method_get_self(struct py_object* cm) {
-	if(!py_is_class_method(cm)) {
+	if(!(cm->type == PY_TYPE_CLASS_METHOD)) {
 		py_error_set_badcall();
 		return NULL;
 	}
@@ -175,16 +147,9 @@ struct py_object* py_class_method_get_self(struct py_object* cm) {
 
 /* Class method methods */
 
-static void py_class_method_dealloc(struct py_object* op) {
+void py_class_method_dealloc(struct py_object* op) {
 	struct py_class_method* cm = (struct py_class_method*) op;
 
 	py_object_decref(cm->func);
 	py_object_decref(cm->self);
 }
-
-struct py_type py_class_method_type = {
-		{ &py_type_type, 1 },
-		sizeof(struct py_class_method), py_class_method_dealloc, /* dealloc */
-		0, /* cmp */
-		0, /* sequencemethods */
-};

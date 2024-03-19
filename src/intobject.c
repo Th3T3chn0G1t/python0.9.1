@@ -12,8 +12,8 @@
 #include <python/stringobject.h>
 
 /* Standard Booleans */
-struct py_int py_true_object = { { &py_int_type, 1 }, 1 };
-struct py_int py_false_object = { { &py_int_type, 1 }, 0 };
+struct py_int py_true_object = { { PY_TYPE_INT, 1 }, 1 };
+struct py_int py_false_object = { { PY_TYPE_INT, 1 }, 0 };
 
 /* TODO: Use "weird pointers" for integers. */
 /*
@@ -49,11 +49,7 @@ static struct py_int* py_int_freelist_fill(void) {
 	return p + PY_INT_COUNT - 1;
 }
 
-int py_is_int(const void* op) {
-	return ((struct py_object*) op)->type == &py_int_type;
-}
-
-struct py_object* py_int_new(long ival) {
+struct py_object* py_int_new(py_value_t ival) {
 	struct py_int* v;
 
 	if(py_int_freelist == NULL) {
@@ -64,19 +60,19 @@ struct py_object* py_int_new(long ival) {
 	py_int_freelist = *(struct py_int**) py_int_freelist;
 	py_object_newref(v);
 
-	v->ob.type = &py_int_type;
+	v->ob.type = PY_TYPE_INT;
 	v->value = ival;
 
 	return (struct py_object*) v;
 }
 
-static void py_int_dealloc(struct py_object* v) {
+void py_int_dealloc(struct py_object* v) {
 	*(struct py_int**) v = py_int_freelist;
 	py_int_freelist = (struct py_int*) v;
 }
 
-long py_int_get(const struct py_object* op) {
-	if(!py_is_int(op)) {
+py_value_t py_int_get(const struct py_object* op) {
+	if(!(op->type == PY_TYPE_INT)) {
 		py_error_set_badcall();
 		return -1;
 	}
@@ -85,16 +81,9 @@ long py_int_get(const struct py_object* op) {
 
 /* Methods */
 
-static int py_int_cmp(const struct py_object* v, const struct py_object* w) {
-	long i = py_int_get(v);
-	long j = py_int_get(w);
+int py_int_cmp(const struct py_object* v, const struct py_object* w) {
+	py_value_t i = py_int_get(v);
+	py_value_t j = py_int_get(w);
 
 	return (i < j) ? -1 : (i > j) ? 1 : 0;
 }
-
-struct py_type py_int_type = {
-		{ &py_type_type, 1 }, sizeof(struct py_int),
-		py_int_dealloc, /* dealloc */
-		py_int_cmp, /* cmp */
-		0, /* sequencemethods */
-};

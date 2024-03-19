@@ -33,23 +33,17 @@ struct py_class_method {
 	struct py_object* self; /* The object to which this applies */
 };
 
-/* TODO: Python global state. */
-extern struct py_type py_class_type;
-extern struct py_type py_class_member_type;
-extern struct py_type py_class_method_type;
-
-int py_is_class(const void*);
-int py_is_class_member(const void*);
-int py_is_class_method(const void*);
-
 struct py_object* py_class_new(struct py_object*);
 struct py_object* py_class_get_attr(struct py_object*, const char*);
+void py_class_dealloc(struct py_object*);
 
 struct py_object* py_class_member_new(struct py_object*);
 struct py_object* py_class_member_get_attr(struct py_object*, const char*);
+void py_class_member_dealloc(struct py_object*);
 
 struct py_object* py_class_method_new(struct py_object*, struct py_object*);
 struct py_object* py_class_method_get_func(struct py_object*);
 struct py_object* py_class_method_get_self(struct py_object*);
+void py_class_method_dealloc(struct py_object*);
 
 #endif

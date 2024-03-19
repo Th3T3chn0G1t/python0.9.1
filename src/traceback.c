@@ -16,23 +16,19 @@
 /* TODO: Python global state. */
 static struct py_traceback* py_traceback_current = NULL;
 
-int py_is_traceback(const void* op) {
-	return ((struct py_object*) op)->type == &py_traceback_type;
-}
-
 static struct py_traceback* py_traceback_new_frame(
 		struct py_traceback* next, struct py_frame* frame, unsigned lineno) {
 
 	struct py_traceback* tb;
 
-	if((next != NULL && !py_is_traceback(next)) ||
-		frame == NULL || !py_is_frame(frame)) {
+	if((next != NULL && !(next->ob.type == PY_TYPE_TRACEBACK)) ||
+		frame == NULL || !(frame->ob.type == PY_TYPE_FRAME)) {
 
 		py_error_set_badcall();
 		return NULL;
 	}
 
-	tb = py_object_new(&py_traceback_type);
+	tb = py_object_new(PY_TYPE_TRACEBACK);
 	if(tb == NULL) return NULL;
 
 	py_object_incref(next);
@@ -114,7 +110,7 @@ static void py_traceback_print_impl(struct py_traceback* tb, FILE* fp) {
 int py_traceback_print(struct py_object* v, FILE* fp) {
 	if(v == NULL) return 0;
 
-	if(!py_is_traceback(v)) {
+	if(!(v->type == PY_TYPE_TRACEBACK)) {
 		py_error_set_badcall();
 		return -1;
 	}
@@ -124,16 +120,9 @@ int py_traceback_print(struct py_object* v, FILE* fp) {
 	return 0;
 }
 
-static void py_traceback_dealloc(struct py_object* op) {
+void py_traceback_dealloc(struct py_object* op) {
 	struct py_traceback* tb = (struct py_traceback*) op;
 
 	py_object_decref(tb->next);
 	py_object_decref(tb->frame);
 }
-
-struct py_type py_traceback_type = {
-		{ &py_type_type, 1 }, sizeof(struct py_traceback),
-		py_traceback_dealloc, /* dealloc */
-		0, /* cmp */
-		0, /* sequencemethods */
-};

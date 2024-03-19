@@ -13,12 +13,8 @@
 #include <python/stringobject.h>
 #include <python/moduleobject.h>
 
-int py_is_module(const void* op) {
-	return ((struct py_object*) op)->type == &py_module_type;
-}
-
 struct py_object* py_module_new(const char* name) {
-	struct py_module* m = py_object_new(&py_module_type);
+	struct py_module* m = py_object_new(PY_TYPE_MODULE);
 	if(m == NULL) return NULL;
 
 	m->name = py_string_new(name);
@@ -39,7 +35,7 @@ struct py_object* py_module_new(const char* name) {
 
 /* Methods */
 
-static void py_module_dealloc(struct py_object* op) {
+void py_module_dealloc(struct py_object* op) {
 	struct py_module* m = (struct py_module*) op;
 	py_object_decref(m->name);
 	py_object_decref(m->attr);
@@ -65,10 +61,3 @@ struct py_object* py_module_get_attr(struct py_object* op, const char* name) {
 
 	return res;
 }
-
-struct py_type py_module_type = {
-		{ &py_type_type, 1 }, /* size */
-		sizeof(struct py_module), /* tp_size */
-		py_module_dealloc, /* dealloc */
-		0, /* cmp */
-		0 };

@@ -46,10 +46,10 @@ struct py_object* py_get_globals(void) {
 /* Test a value used as condition, e.g., in a for or if statement */
 int py_object_truthy(struct py_object* v) {
 
-	if(py_is_int(v)) return py_int_get(v) != 0;
-	else if(py_is_float(v)) return py_float_get(v) != 0.0;
-	else if(py_is_sequence(v)) return py_varobject_size(v) != 0;
-	else if(py_is_dict(v)) return ((struct py_dict*) v)->used != 0;
+	if(v->type == PY_TYPE_INT) return py_int_get(v) != 0;
+	else if(v->type == PY_TYPE_FLOAT) return py_float_get(v) != 0.0;
+	else if(py_is_varobject(v)) return py_varobject_size(v) != 0;
+	else if(v->type == PY_TYPE_DICT) return ((struct py_dict*) v)->used != 0;
 	else if(v == PY_NONE) return 0;
 
 	/* All other objects are 'true' */
@@ -59,13 +59,15 @@ int py_object_truthy(struct py_object* v) {
 static struct py_object* py_object_add(
 		struct py_object* v, struct py_object* w) {
 
-	if(py_is_int(v) && py_is_int(w)) {
+	if(v->type == PY_TYPE_INT && w->type == PY_TYPE_INT) {
 		return py_int_new(py_int_get(v) + py_int_get(w));
 	}
-	else if(py_is_float(v) && py_is_float(w)) {
+	else if(v->type == PY_TYPE_FLOAT && w->type == PY_TYPE_FLOAT) {
 		return py_float_new(py_float_get(v) + py_float_get(w));
 	}
-	else if(py_is_sequence(v)) return (*v->type->sequencemethods->cat)(v, w);
+	else if(py_is_varobject(v)) {
+		return (py_types[v->type].sequencemethods->cat)(v, w);
+	}
 
 	py_error_set_string(py_type_error, "+ not supported by operands");
 	return NULL;
@@ -74,10 +76,10 @@ static struct py_object* py_object_add(
 static struct py_object* py_object_sub(
 		struct py_object* v, struct py_object* w) {
 
-	if(py_is_int(v) && py_is_int(w)) {
+	if((v->type == PY_TYPE_INT) && (w->type == PY_TYPE_INT)) {
 		return py_int_new(py_int_get(v) - py_int_get(w));
 	}
-	else if(py_is_float(v) && py_is_float(w)) {
+	else if((v->type == PY_TYPE_FLOAT) && (w->type == PY_TYPE_FLOAT)) {
 		return py_float_new(py_float_get(v) - py_float_get(w));
 	}
 
@@ -88,10 +90,10 @@ static struct py_object* py_object_sub(
 static struct py_object* py_object_mul(
 		struct py_object* v, struct py_object* w) {
 
-	if(py_is_int(v) && py_is_int(w)) {
+	if((v->type == PY_TYPE_INT) && (w->type == PY_TYPE_INT)) {
 		return py_int_new(py_int_get(v) * py_int_get(w));
 	}
-	else if(py_is_float(v) && py_is_float(w)) {
+	else if((v->type == PY_TYPE_FLOAT) && (w->type == PY_TYPE_FLOAT)) {
 		return py_float_new(py_float_get(v) * py_float_get(w));
 	}
 
@@ -100,10 +102,10 @@ static struct py_object* py_object_mul(
 }
 
 static struct py_object* py_object_div(struct py_object* v, struct py_object* w) {
-	if(py_is_int(v) && py_is_int(w)) {
+	if((v->type == PY_TYPE_INT) && (w->type == PY_TYPE_INT)) {
 		return py_int_new(py_int_get(v) / py_int_get(w));
 	}
-	else if(py_is_float(v) && py_is_float(w)) {
+	else if((v->type == PY_TYPE_FLOAT) && (w->type == PY_TYPE_FLOAT)) {
 		return py_float_new(py_float_get(v) / py_float_get(w));
 	}
 
@@ -112,10 +114,10 @@ static struct py_object* py_object_div(struct py_object* v, struct py_object* w)
 }
 
 static struct py_object* py_object_mod(struct py_object* v, struct py_object* w) {
-	if(py_is_int(v) && py_is_int(w)) {
+	if((v->type == PY_TYPE_INT) && (w->type == PY_TYPE_INT)) {
 		return py_int_new(py_int_get(v) % py_int_get(w));
 	}
-	else if(py_is_float(v) && py_is_float(w)) {
+	else if((v->type == PY_TYPE_FLOAT) && (w->type == PY_TYPE_FLOAT)) {
 		return py_float_new(fmod(py_float_get(v), py_float_get(w)));
 	}
 
@@ -124,10 +126,10 @@ static struct py_object* py_object_mod(struct py_object* v, struct py_object* w)
 }
 
 static struct py_object* py_object_neg(struct py_object* v) {
-	if(py_is_int(v)) {
+	if((v->type == PY_TYPE_INT)) {
 		return py_int_new(-py_int_get(v));
 	}
-	else if(py_is_float(v)) {
+	else if((v->type == PY_TYPE_FLOAT)) {
 		return py_float_new(-py_float_get(v));
 	}
 
@@ -145,14 +147,14 @@ static struct py_object* py_object_not(struct py_object* v) {
 static struct py_object* call_builtin(
 		struct py_object* func, struct py_object* arg) {
 
-	if(py_is_method(func)) {
+	if((func->type == PY_TYPE_METHOD)) {
 		py_method_t meth = ((struct py_method*) func)->method;
 		struct py_object* self = ((struct py_method*) func)->self;
 
 		return (*meth)(self, arg);
 	}
 
-	if(py_is_class(func)) {
+	if((func->type == PY_TYPE_CLASS)) {
 		if(arg != NULL) {
 			py_error_set_string(
 					py_type_error, "classobject() allows no arguments");
@@ -167,9 +169,9 @@ static struct py_object* call_builtin(
 }
 
 struct py_object* py_object_get_attr(struct py_object* v, const char* name) {
-	if(py_is_class_member(v)) return py_class_member_get_attr(v, name);
-	else if(py_is_class(v)) return py_class_get_attr(v, name);
-	else if(py_is_module(v)) return py_module_get_attr(v, name);
+	if((v->type == PY_TYPE_CLASS_MEMBER)) return py_class_member_get_attr(v, name);
+	else if((v->type == PY_TYPE_CLASS)) return py_class_get_attr(v, name);
+	else if((v->type == PY_TYPE_MODULE)) return py_module_get_attr(v, name);
 	else {
 		py_error_set_string(
 				py_type_error,
@@ -182,8 +184,8 @@ static int py_object_set_attr(
 		struct py_object* v, const char* name, struct py_object* w) {
 
 	struct py_object* attr;
-	if(py_is_class_member(v)) attr = ((struct py_class_member*) v)->attr;
-	else if(py_is_module(v)) attr = ((struct py_module*) v)->attr;
+	if((v->type == PY_TYPE_CLASS_MEMBER)) attr = ((struct py_class_member*) v)->attr;
+	else if((v->type == PY_TYPE_MODULE)) attr = ((struct py_module*) v)->attr;
 	else {
 		py_error_set_string(
 				py_type_error,
@@ -206,7 +208,7 @@ struct py_object* py_call_function(
 
 	apro_stamp_start(APRO_CEVAL_CALL_RISING);
 
-	if(py_is_class_method(func)) {
+	if((func->type == PY_TYPE_CLASS_METHOD)) {
 		struct py_object* self = py_class_method_get_self(func);
 		func = py_class_method_get_func(func);
 
@@ -223,14 +225,14 @@ struct py_object* py_call_function(
 			arg = newarg;
 		}
 	}
-	else if(!py_is_func(func)) {
+	else if(!(func->type == PY_TYPE_FUNC)) {
 		py_error_set_string(py_type_error, "call of non-function");
 		return NULL;
 	}
 
 	co = ((struct py_func*) func)->code;
 
-	if(!py_is_code(co)) {
+	if(!(co->type == PY_TYPE_CODE)) {
 		fprintf(stderr, "XXX Bad code\n");
 		abort();
 	}
@@ -263,23 +265,18 @@ struct py_object* py_call_function(
 static struct py_object* py_object_ind(
 		struct py_object* v, struct py_object* w) {
 
-	const struct py_type* tp = v->type;
-
-	if(!py_is_sequence(v) && !py_is_dict(v)) {
-		py_error_set_string(py_type_error, "unsubscriptable object");
-		return NULL;
-	}
-
-	if(py_is_sequence(v)) {
-		if(!py_is_int(w)) {
+	if(py_is_varobject(v)) {
+		if(w->type != PY_TYPE_INT) {
 			py_error_set_string(py_type_error, "sequence subscript not int");
 			return NULL;
 		}
 
-		return (*tp->sequencemethods->ind)(v, py_int_get(w));
+		return (py_types[v->type].sequencemethods->ind)(v, py_int_get(w));
 	}
+	else if(v->type == PY_TYPE_DICT) return py_dict_lookup_object(v, w);
 
-	return py_dict_lookup_object(v, w);
+	py_error_set_string(py_type_error, "unsubscriptable object");
+	return NULL;
 }
 
 static struct py_object* loop_subscript(
@@ -287,7 +284,7 @@ static struct py_object* loop_subscript(
 
 	unsigned i, n;
 
-	if(!py_is_sequence(v)) {
+	if(!py_is_varobject(v)) {
 		py_error_set_string(py_type_error, "loop over non-sequence");
 		return NULL;
 	}
@@ -297,12 +294,12 @@ static struct py_object* loop_subscript(
 
 	if(i >= n) return NULL; /* End of loop */
 
-	return (*v->type->sequencemethods->ind)(v, i);
+	return (py_types[v->type].sequencemethods->ind)(v, i);
 }
 
 static int slice_index(struct py_object* v, unsigned* pi) {
 	if(v != NULL) {
-		if(!py_is_int(v)) {
+		if(!(v->type == PY_TYPE_INT)) {
 			py_error_set_string(py_type_error, "slice index must be int");
 			return -1;
 		}
@@ -316,10 +313,9 @@ static int slice_index(struct py_object* v, unsigned* pi) {
 /* return u[v:w] */
 static struct py_object*
 apply_slice(struct py_object* u, struct py_object* v, struct py_object* w) {
-	const struct py_type* tp = u->type;
 	unsigned ilow, ihigh;
 
-	if(!py_is_sequence(u)) {
+	if(!py_is_varobject(u)) {
 		py_error_set_string(py_type_error, "only sequences can be sliced");
 		return NULL;
 	}
@@ -330,17 +326,17 @@ apply_slice(struct py_object* u, struct py_object* v, struct py_object* w) {
 	if(slice_index(v, &ilow) != 0) return NULL;
 	if(slice_index(w, &ihigh) != 0) return NULL;
 
-	return (*tp->sequencemethods->slice)(u, ilow, ihigh);
+	return (py_types[u->type].sequencemethods->slice)(u, ilow, ihigh);
 }
 
 /* w[key] = v */
 static int assign_subscript(
 		struct py_object* w, struct py_object* key, struct py_object* v) {
 
-	if(py_is_list(w)) {
+	if((w->type == PY_TYPE_LIST)) {
 		unsigned i;
 
-		if(!py_is_int(key)) {
+		if(!(key->type == PY_TYPE_INT)) {
 			py_error_set_string(
 					py_type_error, "sequence subscript must be integer");
 			return -1;
@@ -359,7 +355,7 @@ static int assign_subscript(
 
 		return 0;
 	}
-	else if(py_is_dict(w)) return py_dict_assign(w, key, v);
+	else if((w->type == PY_TYPE_DICT)) return py_dict_assign(w, key, v);
 	else {
 		py_error_set_string(
 				py_type_error, "can't assign to this subscripted object");
@@ -368,7 +364,7 @@ static int assign_subscript(
 }
 
 static int cmp_exception(struct py_object* err, struct py_object* v) {
-	if(py_is_tuple(v)) {
+	if((v->type == PY_TYPE_TUPLE)) {
 		unsigned i, n;
 
 		n = py_varobject_size(v);
@@ -386,11 +382,11 @@ static int cmp_member(struct py_object* v, struct py_object* w) {
 	int cmp;
 
 	/* Special case for char in string */
-	if(py_is_string(w)) {
+	if((w->type == PY_TYPE_STRING)) {
 		const char* s;
 		char c;
 
-		if(!py_is_string(v) || py_varobject_size(v) != 1) {
+		if(!(v->type == PY_TYPE_STRING) || py_varobject_size(v) != 1) {
 			py_error_set_string(
 					py_type_error,
 					"string member test needs char left operand");
@@ -405,7 +401,7 @@ static int cmp_member(struct py_object* v, struct py_object* w) {
 		return 0;
 	}
 
-	if(!py_is_sequence(w)) {
+	if(!py_is_varobject(w)) {
 		py_error_set_string(
 				py_type_error,
 				"'in' or 'not in' needs sequence right argument");
@@ -415,7 +411,7 @@ static int cmp_member(struct py_object* v, struct py_object* w) {
 	n = py_varobject_size(w);
 
 	for(i = 0; i < n; i++) {
-		x = (*w->type->sequencemethods->ind)(w, i);
+		x = (py_types[w->type].sequencemethods->ind)(w, i);
 		cmp = py_object_cmp(v, x);
 		py_object_decref(x);
 
@@ -530,7 +526,7 @@ static int import_from(
 }
 
 static struct py_object* build_class(struct py_object* v) {
-	if(!py_is_dict(v)) {
+	if(!(v->type == PY_TYPE_DICT)) {
 		py_error_set_string(py_system_error, "build_class with non-dictionary");
 		return NULL;
 	}
@@ -672,7 +668,7 @@ struct py_object* py_code_eval(
 			case PY_OP_UNARY_CALL: {
 				v = *--stack_pointer;
 
-				if(py_is_class_method(v) || py_is_func(v)) {
+				if((v->type == PY_TYPE_CLASS_METHOD) || (v->type == PY_TYPE_FUNC)) {
 					x = py_call_function(v, (struct py_object*) NULL);
 				}
 				else x = call_builtin(v, (struct py_object*) NULL);
@@ -753,7 +749,7 @@ struct py_object* py_code_eval(
 				w = *--stack_pointer;
 				v = *--stack_pointer;
 
-				if(py_is_class_method(v) || py_is_func(v)) {
+				if((v->type == PY_TYPE_CLASS_METHOD) || (v->type == PY_TYPE_FUNC)) {
 					x = py_call_function(v, w);
 				}
 				else x = call_builtin(v, w);
@@ -895,7 +891,7 @@ struct py_object* py_code_eval(
 			case PY_OP_UNPACK_TUPLE: {
 				v = *--stack_pointer;
 
-				if(!py_is_tuple(v)) {
+				if(!(v->type == PY_TYPE_TUPLE)) {
 					py_error_set_string(py_type_error, "unpack non-tuple");
 					why = PY_WHY_EXCEPTION;
 				}
@@ -919,7 +915,7 @@ struct py_object* py_code_eval(
 
 			case PY_OP_UNPACK_LIST: {
 				v = *--stack_pointer;
-				if(!py_is_list(v)) {
+				if(!(v->type == PY_TYPE_LIST)) {
 					py_error_set_string(py_type_error, "unpack non-list");
 					why = PY_WHY_EXCEPTION;
 				}

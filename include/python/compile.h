@@ -30,11 +30,7 @@ struct py_code {
 	struct py_object* filename; /* string */
 };
 
-/* TODO: Python global state. */
-extern struct py_type py_code_type;
-
-int py_is_code(const void*);
-
 struct py_code* py_compile(struct py_node*, const char*);
+void py_code_dealloc(struct py_object*);
 
 #endif

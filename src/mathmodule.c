@@ -16,11 +16,11 @@
 static int py_arg_double(struct py_object* args, double* px) {
 	if(args == NULL) return py_error_set_badarg();
 
-	if(py_is_float(args)) {
+	if((args->type == PY_TYPE_FLOAT)) {
 		*px = py_float_get(args);
 		return 1;
 	}
-	else if(py_is_int(args)) {
+	else if((args->type == PY_TYPE_INT)) {
 		*px = py_int_get(args);
 		return 1;
 	}
@@ -29,7 +29,7 @@ static int py_arg_double(struct py_object* args, double* px) {
 }
 
 static int py_arg_double_double(struct py_object* args, double* px, double* py) {
-	if(args == NULL || !py_is_tuple(args) || py_varobject_size(args) != 2) {
+	if(args == NULL || !(args->type == PY_TYPE_TUPLE) || py_varobject_size(args) != 2) {
 		return py_error_set_badarg();
 	}
 

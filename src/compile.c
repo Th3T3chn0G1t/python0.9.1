@@ -42,10 +42,6 @@ struct py_compiler {
 	unsigned nesting; /* counts nested loops */
 };
 
-int py_is_code(const void* op) {
-	return ((struct py_object*) op)->type == &py_code_type;
-}
-
 static struct py_code* py_code_new(
 		py_byte_t* code, struct py_object* consts,
 		struct py_object* names, const char* filename) {
@@ -56,13 +52,13 @@ static struct py_code* py_code_new(
 	/* Make sure the list of names contains only strings */
 	for(i = py_varobject_size(names) + 1; --i >= 1;) {
 		struct py_object* v = py_list_get(names, i - 1);
-		if(v == NULL || !py_is_string(v)) {
+		if(v == NULL || !(v->type == PY_TYPE_STRING)) {
 			py_error_set_badcall();
 			return NULL;
 		}
 	}
 
-	co = py_object_new(&py_code_type);
+	co = py_object_new(PY_TYPE_CODE);
 	if(co != NULL) {
 		co->code = code;
 		py_object_incref(consts);
@@ -215,7 +211,7 @@ static void py_compile_add_op_name(
 
 static struct py_object* py_compile_parse_number(char* s) {
 	char* end = s;
-	long x = strtol(s, &end, 0);
+	py_value_t x = strtoll(s, &end, 0);
 
 	if(*end == '\0') return py_int_new(x);
 
@@ -1693,7 +1689,7 @@ struct py_code* py_compile(struct py_node* n, const char* filename) {
 	return co;
 }
 
-static void code_dealloc(struct py_object* op) {
+void py_code_dealloc(struct py_object* op) {
 	struct py_code* co = (struct py_code*) op;
 
 	free(co->code);
@@ -1701,10 +1697,3 @@ static void code_dealloc(struct py_object* op) {
 	py_object_decref(co->names);
 	py_object_decref(co->filename);
 }
-
-struct py_type py_code_type = {
-		{ &py_type_type, 1 }, sizeof(struct py_code),
-		code_dealloc, /* dealloc */
-		0, /* cmp */
-		0, /* sequencemethods */
-};

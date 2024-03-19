@@ -24,11 +24,7 @@ struct py_methodlist {
 	py_method_t method;
 };
 
-/* TODO: Python global state */
-extern struct py_type py_method_type;
-
-int py_is_method(const void*);
-
 struct py_object* py_method_new(py_method_t, struct py_object*);
+void py_method_dealloc(struct py_object*);
 
 #endif

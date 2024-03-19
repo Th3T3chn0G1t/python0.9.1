@@ -29,10 +29,6 @@ struct py_object* py_memory_error;
 struct py_object* py_name_error;
 struct py_object* py_system_error;
 
-int py_is_sequence(const void* op) {
-	return py_is_list(op) || py_is_tuple(op) || py_is_string(op);
-}
-
 static struct py_object* builtin_float(
 		struct py_object* self, struct py_object* v) {
 
@@ -41,16 +37,17 @@ static struct py_object* builtin_float(
 	if(v == NULL) {
 		/* */
 	}
-	else if(py_is_float(v)) {
+	else if(v->type == PY_TYPE_FLOAT) {
 		py_object_incref(v);
 		return v;
 	}
-	else if(py_is_int(v)) {
-		long x = py_int_get(v);
+	else if(v->type == PY_TYPE_INT) {
+		py_value_t x = py_int_get(v);
 		return py_float_new((double) x);
 	}
 
-	py_error_set_string(py_type_error, "float() argument must be float or int");
+	py_error_set_string(
+			py_type_error, "float() argument must be float or int");
 	return NULL;
 }
 
@@ -62,13 +59,13 @@ static struct py_object* builtin_int(
 	if(v == NULL) {
 		/* */
 	}
-	else if(py_is_int(v)) {
+	else if(v->type == PY_TYPE_INT) {
 		py_object_incref(v);
 		return v;
 	}
-	else if(py_is_float(v)) {
+	else if(v->type == PY_TYPE_FLOAT) {
 		double x = py_float_get(v);
-		return py_int_new((long) x);
+		return py_int_new((py_value_t) x);
 	}
 
 	py_error_set_string(py_type_error, "int() argument must be float or int");
@@ -78,7 +75,7 @@ static struct py_object* builtin_int(
 static struct py_object* builtin_len(
 		struct py_object* self, struct py_object* v) {
 
-	long len;
+	py_value_t len;
 
 	(void) self;
 
@@ -87,8 +84,8 @@ static struct py_object* builtin_len(
 		return NULL;
 	}
 
-	if(py_is_sequence(v)) len = py_varobject_size(v);
-	else if(py_is_dict(v)) len = ((struct py_dict*) v)->used;
+	if(py_is_varobject(v)) len = py_varobject_size(v);
+	else if(v->type == PY_TYPE_DICT) len = ((struct py_dict*) v)->used;
 	else {
 		py_error_set_string(py_type_error, "len() of unsized object");
 		return NULL;
@@ -102,16 +99,16 @@ static struct py_object* builtin_range(
 
 	static char* errmsg = "range() requires 1-3 int arguments";
 	int i, n;
-	long ilow, ihigh, istep;
+	py_value_t ilow, ihigh, istep;
 
 	(void) self;
 
-	if(v != NULL && py_is_int(v)) {
+	if(v != NULL && (v->type == PY_TYPE_INT)) {
 		ilow = 0;
 		ihigh = py_int_get(v);
 		istep = 1;
 	}
-	else if(v == NULL || !py_is_tuple(v)) {
+	else if(v == NULL || !(v->type == PY_TYPE_TUPLE)) {
 		py_error_set_string(py_type_error, errmsg);
 		return NULL;
 	}
@@ -124,7 +121,7 @@ static struct py_object* builtin_range(
 		}
 
 		for(i = 0; i < n; i++) {
-			if(!py_is_int(py_tuple_get(v, i))) {
+			if(py_tuple_get(v, i)->type != PY_TYPE_INT) {
 				py_error_set_string(py_type_error, errmsg);
 				return NULL;
 			}
@@ -193,9 +190,9 @@ static struct py_object* builtin_insert(
 
 	(void) self;
 
-	if(!args || !py_is_tuple(args) || py_varobject_size(args) != 2 ||
-			!(lp = py_tuple_get(args, 0)) || !py_is_list(lp) ||
-			!(ind = py_tuple_get(args, 1)) || !py_is_int(ind) ||
+	if(!args || !(args->type == PY_TYPE_TUPLE) || py_varobject_size(args) != 2 ||
+			!(lp = py_tuple_get(args, 0)) || !(lp->type == PY_TYPE_LIST) ||
+			!(ind = py_tuple_get(args, 1)) || !(ind->type == PY_TYPE_INT) ||
 			!(op = py_tuple_get(args, 2))) {
 
 		py_error_set_badarg();

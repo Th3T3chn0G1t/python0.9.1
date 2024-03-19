@@ -10,10 +10,6 @@
 
 #include <python/listobject.h>
 
-int py_is_list(const void* op) {
-	return ((struct py_varobject*) op)->type == &py_list_type;
-}
-
 struct py_object* py_list_new(unsigned size) {
 	unsigned i;
 	struct py_list* op;
@@ -31,7 +27,7 @@ struct py_object* py_list_new(unsigned size) {
 	}
 
 	py_object_newref(op);
-	op->ob.type = &py_list_type;
+	op->ob.type = PY_TYPE_LIST;
 	op->ob.size = size;
 
 	for(i = 0; i < size; i++) op->item[i] = NULL;
@@ -40,7 +36,7 @@ struct py_object* py_list_new(unsigned size) {
 }
 
 struct py_object* py_list_get(struct py_object* op, unsigned i) {
-	if(!py_is_list(op)) {
+	if(!(op->type == PY_TYPE_LIST)) {
 		py_error_set_badcall();
 		return NULL;
 	}
@@ -57,7 +53,7 @@ int py_list_set(struct py_object* op, unsigned i, struct py_object* newitem) {
 	struct py_object* olditem;
 	struct py_list* lp = (struct py_list*) op;
 
-	if(!py_is_list(op)) {
+	if(!(op->type == PY_TYPE_LIST)) {
 		if(newitem != NULL) py_object_decref(newitem);
 
 		py_error_set_badcall();
@@ -114,7 +110,7 @@ static int ins1(struct py_list* self, unsigned where, struct py_object* v) {
 int py_list_insert(
 		struct py_object* op, unsigned where, struct py_object* newitem) {
 
-	if(!py_is_list(op)) {
+	if(!(op->type == PY_TYPE_LIST)) {
 		py_error_set_badcall();
 		return -1;
 	}
@@ -123,7 +119,7 @@ int py_list_insert(
 }
 
 int py_list_add(struct py_object* op, struct py_object* newitem) {
-	if(!py_is_list(op)) {
+	if(!(op->type == PY_TYPE_LIST)) {
 		py_error_set_badcall();
 		return -1;
 	}
@@ -132,7 +128,7 @@ int py_list_add(struct py_object* op, struct py_object* newitem) {
 }
 
 /* Methods */
-static void list_dealloc(struct py_object* op) {
+void py_list_dealloc(struct py_object* op) {
 	struct py_list* lp = (struct py_list*) op;
 	unsigned i;
 
@@ -143,7 +139,7 @@ static void list_dealloc(struct py_object* op) {
 	free(lp->item);
 }
 
-static int list_compare(const struct py_object* v, const struct py_object* w) {
+int py_list_cmp(const struct py_object* v, const struct py_object* w) {
 	unsigned a = py_varobject_size(v);
 	unsigned b = py_varobject_size(w);
 	unsigned len = (a < b) ? a : b;
@@ -160,7 +156,7 @@ static int list_compare(const struct py_object* v, const struct py_object* w) {
 	return (int) (a - b);
 }
 
-static struct py_object* list_item(struct py_object* op, unsigned i) {
+struct py_object* py_list_ind(struct py_object* op, unsigned i) {
 	struct py_object* item;
 
 	if(i >= py_varobject_size(op)) {
@@ -173,7 +169,7 @@ static struct py_object* list_item(struct py_object* op, unsigned i) {
 	return item;
 }
 
-static struct py_object* list_slice(
+struct py_object* py_list_slice(
 		struct py_object* op, unsigned ilow, unsigned ihigh) {
 
 	struct py_list* np;
@@ -196,14 +192,12 @@ static struct py_object* list_slice(
 	return (struct py_object*) np;
 }
 
-static struct py_object* list_concat(
-		struct py_object* a, struct py_object* b) {
-
+struct py_object* py_list_cat(struct py_object* a, struct py_object* b) {
 	unsigned size;
 	unsigned i;
 	struct py_list* np;
 
-	if(!py_is_list(b)) {
+	if(!(b->type == PY_TYPE_LIST)) {
 		py_error_set_badarg();
 		return NULL;
 	}
@@ -228,16 +222,3 @@ static struct py_object* list_concat(
 
 	return (struct py_object*) np;
 }
-
-static struct py_sequencemethods list_as_sequence = {
-		list_concat, /* cat */
-		list_item, /* ind */
-		list_slice /* slice */
-};
-
-struct py_type py_list_type = {
-		{ &py_type_type, 1 }, sizeof(struct py_list),
-		list_dealloc, /* dealloc */
-		list_compare, /* cmp */
-		&list_as_sequence, /* sequencemethods */
-};

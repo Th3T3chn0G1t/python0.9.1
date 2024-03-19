@@ -8,17 +8,13 @@
 #include <python/std.h>
 #include <python/errors.h>
 
-#ifdef PY_REF_DEBUG
-long py_ref_total;
-#endif
-
 /*
  * Object allocation routines used by the NEWOBJ macro.
  * These are used by the individual routines for object creation.
  * Do not call them otherwise, they do not initialize the object!
  */
-void* py_object_new(const struct py_type* tp) {
-	struct py_object* op = malloc(tp->size);
+void* py_object_new(enum py_type tp) {
+	struct py_object* op = malloc(py_types[tp].size);
 	if(op == NULL) return py_error_set_nomem();
 
 	py_object_newref(op);
@@ -28,16 +24,21 @@ void* py_object_new(const struct py_type* tp) {
 }
 
 int py_object_cmp(const struct py_object* v, const struct py_object* w) {
-	const struct py_type* tp;
-
 	if(v == w) return 0;
 	if(v == NULL) return -1;
 	if(w == NULL) return 1;
 
-	if((tp = v->type) != w->type) return (v < w) ? -1 : 1;
-	if(tp->cmp == NULL) return (v < w) ? -1 : 1;
+	if(v->type != w->type) return (v < w) ? -1 : 1;
+	if(py_types[v->type].cmp == NULL) return (v < w) ? -1 : 1;
 
-	return tp->cmp(v, w);
+	return py_types[v->type].cmp(v, w);
+}
+
+int py_is_varobject(const void* op) {
+	enum py_type type = ((struct py_varobject*) op)->type;
+
+	return type == PY_TYPE_LIST || type == PY_TYPE_TUPLE ||
+			type == PY_TYPE_STRING;
 }
 
 unsigned py_varobject_size(const void* op) {
@@ -50,21 +51,17 @@ unsigned py_varobject_size(const void* op) {
  * type, so there is exactly one (which is indestructible, by the way).
  */
 
-/* TODO: Python global state. */
-static struct py_type py_none_type = {
-		{ &py_type_type, 1 }, 0,
-		0, /* dealloc */
-		0, /* cmp */
-		0, /* sequencemethods */
-};
+struct py_object py_none_object = { PY_TYPE_NONE, 1 };
 
-struct py_object py_none_object = { &py_none_type, 1 };
-
-void py_object_delete(struct py_object* p) { free(p); }
+void py_object_delete(struct py_object* p) { (void) p; }
 
 #ifdef PY_REF_TRACE
 /* TODO: Python global state. */
 static object py_refchain = { &py_refchain, &py_refchain };
+#endif
+
+#ifdef PY_REF_DEBUG
+long py_ref_total;
 #endif
 
 void* py_object_incref(void* p) {
@@ -98,7 +95,7 @@ void* py_object_decref(void* p) {
 
 	if(op->refcount-- <= 0) {
 		py_object_unref(op);
-		op->type->dealloc(op);
+		py_types[op->type].dealloc(op);
 		free(op);
 	}
 

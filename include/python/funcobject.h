@@ -14,10 +14,7 @@ struct py_func {
 	struct py_object* globals;
 };
 
-extern struct py_type py_func_type;
-
-int py_is_func(const void*);
-
 struct py_object* py_func_new(struct py_object*, struct py_object*);
+void py_func_dealloc(struct py_object*);
 
 #endif

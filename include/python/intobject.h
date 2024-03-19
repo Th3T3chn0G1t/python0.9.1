@@ -23,18 +23,25 @@
  * py_true_object and py_false_object below; don't use this.
  */
 
+#ifdef __GNUC__
+# pragma GCC diagnostic push
+# pragma GCC diagnostic ignored "-Wlong-long"
+#endif
+typedef long long py_value_t;
+
 struct py_int {
 	struct py_object ob;
-	long value;
+	py_value_t value;
 };
+#ifdef __GNUC__
+# pragma GCC diagnostic pop
+#endif
 
-/* TODO: Python global state */
-extern struct py_type py_int_type;
+struct py_object* py_int_new(py_value_t);
+py_value_t py_int_get(const struct py_object*);
 
-int py_is_int(const void*);
-
-struct py_object* py_int_new(long);
-long py_int_get(const struct py_object*);
+int py_int_cmp(const struct py_object*, const struct py_object*);
+void py_int_dealloc(struct py_object*);
 
 /*
  * False and True are special intobjects used by Boolean expressions.

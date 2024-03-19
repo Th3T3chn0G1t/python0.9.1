@@ -9,10 +9,6 @@
 #include <python/stringobject.h>
 #include <python/errors.h>
 
-int py_is_string(const void* op) {
-	return ((struct py_varobject*) op)->type == &py_string_type;
-}
-
 struct py_object* py_string_new_size(const char* str, unsigned size) {
 
 	struct py_string* op = malloc(
@@ -20,7 +16,7 @@ struct py_object* py_string_new_size(const char* str, unsigned size) {
 	if(op == NULL) return py_error_set_nomem();
 
 	py_object_newref(op);
-	op->ob.type = &py_string_type;
+	op->ob.type = PY_TYPE_STRING;
 	op->ob.size = size;
 
 	if(str != NULL) memcpy(op->value, str, size);
@@ -39,7 +35,7 @@ struct py_object* py_string_new(const char* str) {
 
 	py_object_newref(op);
 
-	op->ob.type = &py_string_type;
+	op->ob.type = PY_TYPE_STRING;
 	op->ob.size = size;
 
 	strcpy(op->value, str); /* TODO: What is this for? */
@@ -48,7 +44,7 @@ struct py_object* py_string_new(const char* str) {
 }
 
 const char* py_string_get(const struct py_object* op) {
-	if(!py_is_string(op)) {
+	if(!(op->type == PY_TYPE_STRING)) {
 		py_error_set_badcall();
 		return NULL;
 	}
@@ -58,11 +54,11 @@ const char* py_string_get(const struct py_object* op) {
 
 /* Methods */
 
-static struct py_object* py_string_cat(struct py_object* a, struct py_object* b) {
+struct py_object* py_string_cat(struct py_object* a, struct py_object* b) {
 	struct py_string* op;
 	unsigned size;
 
-	if(!py_is_string(b)) {
+	if(!(b->type == PY_TYPE_STRING)) {
 		py_error_set_badarg();
 		return NULL;
 	}
@@ -86,7 +82,7 @@ static struct py_object* py_string_cat(struct py_object* a, struct py_object* b)
 
 	py_object_newref(op);
 
-	op->ob.type = &py_string_type;
+	op->ob.type = PY_TYPE_STRING;
 	op->ob.size = size;
 
 	memcpy(op->value, py_string_get(a), py_varobject_size(a));
@@ -101,7 +97,7 @@ static struct py_object* py_string_cat(struct py_object* a, struct py_object* b)
 
 /* String slice a[i:j] consists of characters a[i] ... a[j-1] */
 
-static struct py_object* py_string_slice(
+struct py_object* py_string_slice(
 		struct py_object* op, unsigned i, unsigned j) {
 
 	if(j > py_varobject_size(op)) j = py_varobject_size(op);
@@ -117,7 +113,7 @@ static struct py_object* py_string_slice(
 	return py_string_new_size(py_string_get(op) + i, j - i);
 }
 
-static struct py_object* py_string_ind(struct py_object* a, unsigned i) {
+struct py_object* py_string_ind(struct py_object* a, unsigned i) {
 	/* TODO: Unchecked. */
 	if(i >= py_varobject_size(a)) {
 		py_error_set_string(PY_INDEX_ERROR, "string index out of range");
@@ -127,8 +123,7 @@ static struct py_object* py_string_ind(struct py_object* a, unsigned i) {
 	return py_string_slice(a, i, i + 1);
 }
 
-static int py_string_cmp(
-		const struct py_object* a, const struct py_object* b) {
+int py_string_cmp(const struct py_object* a, const struct py_object* b) {
 
 	unsigned len_a = py_varobject_size(a);
 	unsigned len_b = py_varobject_size(b);
@@ -142,16 +137,3 @@ static int py_string_cmp(
 
 	return 0;
 }
-
-static struct py_sequencemethods py_string_sequence = {
-		py_string_cat, /* tp_concat */
-		py_string_ind, /* tp_ind */
-		py_string_slice, /* tp_slice */
-};
-
-struct py_type py_string_type = {
-		{ &py_type_type, 1 }, sizeof(struct py_string),
-		py_object_delete, /* dealloc */
-		py_string_cmp, /* cmp */
-		&py_string_sequence, /* sequencemethods */
-};

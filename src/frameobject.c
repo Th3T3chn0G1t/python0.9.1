@@ -13,23 +13,22 @@
 #include <python/frameobject.h>
 #include <python/dictobject.h>
 
-int py_is_frame(const void* op) {
-	return ((struct py_object*) op)->type == &py_frame_type;
-}
-
 struct py_frame* py_frame_new(
 		struct py_frame* back, struct py_code* code, struct py_object* globals,
 		struct py_object* locals, unsigned nvalues, unsigned nblocks) {
 
 	struct py_frame* f;
-	if((back != NULL && !py_is_frame(back)) || code == NULL ||
-		!py_is_code(code) || globals == NULL || !py_is_dict(globals) ||
-		locals == NULL || !py_is_dict(locals)) {
+
+	/* TODO: What is this mess? */
+	if((back != NULL && back->ob.type != PY_TYPE_FRAME) || code == NULL ||
+		code->ob.type != PY_TYPE_CODE || globals == NULL ||
+		globals->type != PY_TYPE_DICT || locals == NULL ||
+		locals->type != PY_TYPE_DICT) {
 
 		py_error_set_badcall();
 		return NULL;
 	}
-	f = py_object_new(&py_frame_type);
+	f = py_object_new(PY_TYPE_FRAME);
 	if(f != NULL) {
 		if(back)
 			py_object_incref(back);
@@ -84,7 +83,7 @@ struct py_block* py_block_pop(struct py_frame* f) {
 	return b;
 }
 
-static void frame_dealloc(struct py_object* op) {
+void py_frame_dealloc(struct py_object* op) {
 	struct py_frame* f = (struct py_frame*) op;
 
 	py_object_decref(f->back);
@@ -94,10 +93,3 @@ static void frame_dealloc(struct py_object* op) {
 	free(f->valuestack);
 	free(f->blockstack);
 }
-
-struct py_type py_frame_type = {
-		{ &py_type_type, 1 }, sizeof(struct py_frame),
-		frame_dealloc, /* dealloc */
-		0, /* cmp */
-		0, /* sequencemethods */
-};

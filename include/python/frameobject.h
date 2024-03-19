@@ -34,14 +34,10 @@ struct py_frame {
 
 /* Standard object interface */
 
-/* TODO: Python global state. */
-extern struct py_type py_frame_type;
-
-int py_is_frame(const void*);
-
 struct py_frame* py_frame_new(
 		struct py_frame*, struct py_code*, struct py_object*,
 		struct py_object*, unsigned, unsigned);
+void py_frame_dealloc(struct py_object*);
 
 /* The rest of the interface is specific for frame objects */
 

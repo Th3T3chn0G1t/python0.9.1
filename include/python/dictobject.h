@@ -38,11 +38,6 @@ struct py_dict {
 	struct py_dictentry* table;
 };
 
-/* TODO: Python global state. */
-extern struct py_type py_dict_type;
-
-int py_is_dict(const void*);
-
 struct py_object* py_dict_new(void);
 
 struct py_object* py_dict_lookup(struct py_object*, const char*);
@@ -52,6 +47,7 @@ int py_dict_insert(struct py_object*, const char*, struct py_object*);
 int py_dict_remove(struct py_object*, const char*);
 unsigned py_dict_size(struct py_object*);
 const char* py_dict_get_key(struct py_object*, unsigned);
+void py_dict_dealloc(struct py_object*);
 
 void py_done_dict(void);
 

@@ -19,12 +19,8 @@ struct py_float {
 	double value;
 };
 
-/* TODO: Python global state. */
-extern struct py_type py_float_type;
-
-int py_is_float(const void*);
-
 struct py_object* py_float_new(double);
 double py_float_get(const struct py_object*);
+int py_float_cmp(const struct py_object*, const struct py_object*);
 
 #endif

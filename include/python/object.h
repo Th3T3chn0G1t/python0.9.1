@@ -64,13 +64,42 @@
 
 /* TODO: Fix unsigned/signed size mixing everywhere. */
 
-struct py_type;
+enum py_type {
+	PY_TYPE_TYPE,
+	PY_TYPE_NONE,
+
+	PY_TYPE_CLASS,
+	PY_TYPE_CLASS_MEMBER,
+	PY_TYPE_CLASS_METHOD,
+
+	PY_TYPE_CODE,
+	PY_TYPE_FRAME,
+	PY_TYPE_TRACEBACK,
+	PY_TYPE_FUNC,
+	PY_TYPE_METHOD,
+	PY_TYPE_MODULE,
+
+	/*
+	 * TODO: This distinction might not need to exist.
+	 * 		 Does it actually do anything for us?
+	 */
+	PY_TYPE_TUPLE,
+	PY_TYPE_LIST,
+	PY_TYPE_STRING,
+
+	PY_TYPE_DICT,
+
+	PY_TYPE_INT,
+	PY_TYPE_FLOAT,
+
+	PY_TYPE_MAX
+};
 
 /* TODO: Object pool to avoid malloc/free constantly. */
 
 struct py_object {
 	/* TODO: Type as index into type table (8 byte objects!) */
-	const struct py_type* type;
+	enum py_type type;
 
 	unsigned refcount;
 
@@ -82,7 +111,7 @@ struct py_object {
 
 /* TODO: This might not need to exist (and entails a gap). */
 struct py_varobject {
-	struct py_type* type;
+	enum py_type type;
 
 	unsigned refcount;
 	unsigned size;
@@ -118,9 +147,7 @@ enum py_print_mode {
 	PY_PRINT_RAW
 };
 
-struct py_type {
-	struct py_object ob;
-
+struct py_type_info {
 	unsigned size; /* For allocation */
 
 	/* Methods to implement standard operations */
@@ -131,7 +158,7 @@ struct py_type {
 };
 
 /* TODO: Python global state. */
-extern struct py_type py_type_type; /* The type of type objects */
+extern struct py_type_info py_types[PY_TYPE_MAX];
 
 /* Generic operations on objects */
 
@@ -146,14 +173,13 @@ extern struct py_type py_type_type; /* The type of type objects */
  */
 
 /* `void*' for convenience's sake. */
-void* py_object_new(const struct py_type*);
-void py_object_delete(struct py_object* p);
+void* py_object_new(enum py_type);
+void py_object_delete(struct py_object*);
 int py_object_cmp(const struct py_object*, const struct py_object*);
 struct py_object* py_object_get_attr(struct py_object*, const char*);
 
+int py_is_varobject(const void*);
 unsigned py_varobject_size(const void*);
-
-int py_is_sequence(const void*);
 
 /*
  * py_object_incref and py_object_decref are used to increment or decrement

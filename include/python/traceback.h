@@ -18,14 +18,9 @@ struct py_traceback {
 	unsigned lineno;
 };
 
-/* TODO: Python global state. */
-extern struct py_type py_traceback_type;
-
-int py_is_traceback(const void*);
-
 int py_traceback_new(struct py_frame*, unsigned);
 int py_traceback_print(struct py_object*, FILE*);
-
+void py_traceback_dealloc(struct py_object*);
 struct py_object* py_traceback_get(void);
 
 #endif

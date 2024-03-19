@@ -32,13 +32,14 @@ struct py_string {
 	char value[1]; /* TODO: Is this supposed to be sized? FAM? */
 };
 
-/* TODO: Python global state. */
-extern struct py_type py_string_type;
-
-int py_is_string(const void* op);
-
 struct py_object* py_string_new_size(const char*, unsigned);
 struct py_object* py_string_new(const char*);
 const char* py_string_get(const struct py_object*);
+
+struct py_object* py_string_cat(struct py_object*, struct py_object*);
+struct py_object* py_string_ind(struct py_object*, unsigned);
+struct py_object* py_string_slice(struct py_object*, unsigned, unsigned);
+
+int py_string_cmp(const struct py_object*, const struct py_object*);
 
 #endif

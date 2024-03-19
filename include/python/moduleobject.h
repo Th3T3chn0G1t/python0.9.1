@@ -16,11 +16,8 @@ struct py_module {
 	struct py_object* attr;
 };
 
-extern struct py_type py_module_type;
-
-int py_is_module(const void*);
-
 struct py_object* py_module_new(const char*);
 struct py_object* py_module_get_attr(struct py_object*, const char*);
+void py_module_dealloc(struct py_object*);
 
 #endif

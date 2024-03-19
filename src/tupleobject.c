@@ -12,10 +12,6 @@
 #include <python/stringobject.h>
 #include <python/intobject.h>
 
-int py_is_tuple(const void* op) {
-	return ((struct py_varobject*) op)->type == &py_tuple_type;
-}
-
 struct py_object* py_tuple_new(unsigned size) {
 	unsigned i;
 	struct py_tuple* op;
@@ -24,7 +20,7 @@ struct py_object* py_tuple_new(unsigned size) {
 	if(op == NULL) return py_error_set_nomem();
 
 	py_object_newref(op);
-	op->ob.type = &py_tuple_type;
+	op->ob.type = PY_TYPE_TUPLE;
 	op->ob.size = size;
 
 	for(i = 0; i < size; i++) op->item[i] = NULL;
@@ -33,7 +29,7 @@ struct py_object* py_tuple_new(unsigned size) {
 }
 
 struct py_object* py_tuple_get(struct py_object* op, unsigned i) {
-	if(!py_is_tuple(op)) {
+	if(!(op->type == PY_TYPE_TUPLE)) {
 		py_error_set_badcall();
 		return NULL;
 	}
@@ -49,7 +45,7 @@ struct py_object* py_tuple_get(struct py_object* op, unsigned i) {
 int py_tuple_set(struct py_object* op, unsigned i, struct py_object* newitem) {
 	struct py_object* olditem;
 
-	if(!py_is_tuple(op)) {
+	if(!(op->type == PY_TYPE_TUPLE)) {
 		if(newitem != NULL) py_object_decref(newitem);
 		py_error_set_badcall();
 		return -1;
@@ -63,24 +59,24 @@ int py_tuple_set(struct py_object* op, unsigned i, struct py_object* newitem) {
 	}
 	olditem = ((struct py_tuple*) op)->item[i];
 	((struct py_tuple*) op)->item[i] = newitem;
-	if(olditem != NULL)
-		py_object_decref(olditem);
+	if(olditem != NULL) py_object_decref(olditem);
+
 	return 0;
 }
 
 /* Methods */
 
-static void tupledealloc(struct py_object* op) {
-	int i;
-	for(i = 0; i < (int) py_varobject_size(op); i++) {
-		if(((struct py_tuple*) op)->item[i] != NULL) {
-			py_object_decref(((struct py_tuple*) op)->item[i]);
-		}
+void py_tuple_dealloc(struct py_object* op) {
+	unsigned i;
+
+	for(i = 0; i < py_varobject_size(op); i++) {
+		py_object_decref(((struct py_tuple*) op)->item[i]);
 	}
+
 	free(op);
 }
 
-static int tuplecompare(const struct py_object* v, const struct py_object* w) {
+int py_tuple_cmp(const struct py_object* v, const struct py_object* w) {
 	unsigned a, b;
 	unsigned len;
 	unsigned i;
@@ -100,7 +96,7 @@ static int tuplecompare(const struct py_object* v, const struct py_object* w) {
 	return (int) (a - b);
 }
 
-static struct py_object* tupleitem(struct py_object* op, unsigned i) {
+struct py_object* py_tuple_ind(struct py_object* op, unsigned i) {
 	struct py_object* item;
 
 	if(i >= py_varobject_size(op)) {
@@ -114,7 +110,7 @@ static struct py_object* tupleitem(struct py_object* op, unsigned i) {
 	return item;
 }
 
-static struct py_object* tupleslice(
+struct py_object* py_tuple_slice(
 		struct py_object* op, unsigned ilow, unsigned ihigh) {
 
 	struct py_tuple* np;
@@ -143,14 +139,13 @@ static struct py_object* tupleslice(
 	return (struct py_object*) np;
 }
 
-static struct py_object* tupleconcat(
-		struct py_object* a, struct py_object* b)  {
+struct py_object* py_tuple_cat(struct py_object* a, struct py_object* b)  {
 
 	unsigned size;
 	unsigned i;
 	struct py_tuple* np;
 
-	if(!py_is_tuple(b)) {
+	if(!(b->type == PY_TYPE_TUPLE)) {
 		py_error_set_badarg();
 		return NULL;
 	}
@@ -176,17 +171,3 @@ static struct py_object* tupleconcat(
 
 	return (struct py_object*) np;
 }
-
-static struct py_sequencemethods tuple_as_sequence = {
-		tupleconcat, /* cat */
-		tupleitem, /* ind */
-		tupleslice, /* slice */
-};
-
-struct py_type py_tuple_type = {
-		{ &py_type_type, 1 },
-		sizeof(struct py_tuple) - sizeof(struct py_object*),
-		tupledealloc, /* dealloc */
-		tuplecompare,  /* cmp*/
-		&tuple_as_sequence, /* sequencemethods */
-};

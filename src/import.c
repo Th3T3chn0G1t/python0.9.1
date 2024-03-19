@@ -72,7 +72,7 @@ void py_import_init(void) {
 struct py_object* py_module_add(const char* name) {
 	struct py_object* m;
 
-	if((m = py_dict_lookup(modules, name)) != NULL && py_is_module(m)) {
+	if((m = py_dict_lookup(modules, name)) != NULL && (m->type == PY_TYPE_MODULE)) {
 		return m;
 	}
 
@@ -92,7 +92,7 @@ struct py_object* py_module_add(const char* name) {
 static FILE* open_module(const char* name, const char* suffix, char* namebuf) {
 	FILE* fp;
 
-	if(py_path == NULL || !py_is_list(py_path)) {
+	if(py_path == NULL || !(py_path->type == PY_TYPE_LIST)) {
 		strcpy(namebuf, name);
 		strcat(namebuf, suffix);
 		fp = pyopen_r(namebuf);
@@ -106,7 +106,7 @@ static FILE* open_module(const char* name, const char* suffix, char* namebuf) {
 			struct py_object* v = py_list_get(py_path, i);
 			unsigned len;
 
-			if(!py_is_string(v)) continue;
+			if(!(v->type == PY_TYPE_STRING)) continue;
 
 			strcpy(namebuf, py_string_get(v));
 			len = py_varobject_size(v);
@@ -204,10 +204,10 @@ void py_import_done(void) {
 			if(k != NULL) {
 				struct py_object* m = py_dict_lookup(modules, k);
 
-				if(m != NULL && py_is_module(m)) {
+				if(m != NULL && (m->type == PY_TYPE_MODULE)) {
 					struct py_object* d = ((struct py_module*) m)->attr;
 
-					if(d != NULL && py_is_dict(d)) py_dict_clear(d);
+					if(d != NULL && (d->type == PY_TYPE_DICT)) py_dict_clear(d);
 				}
 			}
 		}
