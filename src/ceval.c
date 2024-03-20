@@ -574,6 +574,8 @@ struct py_object* py_code_eval(
 	enum py_ceval_why why = PY_WHY_NOT; /* Reason for block stack unwind */
 	int err = 0; /* Error status -- nonzero if error */
 
+	apro_stamp_start(APRO_CEVAL_CODE_EVAL_RISING);
+
 	f = py_frame_new(
 			py_frame_current, /* back */
 			co, /* code */
@@ -592,6 +594,10 @@ struct py_object* py_code_eval(
 		py_object_incref(arg);
 		*stack_pointer++ = (arg);
 	}
+
+	apro_stamp_end(APRO_CEVAL_CODE_EVAL_RISING);
+
+	apro_stamp_start(APRO_CEVAL_CODE_EVAL);
 
 	for(;;) {
 		/* Extract opcode and argument */
@@ -1180,6 +1186,10 @@ struct py_object* py_code_eval(
 		if(why != PY_WHY_NOT) break;
 	} /* main loop */
 
+	apro_stamp_end(APRO_CEVAL_CODE_EVAL);
+
+	apro_stamp_start(APRO_CEVAL_CODE_EVAL_FALLING);
+
 	/* Pop remaining stack entries */
 
 	while((stack_pointer - f->valuestack)) {
@@ -1191,6 +1201,8 @@ struct py_object* py_code_eval(
 
 	py_frame_current = f->back;
 	py_object_decref(f);
+
+	apro_stamp_end(APRO_CEVAL_CODE_EVAL_FALLING);
 
 	if(why == PY_WHY_RETURN) return retval;
 	else return NULL;
