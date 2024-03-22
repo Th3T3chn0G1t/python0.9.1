@@ -16,12 +16,12 @@
 static int py_arg_double(struct py_object* args, double* px) {
 	if(args == NULL) return py_error_set_badarg();
 
-	if((args->type == PY_TYPE_FLOAT)) {
+	if(args->type == PY_TYPE_FLOAT) {
 		*px = py_float_get(args);
 		return 1;
 	}
-	else if((args->type == PY_TYPE_INT)) {
-		*px = py_int_get(args);
+	else if(args->type == PY_TYPE_INT) {
+		*px = (double) py_int_get(args);
 		return 1;
 	}
 

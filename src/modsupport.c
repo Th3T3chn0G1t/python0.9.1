@@ -59,7 +59,7 @@ int py_arg_int(struct py_object* v, int* a) {
 	if(v == NULL || !(v->type == PY_TYPE_INT)) {
 		return py_error_set_badarg();
 	}
-	*a = py_int_get(v);
+	*a = (int) py_int_get(v);
 	return 1;
 }
 
@@ -75,7 +75,7 @@ int py_arg_long(struct py_object* v, long* a) {
 	if(v == NULL || !(v->type == PY_TYPE_INT)) {
 		return py_error_set_badarg();
 	}
-	*a = py_int_get(v);
+	*a = (long) py_int_get(v);
 	return 1;
 }
 

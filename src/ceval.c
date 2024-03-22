@@ -271,7 +271,8 @@ static struct py_object* py_object_ind(
 			return NULL;
 		}
 
-		return (py_types[v->type].sequencemethods->ind)(v, py_int_get(w));
+		return (py_types[v->type].sequencemethods->ind)(
+				v, (unsigned) py_int_get(w));
 	}
 	else if(v->type == PY_TYPE_DICT) return py_dict_lookup_object(v, w);
 
@@ -289,7 +290,7 @@ static struct py_object* loop_subscript(
 		return NULL;
 	}
 
-	i = py_int_get(w);
+	i = (unsigned) py_int_get(w);
 	n = py_varobject_size(v);
 
 	if(i >= n) return NULL; /* End of loop */
@@ -304,7 +305,7 @@ static int slice_index(struct py_object* v, unsigned* pi) {
 			return -1;
 		}
 
-		*pi = py_int_get(v);
+		*pi = (unsigned) py_int_get(v);
 	}
 
 	return 0;
@@ -333,7 +334,7 @@ apply_slice(struct py_object* u, struct py_object* v, struct py_object* w) {
 static int assign_subscript(
 		struct py_object* w, struct py_object* key, struct py_object* v) {
 
-	if((w->type == PY_TYPE_LIST)) {
+	if(w->type == PY_TYPE_LIST) {
 		unsigned i;
 
 		if(!(key->type == PY_TYPE_INT)) {
@@ -342,7 +343,7 @@ static int assign_subscript(
 			return -1;
 		}
 
-		i = py_int_get(key);
+		i = (unsigned) py_int_get(key);
 		if(i >= py_varobject_size(w)) {
 			py_error_set_string(
 					PY_INDEX_ERROR, "list assignment index out of range");

@@ -98,7 +98,7 @@ static struct py_object* builtin_range(
 		struct py_object* self, struct py_object* v) {
 
 	static char* errmsg = "range() requires 1-3 int arguments";
-	int i, n;
+	unsigned i, n;
 	py_value_t ilow, ihigh, istep;
 
 	(void) self;
@@ -145,10 +145,8 @@ static struct py_object* builtin_range(
 	}
 
 	/* XXX ought to check overflow of subion */
-	if(istep > 0) { n = (ihigh - ilow + istep - 1) / istep; }
-	else { n = (ihigh - ilow + istep + 1) / istep; }
-
-	if(n < 0) n = 0;
+	if(istep > 0) { n = (unsigned) ((ihigh - ilow + istep - 1) / istep); }
+	else { n = (unsigned) ((ihigh - ilow + istep + 1) / istep); }
 
 	v = py_list_new(n);
 	if(v == NULL) return NULL;
@@ -199,7 +197,7 @@ static struct py_object* builtin_insert(
 		return NULL;
 	}
 
-	if(py_list_insert(lp, py_int_get(ind), op) == -1) return NULL;
+	if(py_list_insert(lp, (unsigned) py_int_get(ind), op) == -1) return NULL;
 
 	return py_object_incref(PY_NONE);
 }
