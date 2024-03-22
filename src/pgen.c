@@ -136,7 +136,7 @@ static struct py_nfa* addnfa(struct py_nfa_grammar* gr, char* name) {
        }
 
 #else
-#define PY_REQUIRE_N(i, count) /* empty */
+#define PY_REQUIRE_N(i, count) (void) i, (void) count;
 #endif
 
 void py_node_compile_rule(struct py_nfa_grammar* gr, struct py_node* n);
@@ -292,6 +292,7 @@ void py_node_compile_item(
 
 void compile_atom(
 		struct py_labellist* ll, struct py_nfa* nf, struct py_node* n, int* pa, int* pb) {
+
 	int i;
 
 	PY_REQ(n, PY_ATOM);
