@@ -29,7 +29,7 @@ struct py_object* py_memory_error;
 struct py_object* py_name_error;
 struct py_object* py_system_error;
 
-static struct py_object* builtin_float(
+static struct py_object* py_builtin_float(
 		struct py_object* self, struct py_object* v) {
 
 	(void) self;
@@ -51,7 +51,7 @@ static struct py_object* builtin_float(
 	return NULL;
 }
 
-static struct py_object* builtin_int(
+static struct py_object* py_builtin_int(
 		struct py_object* self, struct py_object* v) {
 
 	(void) self;
@@ -72,7 +72,7 @@ static struct py_object* builtin_int(
 	return NULL;
 }
 
-static struct py_object* builtin_len(
+static struct py_object* py_builtin_len(
 		struct py_object* self, struct py_object* v) {
 
 	py_value_t len;
@@ -94,7 +94,7 @@ static struct py_object* builtin_len(
 	return py_int_new(len);
 }
 
-static struct py_object* builtin_range(
+static struct py_object* py_builtin_range(
 		struct py_object* self, struct py_object* v) {
 
 	static char* errmsg = "range() requires 1-3 int arguments";
@@ -166,7 +166,7 @@ static struct py_object* builtin_range(
 	return v;
 }
 
-static struct py_object* builtin_append(
+static struct py_object* py_builtin_append(
 		struct py_object* self, struct py_object* v) {
 
 	struct py_object* lp = py_tuple_get(v, 0);
@@ -179,7 +179,7 @@ static struct py_object* builtin_append(
 	return py_object_incref(PY_NONE);
 }
 
-static struct py_object* builtin_insert(
+static struct py_object* py_builtin_insert(
 		struct py_object* self, struct py_object* args) {
 
 	struct py_object* lp;
@@ -202,7 +202,7 @@ static struct py_object* builtin_insert(
 	return py_object_incref(PY_NONE);
 }
 
-static struct py_object* builtin_pass(
+static struct py_object* py_builtin_pass(
 		struct py_object* self, struct py_object* args) {
 
 	(void) self;
@@ -211,27 +211,51 @@ static struct py_object* builtin_pass(
 	return py_object_incref(PY_NONE);
 }
 
-static struct py_methodlist builtin_methods[] = {
-		{ "float", builtin_float },
-		{ "int", builtin_int },
-		{ "len", builtin_len },
-		{ "range", builtin_range },
-		{ "append", builtin_append },
-		{ "insert", builtin_insert },
-		{ "pass", builtin_pass },
+static struct py_object* py_builtin_notv(
+		struct py_object* self, struct py_object* args) {
+
+	struct py_object* retval;
+	py_value_t val;
+
+	(void) self;
+
+	if(args->type != PY_TYPE_INT) {
+		py_error_set_badarg();
+		return 0;
+	}
+
+	val = py_int_get(args);
+	if(py_error_occurred()) return 0;
+
+	if(val) retval = PY_FALSE;
+	else retval = PY_TRUE;
+
+	return py_object_incref(retval);
+}
+
+/* TODO: Python global state. */
+static struct py_methodlist py_builtin_methods[] = {
+		{ "float", py_builtin_float },
+		{ "int", py_builtin_int },
+		{ "len", py_builtin_len },
+		{ "range", py_builtin_range },
+		{ "append", py_builtin_append },
+		{ "insert", py_builtin_insert },
+		{ "pass", py_builtin_pass },
+		{ "notv", py_builtin_notv },
 		{ NULL, NULL } };
 
 /* TODO: Python global state. */
-static struct py_object* builtin_dict;
+static struct py_object* py_builtin_dict;
 
 struct py_object* py_builtin_get(const char* name) {
-	return py_dict_lookup(builtin_dict, name);
+	return py_dict_lookup(py_builtin_dict, name);
 }
 
 static struct py_object* newstdexception(char* name, char* message) {
 	struct py_object* v = py_string_new(message);
 
-	if(v == NULL || py_dict_insert(builtin_dict, name, v) != 0) {
+	if(v == NULL || py_dict_insert(py_builtin_dict, name, v) != 0) {
 		py_fatal("no mem for new standard exception");
 	}
 
@@ -259,22 +283,22 @@ void py_errors_done(void) {
 void py_builtin_init(void) {
 	struct py_object* m;
 
-	m = py_module_new_methods("builtin", builtin_methods);
-	builtin_dict = ((struct py_module*) m)->attr;
-	py_object_incref(builtin_dict);
+	m = py_module_new_methods("builtin", py_builtin_methods);
+	py_builtin_dict = ((struct py_module*) m)->attr;
+	py_object_incref(py_builtin_dict);
 
-	if(py_dict_insert(builtin_dict, "true", PY_TRUE) == -1) {
+	if(py_dict_insert(py_builtin_dict, "true", PY_TRUE) == -1) {
 		py_fatal("could not add `true' object");
 	}
 
-	if(py_dict_insert(builtin_dict, "false", PY_FALSE) == -1) {
+	if(py_dict_insert(py_builtin_dict, "false", PY_FALSE) == -1) {
 		py_fatal("could not add `false' object");
 	}
 
 	initerrors();
-	(void) py_dict_insert(builtin_dict, "PY_NONE", PY_NONE);
+	(void) py_dict_insert(py_builtin_dict, "PY_NONE", PY_NONE);
 }
 
 void py_builtin_done(void) {
-	py_object_decref(builtin_dict);
+	py_object_decref(py_builtin_dict);
 }
