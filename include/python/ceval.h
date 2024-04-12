@@ -23,9 +23,8 @@ struct py_object* py_get_globals(void);
 
 struct py_object* py_get_locals(void);
 
-int py_object_truthy(struct py_object* v);
+int py_object_truthy(struct py_object*);
 
-struct py_object* py_call_function(
-		struct py_object* func, struct py_object* arg);
+struct py_object* py_call_function(struct py_object*, struct py_object*);
 
 #endif

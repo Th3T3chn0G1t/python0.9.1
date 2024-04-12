@@ -126,10 +126,10 @@ static struct py_object* py_object_mod(struct py_object* v, struct py_object* w)
 }
 
 static struct py_object* py_object_neg(struct py_object* v) {
-	if((v->type == PY_TYPE_INT)) {
+	if(v->type == PY_TYPE_INT) {
 		return py_int_new(-py_int_get(v));
 	}
-	else if((v->type == PY_TYPE_FLOAT)) {
+	else if(v->type == PY_TYPE_FLOAT) {
 		return py_float_new(-py_float_get(v));
 	}
 
@@ -145,17 +145,17 @@ static struct py_object* py_object_not(struct py_object* v) {
 }
 
 static struct py_object* call_builtin(
-		struct py_object* func, struct py_object* arg) {
+		struct py_object* func, struct py_object* args) {
 
 	if((func->type == PY_TYPE_METHOD)) {
 		py_method_t meth = ((struct py_method*) func)->method;
 		struct py_object* self = ((struct py_method*) func)->self;
 
-		return (*meth)(self, arg);
+		return (*meth)(self, args);
 	}
 
-	if((func->type == PY_TYPE_CLASS)) {
-		if(arg != NULL) {
+	if(func->type == PY_TYPE_CLASS) {
+		if(args != NULL) {
 			py_error_set_string(
 					py_type_error, "classobject() allows no arguments");
 			return NULL;
@@ -169,9 +169,9 @@ static struct py_object* call_builtin(
 }
 
 struct py_object* py_object_get_attr(struct py_object* v, const char* name) {
-	if((v->type == PY_TYPE_CLASS_MEMBER)) return py_class_member_get_attr(v, name);
-	else if((v->type == PY_TYPE_CLASS)) return py_class_get_attr(v, name);
-	else if((v->type == PY_TYPE_MODULE)) return py_module_get_attr(v, name);
+	if(v->type == PY_TYPE_CLASS_MEMBER) return py_class_member_get_attr(v, name);
+	else if(v->type == PY_TYPE_CLASS) return py_class_get_attr(v, name);
+	else if(v->type == PY_TYPE_MODULE) return py_module_get_attr(v, name);
 	else {
 		py_error_set_string(
 				py_type_error,
@@ -184,8 +184,8 @@ static int py_object_set_attr(
 		struct py_object* v, const char* name, struct py_object* w) {
 
 	struct py_object* attr;
-	if((v->type == PY_TYPE_CLASS_MEMBER)) attr = ((struct py_class_member*) v)->attr;
-	else if((v->type == PY_TYPE_MODULE)) attr = ((struct py_module*) v)->attr;
+	if(v->type == PY_TYPE_CLASS_MEMBER) attr = ((struct py_class_member*) v)->attr;
+	else if(v->type == PY_TYPE_MODULE) attr = ((struct py_module*) v)->attr;
 	else {
 		py_error_set_string(
 				py_type_error,
@@ -198,7 +198,7 @@ static int py_object_set_attr(
 }
 
 struct py_object* py_call_function(
-		struct py_object* func, struct py_object* arg) {
+		struct py_object* func, struct py_object* args) {
 
 	struct py_object* newarg = NULL;
 	struct py_object* newlocals;
@@ -212,17 +212,17 @@ struct py_object* py_call_function(
 		struct py_object* self = py_class_method_get_self(func);
 		func = py_class_method_get_func(func);
 
-		if(arg == NULL) arg = self;
+		if(args == NULL) args = self;
 		else {
 			newarg = py_tuple_new(2);
 
 			if(newarg == NULL) return NULL;
 
 			py_object_incref(self);
-			py_object_incref(arg);
+			py_object_incref(args);
 			py_tuple_set(newarg, 0, self);
-			py_tuple_set(newarg, 1, arg);
-			arg = newarg;
+			py_tuple_set(newarg, 1, args);
+			args = newarg;
 		}
 	}
 	else if(!(func->type == PY_TYPE_FUNC)) {
@@ -250,7 +250,7 @@ struct py_object* py_call_function(
 
 	apro_stamp_start(APRO_CEVAL_CALL_EVAL);
 
-	v = py_code_eval((struct py_code*) co, newglobals, newlocals, arg);
+	v = py_code_eval((struct py_code*) co, newglobals, newlocals, args);
 
 	apro_stamp_end(APRO_CEVAL_CALL_EVAL);
 
@@ -365,7 +365,7 @@ static int assign_subscript(
 }
 
 static int cmp_exception(struct py_object* err, struct py_object* v) {
-	if((v->type == PY_TYPE_TUPLE)) {
+	if(v->type == PY_TYPE_TUPLE) {
 		unsigned i, n;
 
 		n = py_varobject_size(v);
@@ -553,7 +553,7 @@ static const char* py_code_get_name(struct py_frame* f, unsigned i) {
 
 struct py_object* py_code_eval(
 		struct py_code* co, struct py_object* globals,
-		struct py_object* locals, struct py_object* arg) {
+		struct py_object* locals, struct py_object* args) {
 
 	py_byte_t* code;
 	py_byte_t* next;
@@ -591,9 +591,9 @@ struct py_object* py_code_eval(
 	next = code;
 	stack_pointer = f->valuestack;
 
-	if(arg != NULL) {
-		py_object_incref(arg);
-		*stack_pointer++ = (arg);
+	if(args != NULL) {
+		py_object_incref(args);
+		*stack_pointer++ = args;
 	}
 
 	apro_stamp_end(APRO_CEVAL_CODE_EVAL_RISING);
