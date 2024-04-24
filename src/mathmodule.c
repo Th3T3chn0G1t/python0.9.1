@@ -96,6 +96,87 @@ PY_MATH2(atan2)
 PY_MATH2(fmod)
 PY_MATH2(pow)
 
+static struct py_object* py_math_bitlist_op(
+		struct py_object* args, py_value_t (*func)(py_value_t, py_value_t)) {
+
+	py_value_t res = 0;
+	unsigned i;
+
+	if(args->type != PY_TYPE_TUPLE) {
+		py_error_set_badarg();
+		return 0;
+	}
+
+	for(i = 0; i < py_varobject_size(args); ++i) {
+		struct py_object* ob = py_tuple_get(args, i);
+		py_value_t v = py_int_get(ob);
+
+		res = func(res, v);
+	}
+
+	return py_int_new(res);
+}
+
+
+static py_value_t py_math_orbv(py_value_t v, py_value_t p) { return v | p; }
+static struct py_object* py_math_orb(
+		struct py_object* self, struct py_object* args) {
+	(void) self;
+	return py_math_bitlist_op(args, py_math_orbv);
+}
+
+static py_value_t py_math_andbv(py_value_t v, py_value_t p) { return v & p; }
+static struct py_object* py_math_andb(
+		struct py_object* self, struct py_object* args) {
+	(void) self;
+	return py_math_bitlist_op(args, py_math_andbv);
+}
+
+static py_value_t py_math_xorbv(py_value_t v, py_value_t p) { return v ^ p; }
+static struct py_object* py_math_xorb(
+		struct py_object* self, struct py_object* args) {
+	(void) self;
+	return py_math_bitlist_op(args, py_math_xorbv);
+}
+
+static struct py_object* py_math_val2(
+		struct py_object* args, py_value_t (*func)(py_value_t, py_value_t)) {
+
+	struct py_object* a;
+	struct py_object* b;
+
+	if(args->type != PY_TYPE_TUPLE ||
+		!(a = py_tuple_get(args, 0)) || a->type != PY_TYPE_INT ||
+		!(b = py_tuple_get(args, 1)) || b->type != PY_TYPE_INT) {
+
+		py_error_set_badarg();
+		return 0;
+	}
+
+	return py_int_new(func(py_int_get(a), py_int_get(b)));
+}
+
+static py_value_t py_math_shlv(py_value_t v, py_value_t p) { return v << p; }
+static struct py_object* py_math_shl(
+		struct py_object* self, struct py_object* args) {
+	(void) self;
+	return py_math_val2(args, py_math_shlv);
+}
+
+static py_value_t py_math_shrv(py_value_t v, py_value_t p) { return v >> p; }
+static struct py_object* py_math_shr(
+		struct py_object* self, struct py_object* args) {
+	(void) self;
+	return py_math_val2(args, py_math_shrv);
+}
+
+static struct py_object* py_math_randf(
+		struct py_object* self, struct py_object* args) {
+	(void) self;
+	(void) args;
+	return py_float_new((double) rand() / (double) RAND_MAX);
+}
+
 void py_math_init(void) {
 #define _(func) { #func, py_math_##func }
 	static const struct py_methodlist math_methods[] = {
@@ -118,6 +199,12 @@ void py_math_init(void) {
 			_(sqrt),
 			_(tan),
 			_(tanh),
+			_(orb),
+			_(andb),
+			_(xorb),
+			_(shl),
+			_(shr),
+			_(randf),
 			{ NULL, NULL } /* sentinel */
 	};
 #undef _
