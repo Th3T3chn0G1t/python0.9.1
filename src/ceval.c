@@ -144,6 +144,10 @@ static struct py_object* py_object_not(struct py_object* v) {
 	return w;
 }
 
+/*
+ * TODO: This can possibly be less indirected using a distinct class init
+ * 		 Syntax or like `class('name')'.
+ */
 static struct py_object* call_builtin(
 		struct py_object* func, struct py_object* args) {
 
