@@ -8,6 +8,10 @@
 #ifndef PY_OPCODE_H
 #define PY_OPCODE_H
 
+/*
+ * TODO: We can pack this into a byte (or even half bytes!) when we get to
+ * 		 Emitting static bytecode.
+ */
 enum py_opcode {
 	PY_OP_POP_TOP = 1,
 	PY_OP_ROT_TWO = 2,
@@ -69,6 +73,7 @@ enum py_opcode {
 	PY_OP_SETUP_LOOP = 120, /* Target address (absolute) */
 	PY_OP_SETUP_EXCEPT = 121, /* "" */
 
+	/* TODO: Disable compiling this opcode in dist? */
 	PY_OP_SET_LINENO = 127 /* Current line number */
 };
 

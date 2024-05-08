@@ -101,7 +101,7 @@ int py_labellist_add(struct py_labellist* ll, int type, char* str) {
 
 	lb = &ll->label[ll->count++];
 	lb->type = type;
-	lb->str = str; /* XXX strdup(str) ??? */
+	lb->str = str; /* TODO: strdup(str) ??? */
 
 	return lb - ll->label;
 }

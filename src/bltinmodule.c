@@ -144,7 +144,7 @@ static struct py_object* py_builtin_range(
 		return NULL;
 	}
 
-	/* XXX ought to check overflow of subion */
+	/* TODO: ought to check overflow of subion */
 	if(istep > 0) { n = (unsigned) ((ihigh - ilow + istep - 1) / istep); }
 	else { n = (unsigned) ((ihigh - ilow + istep + 1) / istep); }
 

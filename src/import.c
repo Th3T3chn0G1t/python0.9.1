@@ -88,7 +88,7 @@ struct py_object* py_module_add(const char* name) {
 	return m;
 }
 
-/* XXX No buffer overflow checks! */
+/* TODO: No buffer overflow checks! */
 static FILE* open_module(const char* name, const char* suffix, char* namebuf) {
 	FILE* fp;
 

@@ -88,7 +88,7 @@ static struct py_nfa* py_nfa_new(char* name) {
 	if(nf == NULL) py_fatal("no mem for new nfa");
 
 	nf->type = type++;
-	nf->name = name; /* XXX strdup(name) ??? */
+	nf->name = name; /* TODO: strdup(name) ??? */
 	nf->count = 0;
 	nf->states = NULL;
 	nf->start = nf->finish = -1;
@@ -240,7 +240,7 @@ void py_node_compile_alt(
 	n++;
 
 	for(; --i >= 0; n++) {
-		if(n->type == PY_COMMA) { /* XXX Temporary */
+		if(n->type == PY_COMMA) { /* TODO: Temporary */
 			PY_REQUIRE_N(i, 1);
 			--i;
 			n++;
@@ -514,7 +514,7 @@ static void py_dfa_new(
 
 	py_dfa_convert(d, nstates, states);
 
-	/* XXX cleanup */
+	/* TODO: cleanup */
 }
 
 void py_ss_dfa_print(
@@ -675,7 +675,7 @@ static struct py_grammar* py_nfa_grammar_tables(struct py_nfa_grammar* gr) {
 	if(gr->count == 0) return NULL;
 
 	g = py_grammar_new(gr->nfas[0]->type);
-	/* XXX first rule must be start rule */
+	/* TODO: first rule must be start rule */
 	g->labels = gr->labellist;
 
 	for(i = 0; i < gr->count; i++) {

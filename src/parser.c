@@ -7,7 +7,7 @@
 
 /* For a description, see the comments at end of this file */
 
-/* XXX To do: error recovery */
+/* TODO: error recovery */
 
 #include <python/std.h>
 #include <python/token.h>

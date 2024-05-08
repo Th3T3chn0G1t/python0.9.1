@@ -5,11 +5,11 @@
 
 /* Tokenizer implementation */
 
-/* XXX This is rather old, should be restructured perhaps */
+/* TODO: This is rather old, should be restructured perhaps */
 
-/* XXX Need a better interface to report errors than writing to stderr */
+/* TODO: Need a better interface to report errors than writing to stderr */
 
-/* XXX Should use editor resource to fetch true tab size on Macintosh */
+/* TODO: Should use editor resource to fetch true tab size on Macintosh */
 
 #include <python/std.h>
 #include <python/tokenizer.h>
@@ -74,7 +74,7 @@ struct py_tokenizer* py_tokenizer_setup_file(FILE* fp, char* ps1, char* ps2) {
 /* Free a tok_state structure */
 
 void py_tokenizer_delete(struct py_tokenizer* tok) {
-	/* XXX really need a separate flag to say 'my buffer' */
+	/* TODO: really need a separate flag to say 'my buffer' */
 	if(tok->fp != NULL && tok->buf != NULL) free(tok->buf);
 
 	free(tok);

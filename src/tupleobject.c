@@ -121,7 +121,7 @@ struct py_object* py_tuple_slice(
 	if(ihigh < ilow) ihigh = ilow;
 
 	if(ilow == 0 && ihigh == py_varobject_size(op)) {
-		/* XXX can only do this if tuples are immutable! */
+		/* TODO: can only do this if tuples are immutable! */
 		py_object_incref(op);
 		return op;
 	}

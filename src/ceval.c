@@ -478,7 +478,7 @@ cmp_outcome(enum py_cmp_op op, struct py_object* v, struct py_object* w) {
 					break;
 				case PY_CMP_GE: res = cmp >= 0;
 					break;
-					/* XXX no default? (res is initialized to 0 though) */
+					/* TODO: no default? (res is initialized to 0 though) */
 			}
 		}
 	}
@@ -509,7 +509,7 @@ static int import_from(
 			x = py_dict_lookup(w, name);
 
 			if(x == NULL) {
-				/* XXX can't happen? */
+				/* TODO: can't happen? */
 				py_error_set_string(py_name_error, name);
 				return -1;
 			}

@@ -895,7 +895,7 @@ static void py_compile_assign(
 						n = &n->children[1];
 
 						if(n->type == PY_RPAR) {
-							/* XXX Should allow () = () ??? */
+							/* TODO: Should allow () = () ??? */
 							py_error_set_string(
 									py_type_error, "can't assign to ()");
 							/* TODO: Proper EH. */

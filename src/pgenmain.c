@@ -86,6 +86,4 @@ void py_fatal(const char* msg) {
 	exit(1);
 }
 
-/* XXX TO DO:
-   - check for duplicate definitions of names (instead of py_fatal err)
-*/
+/* TODO: check for duplicate definitions of names (instead of py_fatal err) */

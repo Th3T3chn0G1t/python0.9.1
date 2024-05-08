@@ -5,8 +5,10 @@
 
 /* Float object implementation */
 
-/* XXX There should be overflow checks here, but it's hard to check
-   for any kind of float exception without losing portability. */
+/*
+ * TODO: There should be overflow checks here, but it's hard to check
+ * 		 For any kind of float exception without losing portability.
+ */
 
 #include <python/std.h>
 #include <python/errors.h>
