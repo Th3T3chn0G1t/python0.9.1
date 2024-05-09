@@ -62,8 +62,6 @@
 # define PY_REF_DEBUG
 #endif
 
-/* TODO: Fix unsigned/signed size mixing everywhere. */
-
 enum py_type {
 	PY_TYPE_TYPE,
 	PY_TYPE_NONE,
@@ -98,7 +96,6 @@ enum py_type {
 /* TODO: Object pool to avoid malloc/free constantly. */
 
 struct py_object {
-	/* TODO: Type as index into type table (8 byte objects!) */
 	enum py_type type;
 
 	unsigned refcount;

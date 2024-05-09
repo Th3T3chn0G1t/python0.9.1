@@ -211,6 +211,7 @@ static void py_compile_add_op_name(
 
 static struct py_object* py_compile_parse_number(char* s) {
 	char* end = s;
+	/* TODO: Technically not C89. */
 	py_value_t x = strtoll(s, &end, 0);
 
 	if(*end == '\0') return py_int_new(x);

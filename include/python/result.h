@@ -11,7 +11,7 @@
 #ifndef PY_RESULT_H
 #define PY_RESULT_H
 
-/* TODO: Enum. */
+/* TODO: Use for more things in native land. */
 enum py_result {
 	PY_RESULT_OK = 10, /* No error */
 	PY_RESULT_EOF = 11, /* (Unexpected) EOF read */
