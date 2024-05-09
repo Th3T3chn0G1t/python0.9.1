@@ -20,8 +20,6 @@
 #include <python/parsetok.h>
 #include <python/pgen.h>
 
-int debugging;
-
 /* Forward */
 struct py_grammar* py_load_grammar(const char*);
 

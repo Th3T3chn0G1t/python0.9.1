@@ -100,7 +100,7 @@ static int py_tokenizer_next_character(struct py_tokenizer* tok) {
 			char* new = tok->buf;
 
 			newptr = realloc(new, (n + n) * sizeof(char));
-			if(new == NULL) {
+			if(newptr == NULL) {
 				free(new);
 				tok->done = PY_RESULT_OOM;
 				return EOF;

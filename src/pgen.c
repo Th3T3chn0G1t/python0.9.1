@@ -14,8 +14,6 @@
 #include <python/metagrammar.h>
 #include <python/pgen.h>
 
-extern int debugging;
-
 /* PART ONE -- CONSTRUCT NFA -- Cf. Algorithm 3.2 from [Aho&Ullman 77] */
 
 struct py_nfa_arc {
@@ -165,7 +163,6 @@ static struct py_nfa_grammar* py_node_compile_meta(struct py_node* n) {
 	struct py_nfa_grammar* gr;
 	int i;
 
-	fprintf(stderr, "Compiling (meta-) parse tree into NFA grammar\n");
 	gr = py_nfa_grammar_new();
 	PY_REQ(n, PY_MSTART);
 	i = (int) n->count - 1; /* Last child is PY_ENDMARKER */
@@ -319,46 +316,8 @@ void compile_atom(
 		*pb = py_nfa_add_state(nf);
 		py_nfa_add_arc(nf, *pa, *pb, py_labellist_add(ll, n->type, n->str));
 	}
-	else
-		PY_REQ(n, PY_NAME);
+	else PY_REQ(n, PY_NAME);
 }
-
-static void py_nfa_dump_state(
-		struct py_labellist* ll, struct py_nfa* nf, int istate) {
-
-	struct py_nfa_state* st;
-	struct py_nfa_arc* ar;
-	unsigned i;
-
-	printf(
-			"%c%2d%c", istate == nf->start ? '*' : ' ', istate,
-			istate == nf->finish ? '.' : ' ');
-
-	st = &nf->states[istate];
-	ar = st->arcs;
-
-	for(i = 0; i < st->count; i++) {
-		if(i > 0) printf("\n    ");
-
-		printf(
-				"-> %2d  %s", ar->arrow,
-				py_label_repr(&ll->label[ar->label]));
-		ar++;
-	}
-
-	printf("\n");
-}
-
-static void py_nfa_dump(struct py_labellist* ll, struct py_nfa* nf) {
-	unsigned i;
-
-	printf(
-			"NFA '%s' has %d states; start %d, finish %d\n", nf->name,
-			nf->count, nf->start, nf->finish);
-
-	for(i = 0; i < nf->count; i++) py_nfa_dump_state(ll, nf, i);
-}
-
 
 /* PART TWO -- CONSTRUCT DFA -- Algorithm 3.1 from [Aho&Ullman 77] */
 
@@ -648,12 +607,6 @@ static struct py_grammar* py_nfa_grammar_tables(struct py_nfa_grammar* gr) {
 	for(i = 0; i < gr->count; i++) {
 		nf = gr->nfas[i];
 
-		if(debugging) {
-			printf("Dump of NFA for '%s' ...\n", nf->name);
-			py_nfa_dump(&gr->labellist, nf);
-		}
-
-		fprintf(stderr, "Making DFA for '%s' ...\n", nf->name);
 		d = py_grammar_add_dfa(g, nf->type, nf->name);
 		py_dfa_new(gr->nfas[i], d);
 	}

@@ -9,8 +9,6 @@
 #include <python/grammar.h>
 #include <python/token.h>
 
-extern int debugging;
-
 /* Forward */
 static void py_grammar_calculate_first_set(struct py_grammar*, struct py_dfa*);
 
@@ -18,7 +16,6 @@ void py_grammar_add_firsts(struct py_grammar* g) {
 	unsigned i;
 	struct py_dfa* d;
 
-	fprintf(stderr, "Adding FIRST sets ...\n");
 	for(i = 0; i < g->count; i++) {
 		d = &g->dfas[i];
 		if(d->first == NULL) {
@@ -31,13 +28,14 @@ void py_grammar_add_firsts(struct py_grammar* g) {
 static void py_grammar_calculate_first_set(
 		struct py_grammar* g, struct py_dfa* d) {
 
+	static py_bitset_t dummy;
+
 	unsigned i, j;
 	struct py_state* s;
 	struct py_arc* a;
 	unsigned nbits;
 	unsigned nsyms;
 	int* sym;
-	static py_bitset_t dummy;
 	py_bitset_t result;
 	int type;
 	struct py_dfa* d1;

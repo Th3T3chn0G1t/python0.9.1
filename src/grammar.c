@@ -9,9 +9,6 @@
 #include <python/grammar.h>
 #include <python/errors.h>
 
-/* TODO: Python global state. */
-extern int debugging;
-
 struct py_grammar* py_grammar_new(int start) {
 	struct py_grammar* g;
 
@@ -136,18 +133,9 @@ static void py_grammar_translate_label(
 
 	unsigned i;
 
-	if(debugging) {
-		printf("Translating label %s ...\n", py_label_repr(lb));
-	}
-
 	if(lb->type == PY_NAME) {
 		for(i = 0; i < g->count; i++) {
 			if(strcmp(lb->str, g->dfas[i].name) == 0) {
-				if(debugging) {
-					printf(
-							"Label %s is non-terminal %d.\n", lb->str,
-							g->dfas[i].type);
-				}
 				lb->type = g->dfas[i].type;
 				lb->str = NULL;
 				return;
@@ -155,10 +143,6 @@ static void py_grammar_translate_label(
 		}
 		for(i = 0; i < (int) PY_N_TOKENS; i++) {
 			if(strcmp(lb->str, py_token_names[i]) == 0) {
-				if(debugging) {
-					printf(
-							"Label %s is terminal %d.\n", lb->str, i);
-				}
 				lb->type = i;
 				lb->str = NULL;
 				return;
@@ -172,10 +156,6 @@ static void py_grammar_translate_label(
 	if(lb->type == PY_STRING) {
 		if(isalpha(lb->str[1])) {
 			char* p;
-
-			if(debugging) {
-				printf("Label %s is a keyword\n", lb->str);
-			}
 
 			lb->type = PY_NAME;
 			lb->str++;
@@ -201,7 +181,6 @@ static void py_grammar_translate_label(
 void py_grammar_translate(struct py_grammar* g) {
 	unsigned i;
 
-	fprintf(stderr, "Translating labels ...\n");
 	/* Don't translate EMPTY */
 	for(i = PY_LABEL_EMPTY + 1; i < g->labels.count; i++) {
 		py_grammar_translate_label(g, &g->labels.label[i]);
