@@ -29,13 +29,13 @@ struct py_nfa_state {
 };
 
 struct py_nfa {
-	/* TODO: Signedness. */
 	int type;
 	char* name;
 
 	unsigned count;
 	struct py_nfa_state* states;
 
+	/* TODO: Signedness. */
 	int start, finish;
 };
 
@@ -48,11 +48,14 @@ struct py_nfa_grammar {
 static int py_nfa_add_state(struct py_nfa* nf) {
 	struct py_nfa_state* st;
 
-	/* TODO: Leaky realloc. */
-	nf->states = realloc(
+	void* newptr = realloc(
 			nf->states, (nf->count + 1) * sizeof(struct py_nfa_state));
 	/* TODO: Better EH. */
-	if(nf->states == NULL) py_fatal("out of mem");
+	if(newptr == NULL) {
+		free(nf->states);
+		py_fatal("out of mem");
+	}
+	nf->states = newptr;
 
 	st = &nf->states[nf->count++];
 	st->count = 0;
@@ -66,13 +69,17 @@ static void py_nfa_add_arc(
 
 	struct py_nfa_state* st;
 	struct py_nfa_arc* ar;
+	void* newptr;
 
 	st = &nf->states[from];
 
-	/* TODO: Leaky realloc. */
-	st->arcs = realloc(st->arcs, (st->count + 1) * sizeof(struct py_nfa_arc));
+	newptr = realloc(st->arcs, (st->count + 1) * sizeof(struct py_nfa_arc));
 	/* TODO: Better EH. */
-	if(st->arcs == NULL) py_fatal("out of mem");
+	if(newptr == NULL) {
+		free(newptr);
+		py_fatal("out of mem");
+	}
+	st->arcs = newptr;
 
 	ar = &st->arcs[st->count++];
 	ar->label = lbl;
@@ -390,15 +397,11 @@ struct py_ss_state {
 	int rename;
 };
 
-void py_ss_dfa_print(
-		unsigned, struct py_ss_state*, unsigned, struct py_labellist*, char*);
-
 void py_ss_state_simplify(unsigned, struct py_ss_state*);
 
 void py_dfa_convert(struct py_dfa*, unsigned, struct py_ss_state*);
 
-static void py_dfa_new(
-		struct py_nfa_grammar* gr, struct py_nfa* nf, struct py_dfa* d) {
+static void py_dfa_new(struct py_nfa* nf, struct py_dfa* d) {
 
 	unsigned nbits = nf->count;
 	py_bitset_t ss;
@@ -413,6 +416,7 @@ static void py_dfa_new(
 	ss = py_bitset_new(nbits);
 	py_nfa_add_closure(ss, nf, nf->start);
 	states = malloc(sizeof(struct py_ss_state));
+	/* TODO: Better EH. */
 	if(states == NULL) py_fatal("no mem for state in py_dfa_new");
 
 	nstates = 1;
@@ -435,32 +439,36 @@ static void py_dfa_new(
 	for(istate = 0; istate < nstates; ++istate) {
 		current = &states[istate];
 		ss = current->bitset;
+
 		/* For all its states... */
 		for(ibit = 0; ibit < nf->count; ++ibit) {
-			if(!PY_TESTBIT(ss, ibit)) {
-				continue;
-			}
+			if(!PY_TESTBIT(ss, ibit)) continue;
 			st = &nf->states[ibit];
+
 			/* For all non-empty arcs from this state... */
 			for(iarc = 0; iarc < st->count; iarc++) {
+				void* newptr;
+
 				ar = &st->arcs[iarc];
-				if(ar->label == PY_LABEL_EMPTY) {
-					continue;
-				}
+				if(ar->label == PY_LABEL_EMPTY) continue;
+
 				/* Look up in list of arcs from this state */
 				for(jarc = 0; jarc < current->count; ++jarc) {
 					ss_arc = &current->arcs[jarc];
-					if(ar->label == ss_arc->label) {
-						goto found;
-					}
+					if(ar->label == ss_arc->label) goto found;
 				}
+
 				/* Add new arc for this state */
-				/* TODO: Leaky realloc. */
-				current->arcs = realloc(
-						current->arcs, (current->count + 1) * sizeof(struct py_ss_arc));
-				if(current->arcs == NULL) {
+				newptr = realloc(
+						current->arcs,
+						(current->count + 1) * sizeof(struct py_ss_arc));
+				if(newptr == NULL) {
+					/* TODO: Better EH. */
+					free(newptr);
 					py_fatal("out of mem");
 				}
+				current->arcs = newptr;
+
 				ss_arc = &current->arcs[current->count++];
 				ss_arc->label = ar->label;
 				ss_arc->bitset = py_bitset_new(nbits);
@@ -474,6 +482,8 @@ static void py_dfa_new(
 
 		/* Now look up all the arrow states */
 		for(jarc = 0; jarc < states[istate].count; jarc++) {
+			void* newptr;
+
 			ss_arc = &states[istate].arcs[jarc];
 
 			for(jstate = 0; jstate < nstates; jstate++) {
@@ -485,9 +495,13 @@ static void py_dfa_new(
 				}
 			}
 
-			/* TODO: Leaky realloc. */
-			states = realloc(states, (nstates + 1) * sizeof(struct py_ss_state));
-			if(states == NULL) py_fatal("out of mem");
+			newptr = realloc(states, (nstates + 1) * sizeof(struct py_ss_state));
+			if(newptr == NULL) {
+				/* TODO: Bestter EH. */
+				free(states);
+				py_fatal("out of mem");
+			}
+			states = newptr;
 
 			ss_arc->arrow = nstates;
 			current = &states[nstates++];
@@ -500,57 +514,12 @@ static void py_dfa_new(
 		}
 	}
 
-	if(debugging) {
-		py_ss_dfa_print(
-				nstates, states, nbits, &gr->labellist, "before minimizing");
-	}
-
 	py_ss_state_simplify(nstates, states);
-
-	if(debugging) {
-		py_ss_dfa_print(
-				nstates, states, nbits, &gr->labellist, "after minimizing");
-	}
 
 	py_dfa_convert(d, nstates, states);
 
 	/* TODO: cleanup */
 }
-
-void py_ss_dfa_print(
-		unsigned nstates, struct py_ss_state* state, unsigned nbits,
-		struct py_labellist* ll, char* msg) {
-
-	unsigned i, ibit, iarc;
-	struct py_ss_state* current;
-	struct py_ss_arc* ss_arc;
-
-	printf("Subset DFA %s\n", msg);
-	for(i = 0; i < nstates; i++) {
-		current = &state[i];
-		if(current->deleted) {
-			continue;
-		}
-		printf(" Subset %d", i);
-		if(current->finish) {
-			printf(" (finish)");
-		}
-		printf(" { ");
-		for(ibit = 0; ibit < nbits; ibit++) {
-			if(PY_TESTBIT(current->bitset, ibit)) {
-				printf("%d ", ibit);
-			}
-		}
-		printf("}\n");
-		for(iarc = 0; iarc < current->count; iarc++) {
-			ss_arc = &current->arcs[iarc];
-			printf(
-					"  Arc to state %d, label %s\n", ss_arc->arrow,
-					py_label_repr(&ll->label[ss_arc->label]));
-		}
-	}
-}
-
 
 /* PART THREE -- SIMPLIFY DFA */
 
@@ -583,8 +552,6 @@ static void py_ss_state_rename(
 		unsigned to) {
 
 	unsigned i, j;
-
-	if(debugging) printf("Rename state %d to %d.\n", from, to);
 
 	for(i = 0; i < nstates; i++) {
 		if(state[i].deleted) {
@@ -688,7 +655,7 @@ static struct py_grammar* py_nfa_grammar_tables(struct py_nfa_grammar* gr) {
 
 		fprintf(stderr, "Making DFA for '%s' ...\n", nf->name);
 		d = py_grammar_add_dfa(g, nf->type, nf->name);
-		py_dfa_new(gr, gr->nfas[i], d);
+		py_dfa_new(gr->nfas[i], d);
 	}
 
 	return g;

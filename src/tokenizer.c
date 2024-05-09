@@ -9,8 +9,6 @@
 
 /* TODO: Need a better interface to report errors than writing to stderr */
 
-/* TODO: Should use editor resource to fetch true tab size on Macintosh */
-
 #include <python/std.h>
 #include <python/tokenizer.h>
 #include <python/result.h>
@@ -97,16 +95,17 @@ static int py_tokenizer_next_character(struct py_tokenizer* tok) {
 		if(tok->inp > tok->buf && tok->inp[-1] == '\n') tok->inp = tok->buf;
 
 		if(tok->inp == tok->end) {
+			void* newptr;
 			int n = tok->end - tok->buf;
 			char* new = tok->buf;
 
-			/* TODO: Leaky realloc. */
-			new = realloc(new, (n + n) * sizeof(char));
+			newptr = realloc(new, (n + n) * sizeof(char));
 			if(new == NULL) {
-				fprintf(stderr, "tokenizer out of mem\n");
+				free(new);
 				tok->done = PY_RESULT_OOM;
 				return EOF;
 			}
+			new = newptr;
 
 			tok->buf = new;
 			tok->inp = tok->buf + n;
@@ -387,15 +386,3 @@ int py_tokenizer_get(
 	*p_end = tok->cur;
 	return py_token_char(c);
 }
-
-
-#ifdef _DEBUG
-/* TODO: Unused? */
-void py_token_dump(int type, char* start, char* end) {
-	printf("%s", py_token_names[type]);
-	if(type == PY_NAME || type == PY_NUMBER || type == PY_STRING ||
-	   type == PY_OP) {
-		printf("(%.*s)", (int) (end - start), start);
-	}
-}
-#endif

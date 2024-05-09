@@ -101,16 +101,16 @@ static void py_compiler_delete(struct py_compiler* c) {
 
 static void py_compile_add_byte(struct py_compiler* c, py_byte_t byte) {
 	if(c->offset >= c->len) {
-		/* TODO: Leaky realloc. */
-		c->code = realloc(c->code, c->len + PY_CODE_CHUNK);
-		memset(c->code + c->len, 0, PY_CODE_CHUNK);
-		c->len += PY_CODE_CHUNK;
-
-		if(!c->code) {
+		void* newptr = realloc(c->code, c->len + PY_CODE_CHUNK);
+		if(!newptr) {
+			free(c->code);
 			/* TODO: Better nomem handling */
-			fprintf(stderr, "out of memory");
 			abort();
 		}
+
+		c->code = newptr;
+		memset(c->code + c->len, 0, PY_CODE_CHUNK);
+		c->len += PY_CODE_CHUNK;
 	}
 
 	c->code[c->offset++] = byte;
@@ -231,8 +231,9 @@ static struct py_object* py_compile_parse_string(const char* s) {
 
 	for(i = 1; s[i] != '\''; ++i) {
 		/* TODO: Leaky realloc. */
-		buf = realloc(buf, ++len);
-		if(!buf) return py_error_set_nomem();
+		void* newptr = realloc(buf, ++len);
+		if(!newptr) return py_error_set_nomem();
+		buf = newptr;
 
 		buf[len - 1] = s[i];
 		if(s[i] != '\\') continue;
@@ -414,7 +415,8 @@ static void com_apply_trailer(struct py_compiler* c, struct py_node* n) {
 
 		default: {
 			py_error_set_string(
-					py_system_error, "com_apply_trailer: unknown PY_GRAMMAR_TRAILER type");
+					py_system_error,
+					"com_apply_trailer: unknown PY_GRAMMAR_TRAILER type");
 			/* TODO: Proper EH. */
 			abort();
 		}
@@ -506,8 +508,7 @@ static void py_compile_expression(struct py_compiler* c, struct py_node* n) {
 			default: {
 				py_error_set_string(
 						py_system_error,
-						"py_compile_expression: "
-						"expr operator not + or -");
+						"py_compile_expression: expr operator not + or -");
 				/* TODO: Proper EH. */
 				abort();
 			}
@@ -896,7 +897,6 @@ static void py_compile_assign(
 						n = &n->children[1];
 
 						if(n->type == PY_RPAR) {
-							/* TODO: Should allow () = () ??? */
 							py_error_set_string(
 									py_type_error, "can't assign to ()");
 							/* TODO: Proper EH. */
@@ -939,8 +939,8 @@ static void py_compile_assign(
 			}
 
 			default: {
-				fprintf(stderr, "node type %d\n", n->type);
-				py_error_set_string(py_system_error, "py_compile_assign: bad node");
+				py_error_set_string(
+						py_system_error, "py_compile_assign: bad node");
 				/* TODO: Proper EH. */
 				abort();
 			}
@@ -1270,7 +1270,8 @@ static void py_compile_try_statement(
 				py_compile_add_byte(c, PY_OP_DUP_TOP);
 				py_compile_node(c, &ch->children[1]);
 				py_compile_add_op_arg(c, PY_OP_COMPARE_OP, PY_CMP_EXC_MATCH);
-				py_compile_add_forward_reference(c, PY_OP_JUMP_IF_FALSE, &except_anchor);
+				py_compile_add_forward_reference(
+						c, PY_OP_JUMP_IF_FALSE, &except_anchor);
 				py_compile_add_byte(c, PY_OP_POP_TOP);
 			}
 
@@ -1627,6 +1628,7 @@ static void py_compile_function_signature(
 	py_compile_add_byte(c, PY_OP_RETURN_VALUE);
 }
 
+/* TODO: Rename. */
 static void compile_node(struct py_compiler* c, struct py_node* n) {
 	py_compile_add_op_arg(c, PY_OP_SET_LINENO, n->lineno);
 
@@ -1675,13 +1677,15 @@ static void compile_node(struct py_compiler* c, struct py_node* n) {
 struct py_code* py_compile(struct py_node* n, const char* filename) {
 	struct py_compiler sc;
 	struct py_code* co;
+	void* newptr;
 
 	if(!py_compiler_new(&sc, filename)) return NULL;
 
 	compile_node(&sc, n);
 
-	/* TODO: Leaky realloc. */
-	sc.code = realloc(sc.code, sc.offset);
+	newptr = realloc(sc.code, sc.offset);
+	if(!newptr) return NULL; /* TODO: Free dead compiler. */
+	sc.code = newptr;
 	sc.len = sc.offset;
 
 	co = py_code_new(sc.code, sc.consts, sc.names, filename);

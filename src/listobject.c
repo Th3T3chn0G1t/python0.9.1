@@ -85,9 +85,9 @@ static int ins1(struct py_list* self, unsigned where, struct py_object* v) {
 	}
 
 	items = self->item;
-	/* TODO: Leaky realloc. */
-	items = realloc(items, (self->ob.size + 1) * sizeof(struct py_object*));
 
+	/* This isn't leaky -- we want to preserve original in OOM case here. */
+	items = realloc(items, (self->ob.size + 1) * sizeof(struct py_object*));
 	if(items == NULL) {
 		py_error_set_nomem();
 		return -1;

@@ -74,6 +74,7 @@ static void py_traceback_print_line(
 	/* TODO: Debug info to not require sources for tb. */
 	xfp = pyopen_r(filename);
 	if(xfp == NULL) {
+		/* TODO: Better EH? */
 		fprintf(fp, "    (cannot open \"%s\")\n", filename);
 		return;
 	}

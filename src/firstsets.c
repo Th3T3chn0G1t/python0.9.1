@@ -43,11 +43,10 @@ static void py_grammar_calculate_first_set(
 	struct py_dfa* d1;
 	struct py_label* l0;
 
-	if(debugging) printf("Calculate FIRST set for '%s'\n", d->name);
-
 	if(dummy == NULL) dummy = py_bitset_new(1);
 
 	if(d->first == dummy) {
+		/* TODO: Better EH. */
 		fprintf(stderr, "Left-recursion for '%s'\n", d->name);
 		return;
 	}
@@ -64,6 +63,7 @@ static void py_grammar_calculate_first_set(
 
 	sym = malloc(sizeof(int));
 	if(sym == NULL) {
+		/* TODO: Better EH. */
 		py_fatal("no mem for new sym in py_grammar_calculate_first_set");
 	}
 
@@ -80,13 +80,15 @@ static void py_grammar_calculate_first_set(
 		}
 
 		if(j >= nsyms) { /* New label */
-			/* TODO: Leaky realloc. */
-			sym = realloc(sym, (nsyms + 1) * sizeof(int));
-			if(sym == NULL) {
+			void* newptr = realloc(sym, (nsyms + 1) * sizeof(int));
+			if(newptr == NULL) {
+				/* TODO: Better EH. */
+				free(sym);
 				py_fatal(
 						"no mem to resize sym in "
 						"py_grammar_calculate_first_set");
 			}
+			sym = newptr;
 
 			sym[nsyms++] = a->label;
 			type = l0[a->label].type;
@@ -95,6 +97,7 @@ static void py_grammar_calculate_first_set(
 				d1 = py_grammar_find_dfa(g, type);
 
 				if(d1->first == dummy) {
+					/* TODO: Better EH? */
 					fprintf(stderr, "Left-recursion below '%s'\n", d->name);
 				}
 				else {
@@ -107,14 +110,6 @@ static void py_grammar_calculate_first_set(
 			else py_bitset_add(result, a->label);
 		}
 	}
+
 	d->first = result;
-	if(debugging) {
-		printf("FIRST set for '%s': {", d->name);
-		for(i = 0; i < nbits; i++) {
-			if(PY_TESTBIT(result, i)) {
-				printf(" %s", py_label_repr(&l0[i]));
-			}
-		}
-		printf(" }\n");
-	}
 }

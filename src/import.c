@@ -89,7 +89,9 @@ struct py_object* py_module_add(const char* name) {
 }
 
 /* TODO: No buffer overflow checks! */
-static FILE* open_module(const char* name, const char* suffix, char* namebuf) {
+static FILE* py_open_module(
+		const char* name, const char* suffix, char* namebuf) {
+
 	FILE* fp;
 
 	if(py_path == NULL || !(py_path->type == PY_TYPE_LIST)) {
@@ -133,7 +135,7 @@ static struct py_object* get_module(
 	int err;
 	char namebuf[256];
 
-	fp = open_module(name, ".py", namebuf);
+	fp = py_open_module(name, ".py", namebuf);
 	if(fp == NULL) {
 		if(m == NULL) {
 			py_error_set_string(py_name_error, name);
@@ -179,11 +181,10 @@ struct py_object* py_import_module(const char* name) {
 	return m;
 }
 
-/* TODO: Signedness. */
 static void py_dict_clear(struct py_object* d) {
-	int i;
+	unsigned i;
 
-	for(i = (int) py_dict_size(d); --i >= 0;) {
+	for(i = 0; i < py_dict_size(d); ++i) {
 		const char* k = py_dict_get_key(d, i);
 		if(k != NULL) (void) py_dict_remove(d, k);
 	}
@@ -191,14 +192,13 @@ static void py_dict_clear(struct py_object* d) {
 
 void py_import_done(void) {
 	if(modules != NULL) {
-		int i;
+		unsigned i;
 
 		/*
 		 * Explicitly erase all modules; this is the safest way to get rid of
 		 * at least *some* circular dependencies
 		 */
-		/* TODO: Signedness. */
-		for(i = (int) py_dict_size(modules); --i >= 0;) {
+		for(i = 0; i < py_dict_size(modules); ++i) {
 			const char* k = py_dict_get_key(modules, i);
 
 			if(k != NULL) {

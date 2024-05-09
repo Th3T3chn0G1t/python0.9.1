@@ -38,7 +38,7 @@ struct py_object* py_string_new(const char* str) {
 	op->ob.type = PY_TYPE_STRING;
 	op->ob.size = size;
 
-	strcpy(op->value, str); /* TODO: What is this for? */
+	memcpy(op->value, str, size + 1);
 
 	return (struct py_object*) op;
 }

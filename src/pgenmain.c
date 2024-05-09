@@ -34,24 +34,28 @@ int main(int argc, char** argv) {
 		fprintf(stderr, "usage: %s grammar outsource outheader\n", argv[0]);
 		exit(2);
 	}
+
 	filename = argv[1];
 	g = py_load_grammar(filename);
+
 	fp = fopen(argv[2], "w");
 	if(fp == NULL) {
 		perror("graminit.c");
 		exit(1);
 	}
-	fprintf(stderr, "Writing graminit.c ...\n");
+
 	py_grammar_print(g, fp);
 	fclose(fp);
+
 	fp = fopen(argv[3], "w");
 	if(fp == NULL) {
 		perror("graminit.h");
 		exit(1);
 	}
-	fprintf(stderr, "Writing graminit.h ...\n");
+
 	py_grammar_print_nonterminals(g, fp);
 	fclose(fp);
+
 	exit(0);
 }
 

@@ -19,7 +19,6 @@ struct py_frame* py_frame_new(
 
 	struct py_frame* f;
 
-	/* TODO: What is this mess? */
 	if((back != NULL && back->ob.type != PY_TYPE_FRAME) || code == NULL ||
 		code->ob.type != PY_TYPE_CODE || globals == NULL ||
 		globals->type != PY_TYPE_DICT || locals == NULL ||

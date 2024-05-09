@@ -100,15 +100,20 @@ static void fixstate(struct py_grammar* g, struct py_state* s) {
 
 	if(k < nl) {
 		int i;
+		void* newptr;
 
-		s->accel = malloc((nl - k) * sizeof(int));
-		/* TODO: Leaky realloc. */
-		freelist = realloc(freelist, ++freelist_len * sizeof(int*));
-
-		if(s->accel == NULL || freelist == NULL) {
+		/* TODO: Better EH. */
+		if(!(s->accel = malloc((nl - k) * sizeof(int)))) {
 			fprintf(stderr, "no mem to add parser accelerators\n");
 			exit(1);
 		}
+
+		if(!(newptr = realloc(freelist, ++freelist_len * sizeof(int*)))) {
+			free(freelist);
+			fprintf(stderr, "no mem to add parser accelerators\n");
+			exit(1);
+		}
+		freelist = newptr;
 
 		freelist[freelist_len - 1] = s->accel;
 		s->lower = k;

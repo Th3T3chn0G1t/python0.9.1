@@ -31,9 +31,13 @@ struct py_grammar* py_grammar_new(int start) {
 struct py_dfa* py_grammar_add_dfa(struct py_grammar* g, int type, char* name) {
 	struct py_dfa* d;
 
-	/* TODO: Leaky realloc. */
-	g->dfas = realloc(g->dfas, (g->count + 1) * sizeof(struct py_dfa));
-	if(g->dfas == NULL) py_fatal("no mem to resize dfa in py_grammar_add_dfa");
+	void* newptr = realloc(g->dfas, (g->count + 1) * sizeof(struct py_dfa));
+	if(newptr == NULL) {
+		free(g->dfas);
+		/* TODO: Better EH. */
+		py_fatal("no mem to resize dfa in py_grammar_add_dfa");
+	}
+	g->dfas = newptr;
 
 	d = &g->dfas[g->count++];
 	d->type = type;
@@ -87,6 +91,7 @@ void py_dfa_add_arc(
 int py_labellist_add(struct py_labellist* ll, int type, char* str) {
 	unsigned i;
 	struct py_label* lb;
+	void* newptr;
 
 	for(i = 0; i < ll->count; i++) {
 		if(ll->label[i].type == type && strcmp(ll->label[i].str, str) == 0) {
@@ -94,10 +99,13 @@ int py_labellist_add(struct py_labellist* ll, int type, char* str) {
 		}
 	}
 
-	ll->label = realloc(ll->label, (ll->count + 1) * sizeof(struct py_label));
-	if(ll->label == NULL) {
+	newptr = realloc(ll->label, (ll->count + 1) * sizeof(struct py_label));
+	if(newptr == NULL) {
+		free(ll->label);
+		/* TODO: Better EH. */
 		py_fatal("no mem to resize struct py_labellist in py_labellist_add");
 	}
+	ll->label = newptr;
 
 	lb = &ll->label[ll->count++];
 	lb->type = type;
