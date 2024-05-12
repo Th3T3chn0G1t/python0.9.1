@@ -72,7 +72,7 @@ static void py_traceback_print_line(
 	unsigned i;
 
 	/* TODO: Debug info to not require sources for tb. */
-	xfp = pyopen_r(filename);
+	xfp = py_open_r(filename);
 	if(xfp == NULL) {
 		/* TODO: Better EH? */
 		fprintf(fp, "    (cannot open \"%s\")\n", filename);
@@ -91,7 +91,7 @@ static void py_traceback_print_line(
 		if(strchr(p, '\n') == NULL) fprintf(fp, "\n");
 	}
 
-	pyclose(xfp); /* TODO: Reopening file every tb? */
+	py_close(xfp); /* TODO: Reopening file every tb? */
 }
 
 static void py_traceback_print_impl(struct py_traceback* tb, FILE* fp) {

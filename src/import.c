@@ -21,8 +21,10 @@
 #include <python/listobject.h>
 #include <python/stringobject.h>
 
+/* TODO: This system needs some rework to clean up import control flow. */
+
 /* TODO: Python global state. */
-static struct py_object* modules;
+static struct py_object* py_modules;
 struct py_object* py_path;
 
 struct py_object* py_path_new(const char* path) {
@@ -34,57 +36,55 @@ struct py_object* py_path_new(const char* path) {
 
 	n = 1;
 	p = path;
+
 	while((p = strchr(p, delim)) != NULL) {
 		n++;
 		p++;
 	}
-	v = py_list_new(n);
-	if(v == NULL) {
-		return NULL;
-	}
+
+	if(!(v = py_list_new(n))) return NULL;
+
 	for(i = 0;; i++) {
-		p = strchr(path, delim);
-		if(p == NULL) {
-			p = strchr(path, '\0');
-		} /* End of string */
-		w = py_string_new_size(path, (int) (p - path));
+		if(!(p = strchr(path, delim))) p = strchr(path, '\0');
+
+		w = py_string_new_size(path, (unsigned) (p - path));
 		if(w == NULL) {
 			py_object_decref(v);
 			return NULL;
 		}
+
 		py_list_set(v, i, w);
-		if(*p == '\0') {
-			break;
-		}
+		if(*p == '\0') break;
+
 		path = p + 1;
 	}
+
 	return v;
 }
 
 /* Initialization */
 
 void py_import_init(void) {
-	if((modules = py_dict_new()) == NULL) {
-		py_fatal("no mem for dictionary of modules");
+	if((py_modules = py_dict_new()) == NULL) {
+		py_fatal("no mem for dictionary of py_modules");
 	}
 }
 
 struct py_object* py_module_add(const char* name) {
 	struct py_object* m;
 
-	if((m = py_dict_lookup(modules, name)) != NULL && (m->type == PY_TYPE_MODULE)) {
+	if((m = py_dict_lookup(py_modules, name)) && m->type == PY_TYPE_MODULE) {
 		return m;
 	}
 
-	m = py_module_new(name);
-	if(m == NULL) return NULL;
+	if(!(m = py_module_new(name))) return NULL;
 
-	if(py_dict_insert(modules, name, m) != 0) {
+	if(py_dict_insert(py_modules, name, m)) {
 		py_object_decref(m);
 		return NULL;
 	}
 
-	py_object_decref(m); /* Yes, it still exists, in modules! */
+	py_object_decref(m); /* Yes, it still exists, in py_modules! */
 	return m;
 }
 
@@ -97,7 +97,7 @@ static FILE* py_open_module(
 	if(py_path == NULL || !(py_path->type == PY_TYPE_LIST)) {
 		strcpy(namebuf, name);
 		strcat(namebuf, suffix);
-		fp = pyopen_r(namebuf);
+		fp = py_open_r(namebuf);
 	}
 	else {
 		unsigned npath = py_varobject_size(py_path);
@@ -113,12 +113,13 @@ static FILE* py_open_module(
 			strcpy(namebuf, py_string_get(v));
 			len = py_varobject_size(v);
 
+			/* TODO: Play nice with Windows file separators? */
 			if(len > 0 && namebuf[len - 1] != '/') namebuf[len++] = '/';
 
 			strcpy(namebuf + len, name);
 			strcat(namebuf, suffix);
 
-			fp = pyopen_r(namebuf);
+			fp = py_open_r(namebuf);
 			if(fp != NULL) break;
 		}
 	}
@@ -126,61 +127,62 @@ static FILE* py_open_module(
 	return fp;
 }
 
-static struct py_object* get_module(
-		struct py_object* m, const char* name, struct py_object** m_ret) {
+static struct py_object* py_get_module(
+		struct py_env* env, struct py_object* m, const char* name,
+		struct py_object** ret) {
 
 	struct py_object* d;
 	struct py_node* n;
 	FILE* fp;
 	int err;
+
+	/* TODO: This is not playing nice with buffers. */
 	char namebuf[256];
 
-	fp = py_open_module(name, ".py", namebuf);
-	if(fp == NULL) {
-		if(m == NULL) {
-			py_error_set_string(py_name_error, name);
-		}
-		else {
-			py_error_set_string(py_runtime_error, "no module source file");
-		}
+	if(!(fp = py_open_module(name, ".py", namebuf))) {
+		if(!m) py_error_set_string(py_name_error, name);
+		else py_error_set_string(py_runtime_error, "no module source file");
+
 		return NULL;
 	}
-	err = py_parse_file(fp, namebuf, &py_grammar, PY_GRAMMAR_FILE_INPUT, 0, 0, &n);
-	pyclose(fp);
+
+	err = py_parse_file(
+			fp, namebuf, &py_grammar, PY_GRAMMAR_FILE_INPUT, 0, 0, &n);
+	py_close(fp);
+
 	if(err != PY_RESULT_DONE) {
 		py_error_set_input(err);
 		return NULL;
 	}
-	if(m == NULL) {
-		m = py_module_add(name);
-		if(m == NULL) {
+
+	if(!m) {
+		if(!(m = py_module_add(name))) {
 			py_tree_delete(n);
 			return NULL;
 		}
-		*m_ret = m;
+
+		*ret = m;
 	}
+
 	d = ((struct py_module*) m)->attr;
-	return py_tree_run(n, namebuf, d, d);
+
+	return py_tree_run(env, n, namebuf, d, d);
 }
 
-static struct py_object* load_module(const char* name) {
-	struct py_object* m, * v;
-
-	v = get_module((struct py_object*) NULL, name, &m);
-	if(v == NULL) return NULL;
-
-	py_object_decref(v);
-	return m;
-}
-
-struct py_object* py_import_module(const char* name) {
+struct py_object* py_import_module(struct py_env* env, const char* name) {
 	struct py_object* m;
+	struct py_object* v;
 
-	if((m = py_dict_lookup(modules, name)) == NULL) m = load_module(name);
+	if(!(m = py_dict_lookup(py_modules, name))) {
+		if(!(v = py_get_module(env, NULL, name, &m))) return NULL;
+
+		py_object_decref(v);
+	}
 
 	return m;
 }
 
+/* TODO: Shouldn't this be in dictobject? */
 static void py_dict_clear(struct py_object* d) {
 	unsigned i;
 
@@ -191,29 +193,31 @@ static void py_dict_clear(struct py_object* d) {
 }
 
 void py_import_done(void) {
-	if(modules != NULL) {
+	if(py_modules != NULL) {
 		unsigned i;
 
 		/*
-		 * Explicitly erase all modules; this is the safest way to get rid of
-		 * at least *some* circular dependencies
+		 * Explicitly erase all py_modules; this is the safest way to get rid
+		 * Of at least *some* circular dependencies.
 		 */
-		for(i = 0; i < py_dict_size(modules); ++i) {
-			const char* k = py_dict_get_key(modules, i);
 
-			if(k != NULL) {
-				struct py_object* m = py_dict_lookup(modules, k);
+		/* TODO: Make this more robust. */
+		for(i = 0; i < py_dict_size(py_modules); ++i) {
+			const char* k = py_dict_get_key(py_modules, i);
 
-				if(m != NULL && (m->type == PY_TYPE_MODULE)) {
+			if(k) {
+				struct py_object* m = py_dict_lookup(py_modules, k);
+
+				if(m && m->type == PY_TYPE_MODULE) {
 					struct py_object* d = ((struct py_module*) m)->attr;
 
-					if(d != NULL && (d->type == PY_TYPE_DICT)) py_dict_clear(d);
+					if(d && d->type == PY_TYPE_DICT) py_dict_clear(d);
 				}
 			}
 		}
 
-		py_dict_clear(modules);
+		py_dict_clear(py_modules);
 	}
 
-	py_object_decref(modules);
+	py_object_decref(py_modules);
 }

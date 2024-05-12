@@ -13,6 +13,7 @@
 #include <python/frameobject.h>
 #include <python/dictobject.h>
 
+/* TODO: This function is kind of a mess for such an important component. */
 struct py_frame* py_frame_new(
 		struct py_frame* back, struct py_code* code, struct py_object* globals,
 		struct py_object* locals, unsigned nvalues, unsigned nblocks) {

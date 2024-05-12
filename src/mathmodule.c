@@ -5,6 +5,7 @@
 
 /* Math module -- standard C math library functions */
 
+#include <python/state.h>
 #include <python/std.h>
 #include <python/modsupport.h>
 #include <python/errors.h>
@@ -12,6 +13,10 @@
 #include <python/floatobject.h>
 #include <python/intobject.h>
 #include <python/tupleobject.h>
+
+typedef double (*py_math1_t)(double);
+typedef double (*py_math2_t)(double, double);
+typedef py_value_t (*py_math_val2_t)(py_value_t, py_value_t);
 
 static int py_arg_double(struct py_object* args, double* px) {
 	if(args == NULL) return py_error_set_badarg();
@@ -28,8 +33,12 @@ static int py_arg_double(struct py_object* args, double* px) {
 	return py_error_set_badarg();
 }
 
-static int py_arg_double_double(struct py_object* args, double* px, double* py) {
-	if(args == NULL || !(args->type == PY_TYPE_TUPLE) || py_varobject_size(args) != 2) {
+static int py_arg_double_double(
+		struct py_object* args, double* px, double* py) {
+
+	if(args == NULL || !(args->type == PY_TYPE_TUPLE) ||
+		py_varobject_size(args) != 2) {
+
 		return py_error_set_badarg();
 	}
 
@@ -37,11 +46,14 @@ static int py_arg_double_double(struct py_object* args, double* px, double* py) 
 		   py_arg_double(py_tuple_get(args, 1), py);
 }
 
-static struct py_object* py_math1_impl(struct py_object* args, double (* func)(double)) {
+static struct py_object* py_math1_impl(
+		struct py_object* args, py_math1_t func) {
+
 	double x;
 
 	if(!py_arg_double(args, &x)) return NULL;
 
+	/* TODO: Better EH. */
 	errno = 0;
 	x = (*func)(x);
 
@@ -49,11 +61,14 @@ static struct py_object* py_math1_impl(struct py_object* args, double (* func)(d
 	else return py_float_new(x);
 }
 
-static struct py_object* py_math2_impl(struct py_object* args, double (*func)(double, double)) {
+static struct py_object* py_math2_impl(
+		struct py_object* args, py_math2_t func) {
+
 	double x, y;
 
 	if(!py_arg_double_double(args, &x, &y)) return NULL;
 
+	/* TODO: Better EH. */
 	errno = 0;
 	x = (*func)(x, y);
 
@@ -63,14 +78,18 @@ static struct py_object* py_math2_impl(struct py_object* args, double (*func)(do
 
 #define PY_MATH1(func) \
 	static struct py_object* py_math_##func( \
+			struct py_env* env, \
 			struct py_object* self, struct py_object* args) { \
+		(void) env; \
 		(void) self; \
 		return py_math1_impl(args, func); \
 	}
 
 #define PY_MATH2(func) \
 	static struct py_object* py_math_##func( \
+			struct py_env* env, \
 			struct py_object* self, struct py_object* args) { \
+		(void) env; \
 		(void) self; \
 		return py_math2_impl(args, func); \
 	}
@@ -97,7 +116,7 @@ PY_MATH2(fmod)
 PY_MATH2(pow)
 
 static struct py_object* py_math_bitlist_op(
-		struct py_object* args, py_value_t (*func)(py_value_t, py_value_t)) {
+		struct py_object* args, py_math_val2_t func) {
 
 	py_value_t res = 0;
 	unsigned i;
@@ -120,27 +139,30 @@ static struct py_object* py_math_bitlist_op(
 
 static py_value_t py_math_orbv(py_value_t v, py_value_t p) { return v | p; }
 static struct py_object* py_math_orb(
-		struct py_object* self, struct py_object* args) {
+		struct py_env* env, struct py_object* self, struct py_object* args) {
+	(void) env;
 	(void) self;
 	return py_math_bitlist_op(args, py_math_orbv);
 }
 
 static py_value_t py_math_andbv(py_value_t v, py_value_t p) { return v & p; }
 static struct py_object* py_math_andb(
-		struct py_object* self, struct py_object* args) {
+		struct py_env* env, struct py_object* self, struct py_object* args) {
+	(void) env;
 	(void) self;
 	return py_math_bitlist_op(args, py_math_andbv);
 }
 
 static py_value_t py_math_xorbv(py_value_t v, py_value_t p) { return v ^ p; }
 static struct py_object* py_math_xorb(
-		struct py_object* self, struct py_object* args) {
+		struct py_env* env, struct py_object* self, struct py_object* args) {
+	(void) env;
 	(void) self;
 	return py_math_bitlist_op(args, py_math_xorbv);
 }
 
 static struct py_object* py_math_val2(
-		struct py_object* args, py_value_t (*func)(py_value_t, py_value_t)) {
+		struct py_object* args, py_math_val2_t func) {
 
 	struct py_object* a;
 	struct py_object* b;
@@ -158,20 +180,23 @@ static struct py_object* py_math_val2(
 
 static py_value_t py_math_shlv(py_value_t v, py_value_t p) { return v << p; }
 static struct py_object* py_math_shl(
-		struct py_object* self, struct py_object* args) {
+		struct py_env* env, struct py_object* self, struct py_object* args) {
+	(void) env;
 	(void) self;
 	return py_math_val2(args, py_math_shlv);
 }
 
 static py_value_t py_math_shrv(py_value_t v, py_value_t p) { return v >> p; }
 static struct py_object* py_math_shr(
-		struct py_object* self, struct py_object* args) {
+		struct py_env* env, struct py_object* self, struct py_object* args) {
+	(void) env;
 	(void) self;
 	return py_math_val2(args, py_math_shrv);
 }
 
 static struct py_object* py_math_randf(
-		struct py_object* self, struct py_object* args) {
+		struct py_env* env, struct py_object* self, struct py_object* args) {
+	(void) env;
 	(void) self;
 	(void) args;
 	return py_float_new((double) rand() / (double) RAND_MAX);

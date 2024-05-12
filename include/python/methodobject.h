@@ -8,9 +8,15 @@
 #ifndef PY_METHODOBJECT_H
 #define PY_METHODOBJECT_H
 
+#include <python/state.h>
 #include <python/object.h>
 
-typedef struct py_object* (*py_method_t)(struct py_object*, struct py_object*);
+/*
+ * TODO: Separate selfcall CC to allow classmethods to recieve self without
+ * 		 Requiring self on all method decls.
+ */
+typedef struct py_object* (*py_method_t)(
+		struct py_env*, struct py_object*, struct py_object*);
 
 struct py_method {
 	struct py_object ob;

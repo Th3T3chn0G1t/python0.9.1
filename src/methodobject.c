@@ -8,10 +8,10 @@
 #include <python/errors.h>
 #include <python/methodobject.h>
 
-struct py_object* py_method_new(py_method_t meth, struct py_object* self) {
+struct py_object* py_method_new(py_method_t method, struct py_object* self) {
 	struct py_method* op = py_object_new(PY_TYPE_METHOD);
 	if(op != NULL) {
-		op->method = meth;
+		op->method = method;
 		op->self = self;
 
 		if(self != NULL) py_object_incref(self);

@@ -5,6 +5,7 @@
 
 /* Execute compiled code */
 
+#include <python/state.h>
 #include <python/std.h>
 #include <python/env.h>
 #include <python/import.h>
@@ -30,16 +31,14 @@
 
 #include <apro.h>
 
-struct py_frame* py_frame_current;
-
-struct py_object* py_get_locals(void) {
-	if(py_frame_current == NULL) return NULL;
-	else return py_frame_current->locals;
+struct py_object* py_get_locals(struct py_env* env) {
+	if(env->current == NULL) return NULL;
+	else return env->current->locals;
 }
 
-struct py_object* py_get_globals(void) {
-	if(py_frame_current == NULL) return NULL;
-	else return py_frame_current->globals;
+struct py_object* py_get_globals(struct py_env* env) {
+	if(env->current == NULL) return NULL;
+	else return env->current->globals;
 }
 
 /* TODO: Move all these "generalising" functions into their own place. */
@@ -58,14 +57,16 @@ int py_object_truthy(struct py_object* v) {
 static struct py_object* py_object_add(
 		struct py_object* v, struct py_object* w) {
 
+	py_cat_t cat;
+
 	if(v->type == PY_TYPE_INT && w->type == PY_TYPE_INT) {
 		return py_int_new(py_int_get(v) + py_int_get(w));
 	}
 	else if(v->type == PY_TYPE_FLOAT && w->type == PY_TYPE_FLOAT) {
 		return py_float_new(py_float_get(v) + py_float_get(w));
 	}
-	else if(py_is_varobject(v)) {
-		return (py_types[v->type].sequencemethods->cat)(v, w);
+	else if((cat = py_types[v->type].cat)) {
+		return cat(v, w);
 	}
 
 	py_error_set_string(py_type_error, "+ not supported by operands");
@@ -151,13 +152,13 @@ static struct py_object* py_object_not(struct py_object* v) {
  * 		 Syntax or like `class('name')'.
  */
 static struct py_object* py_call_builtin(
-		struct py_object* func, struct py_object* args) {
+		struct py_env* env, struct py_object* func, struct py_object* args) {
 
 	if((func->type == PY_TYPE_METHOD)) {
-		py_method_t meth = ((struct py_method*) func)->method;
+		py_method_t method = ((struct py_method*) func)->method;
 		struct py_object* self = ((struct py_method*) func)->self;
 
-		return (*meth)(self, args);
+		return (*method)(env, self, args);
 	}
 
 	if(func->type == PY_TYPE_CLASS) {
@@ -207,7 +208,7 @@ static int py_object_set_attr(
 }
 
 struct py_object* py_call_function(
-		struct py_object* func, struct py_object* args) {
+		struct py_env* env, struct py_object* func, struct py_object* args) {
 
 	struct py_object* newarg = NULL;
 	struct py_object* newlocals;
@@ -260,7 +261,7 @@ struct py_object* py_call_function(
 
 	apro_stamp_start(APRO_CEVAL_CALL_EVAL);
 
-	v = py_code_eval((struct py_code*) co, newglobals, newlocals, args);
+	v = py_code_eval(env, (struct py_code*) co, newglobals, newlocals, args);
 
 	apro_stamp_end(APRO_CEVAL_CALL_EVAL);
 
@@ -275,14 +276,15 @@ struct py_object* py_call_function(
 static struct py_object* py_object_ind(
 		struct py_object* v, struct py_object* w) {
 
-	if(py_is_varobject(v)) {
+	py_ind_t ind;
+
+	if((ind = py_types[v->type].ind)) {
 		if(w->type != PY_TYPE_INT) {
 			py_error_set_string(py_type_error, "sequence subscript not int");
 			return NULL;
 		}
 
-		return (py_types[v->type].sequencemethods->ind)(
-				v, (unsigned) py_int_get(w));
+		return ind(v, (unsigned) py_int_get(w));
 	}
 	else if(v->type == PY_TYPE_DICT) return py_dict_lookup_object(v, w);
 
@@ -305,7 +307,7 @@ static struct py_object* py_loop_subscript(
 
 	if(i >= n) return NULL; /* End of loop */
 
-	return (py_types[v->type].sequencemethods->ind)(v, i);
+	return py_types[v->type].ind(v, i);
 }
 
 static int py_slice_index(struct py_object* v, unsigned* pi) {
@@ -325,9 +327,10 @@ static int py_slice_index(struct py_object* v, unsigned* pi) {
 static struct py_object* py_apply_slice(
 		struct py_object* u, struct py_object* v, struct py_object* w) {
 
+	py_slice_t slice;
 	unsigned ilow, ihigh;
 
-	if(!py_is_varobject(u)) {
+	if(!(slice = py_types[u->type].slice)) {
 		py_error_set_string(py_type_error, "only sequences can be sliced");
 		return NULL;
 	}
@@ -338,7 +341,7 @@ static struct py_object* py_apply_slice(
 	if(py_slice_index(v, &ilow) != 0) return NULL;
 	if(py_slice_index(w, &ihigh) != 0) return NULL;
 
-	return (py_types[u->type].sequencemethods->slice)(u, ilow, ihigh);
+	return slice(u, ilow, ihigh);
 }
 
 /* w[key] = v */
@@ -423,7 +426,7 @@ static int py_cmp_member(struct py_object* v, struct py_object* w) {
 	n = py_varobject_size(w);
 
 	for(i = 0; i < n; i++) {
-		x = (py_types[w->type].sequencemethods->ind)(w, i);
+		x = py_types[w->type].ind(w, i);
 		cmp = py_object_cmp(v, x);
 		py_object_decref(x);
 
@@ -553,7 +556,7 @@ static const char* py_code_get_name(struct py_frame* f, unsigned i) {
 /* Interpreter main loop */
 
 struct py_object* py_code_eval(
-		struct py_code* co, struct py_object* globals,
+		struct py_env* env, struct py_code* co, struct py_object* globals,
 		struct py_object* locals, struct py_object* args) {
 
 	py_byte_t* code;
@@ -579,10 +582,10 @@ struct py_object* py_code_eval(
 	apro_stamp_start(APRO_CEVAL_CODE_EVAL_RISING);
 
 	/* TODO: Why are these constants the random defaults. */
-	f = py_frame_new(py_frame_current, co, globals, locals, 50, 20);
+	f = py_frame_new(env->current, co, globals, locals, 50, 20);
 	if(f == NULL) return NULL;
 
-	py_frame_current = f;
+	env->current = f;
 	code = f->code->code;
 	next = code;
 	stack_pointer = f->valuestack;
@@ -675,9 +678,9 @@ struct py_object* py_code_eval(
 				if(v->type == PY_TYPE_CLASS_METHOD ||
 					v->type == PY_TYPE_FUNC) {
 
-					x = py_call_function(v, (struct py_object*) NULL);
+					x = py_call_function(env, v, NULL);
 				}
-				else x = py_call_builtin(v, (struct py_object*) NULL);
+				else x = py_call_builtin(env, v, NULL);
 
 				py_object_decref(v);
 				*stack_pointer++ = x;
@@ -758,9 +761,9 @@ struct py_object* py_code_eval(
 				if(v->type == PY_TYPE_CLASS_METHOD ||
 					v->type == PY_TYPE_FUNC) {
 
-					x = py_call_function(v, w);
+					x = py_call_function(env, v, w);
 				}
-				else x = py_call_builtin(v, w);
+				else x = py_call_builtin(env, v, w);
 
 				py_object_decref(v);
 				py_object_decref(w);
@@ -1044,7 +1047,7 @@ struct py_object* py_code_eval(
 			}
 
 			case PY_OP_IMPORT_NAME: {
-				x = py_import_module(py_code_get_name(f, oparg));
+				x = py_import_module(env, py_code_get_name(f, oparg));
 				py_object_incref(x);
 				*stack_pointer++ = x;
 
@@ -1194,7 +1197,7 @@ struct py_object* py_code_eval(
 
 	/* Restore previous frame and release the current one */
 
-	py_frame_current = f->back;
+	env->current = f->back;
 	py_object_decref(f);
 
 	apro_stamp_end(APRO_CEVAL_CODE_EVAL_FALLING);

@@ -192,7 +192,9 @@ static int py_dict_resize(struct py_dict* dp) {
 }
 
 struct py_object* py_dict_lookup(struct py_object* op, const char* key) {
-	if(!(op->type == PY_TYPE_DICT)) py_fatal("py_dict_lookup on non-dictionary");
+	if(!(op->type == PY_TYPE_DICT)) {
+		py_fatal("py_dict_lookup on non-dictionary");
+	}
 
 	return py_dict_look((struct py_dict*) op, key)->value;
 }

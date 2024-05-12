@@ -5,6 +5,7 @@
 
 /* Built-in functions */
 
+#include <python/state.h>
 #include <python/node.h>
 #include <python/import.h>
 #include <python/modsupport.h>
@@ -30,19 +31,17 @@ struct py_object* py_name_error;
 struct py_object* py_system_error;
 
 static struct py_object* py_builtin_float(
-		struct py_object* self, struct py_object* v) {
+	struct py_env* env, struct py_object* self, struct py_object* args) {
 
+	(void) env;
 	(void) self;
 
-	if(v == NULL) {
-		/* */
+	if(args && args->type == PY_TYPE_FLOAT) {
+		py_object_incref(args);
+		return args;
 	}
-	else if(v->type == PY_TYPE_FLOAT) {
-		py_object_incref(v);
-		return v;
-	}
-	else if(v->type == PY_TYPE_INT) {
-		py_value_t x = py_int_get(v);
+	else if(args && args->type == PY_TYPE_INT) {
+		py_value_t x = py_int_get(args);
 		return py_float_new((double) x);
 	}
 
@@ -52,19 +51,17 @@ static struct py_object* py_builtin_float(
 }
 
 static struct py_object* py_builtin_int(
-		struct py_object* self, struct py_object* v) {
+		struct py_env* env, struct py_object* self, struct py_object* args) {
 
+	(void) env;
 	(void) self;
 
-	if(v == NULL) {
-		/* */
+	if(args && args->type == PY_TYPE_INT) {
+		py_object_incref(args);
+		return args;
 	}
-	else if(v->type == PY_TYPE_INT) {
-		py_object_incref(v);
-		return v;
-	}
-	else if(v->type == PY_TYPE_FLOAT) {
-		double x = py_float_get(v);
+	else if(args && args->type == PY_TYPE_FLOAT) {
+		double x = py_float_get(args);
 		return py_int_new((py_value_t) x);
 	}
 
@@ -73,19 +70,20 @@ static struct py_object* py_builtin_int(
 }
 
 static struct py_object* py_builtin_len(
-		struct py_object* self, struct py_object* v) {
+		struct py_env* env, struct py_object* self, struct py_object* args) {
 
 	py_value_t len;
 
+	(void) env;
 	(void) self;
 
-	if(v == NULL) {
+	if(args == NULL) {
 		py_error_set_string(py_type_error, "len() without argument");
 		return NULL;
 	}
 
-	if(py_is_varobject(v)) len = py_varobject_size(v);
-	else if(v->type == PY_TYPE_DICT) len = ((struct py_dict*) v)->used;
+	if(py_is_varobject(args)) len = py_varobject_size(args);
+	else if(args->type == PY_TYPE_DICT) len = ((struct py_dict*) args)->used;
 	else {
 		py_error_set_string(py_type_error, "len() of unsized object");
 		return NULL;
@@ -94,26 +92,32 @@ static struct py_object* py_builtin_len(
 	return py_int_new(len);
 }
 
+/*
+ * TODO: This can probably be simplified/split-off since it's such a core
+ * 		 Function.
+ */
 static struct py_object* py_builtin_range(
-		struct py_object* self, struct py_object* v) {
+		struct py_env* env, struct py_object* self, struct py_object* args) {
 
-	static char* errmsg = "range() requires 1-3 int arguments";
+	static const char errmsg[] = "range() requires 1-3 int arguments";
+
 	unsigned i, n;
 	py_value_t ilow, ihigh, istep;
 
+	(void) env;
 	(void) self;
 
-	if(v != NULL && (v->type == PY_TYPE_INT)) {
+	if(args && (args->type == PY_TYPE_INT)) {
 		ilow = 0;
-		ihigh = py_int_get(v);
+		ihigh = py_int_get(args);
 		istep = 1;
 	}
-	else if(v == NULL || !(v->type == PY_TYPE_TUPLE)) {
+	else if(!args || args->type != PY_TYPE_TUPLE) {
 		py_error_set_string(py_type_error, errmsg);
 		return NULL;
 	}
 	else {
-		n = py_varobject_size(v);
+		n = py_varobject_size(args);
 
 		if(n < 1 || n > 3) {
 			py_error_set_string(py_type_error, errmsg);
@@ -121,22 +125,22 @@ static struct py_object* py_builtin_range(
 		}
 
 		for(i = 0; i < n; i++) {
-			if(py_tuple_get(v, i)->type != PY_TYPE_INT) {
+			if(py_tuple_get(args, i)->type != PY_TYPE_INT) {
 				py_error_set_string(py_type_error, errmsg);
 				return NULL;
 			}
 		}
 
 		if(n == 3) {
-			istep = py_int_get(py_tuple_get(v, 2));
+			istep = py_int_get(py_tuple_get(args, 2));
 			--n;
 		}
-		else { istep = 1; }
+		else istep = 1;
 
-		ihigh = py_int_get(py_tuple_get(v, --n));
+		ihigh = py_int_get(py_tuple_get(args, --n));
 
-		if(n > 0) { ilow = py_int_get(py_tuple_get(v, 0)); }
-		else { ilow = 0; }
+		if(n > 0) ilow = py_int_get(py_tuple_get(args, 0));
+		else ilow = 0;
 	}
 
 	if(istep == 0) {
@@ -145,33 +149,33 @@ static struct py_object* py_builtin_range(
 	}
 
 	/* TODO: ought to check overflow of subion */
-	if(istep > 0) { n = (unsigned) ((ihigh - ilow + istep - 1) / istep); }
-	else { n = (unsigned) ((ihigh - ilow + istep + 1) / istep); }
+	if(istep > 0) n = (unsigned) ((ihigh - ilow + istep - 1) / istep);
+	else n = (unsigned) ((ihigh - ilow + istep + 1) / istep);
 
-	v = py_list_new(n);
-	if(v == NULL) return NULL;
+	if(!(args = py_list_new(n))) return 0;
 
 	for(i = 0; i < n; i++) {
 		struct py_object* w = py_int_new(ilow);
 
 		if(w == NULL) {
-			py_object_decref(v);
+			py_object_decref(args);
 			return NULL;
 		}
 
-		py_list_set(v, i, w);
+		py_list_set(args, i, w);
 		ilow += istep;
 	}
 
-	return v;
+	return args;
 }
 
 static struct py_object* py_builtin_append(
-		struct py_object* self, struct py_object* v) {
+		struct py_env* env, struct py_object* self, struct py_object* args) {
 
-	struct py_object* lp = py_tuple_get(v, 0);
-	struct py_object* op = py_tuple_get(v, 1);
+	struct py_object* lp = py_tuple_get(args, 0);
+	struct py_object* op = py_tuple_get(args, 1);
 
+	(void) env;
 	(void) self;
 
 	if(!lp || !op || py_list_add(lp, op) == -1) return 0;
@@ -180,12 +184,13 @@ static struct py_object* py_builtin_append(
 }
 
 static struct py_object* py_builtin_insert(
-		struct py_object* self, struct py_object* args) {
+		struct py_env* env, struct py_object* self, struct py_object* args) {
 
 	struct py_object* lp;
 	struct py_object* ind;
 	struct py_object* op;
 
+	(void) env;
 	(void) self;
 
 	if(!args || !(args->type == PY_TYPE_TUPLE) || py_varobject_size(args) != 2 ||
@@ -203,8 +208,9 @@ static struct py_object* py_builtin_insert(
 }
 
 static struct py_object* py_builtin_pass(
-		struct py_object* self, struct py_object* args) {
+		struct py_env* env, struct py_object* self, struct py_object* args) {
 
+	(void) env;
 	(void) self;
 	(void) args;
 
@@ -212,11 +218,12 @@ static struct py_object* py_builtin_pass(
 }
 
 static struct py_object* py_builtin_notv(
-		struct py_object* self, struct py_object* args) {
+		struct py_env* env, struct py_object* self, struct py_object* args) {
 
 	struct py_object* retval;
 	py_value_t val;
 
+	(void) env;
 	(void) self;
 
 	if(args->type != PY_TYPE_INT) {

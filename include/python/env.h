@@ -8,9 +8,9 @@
 
 #include <python/std.h>
 
-FILE* pyopen_r(const char* path);
+FILE* py_open_r(const char* path);
 
-void pyclose(FILE* fp);
+void py_close(FILE* fp);
 
 #ifdef __has_attribute
 # if __has_attribute(fallthrough)

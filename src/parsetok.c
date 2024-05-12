@@ -41,6 +41,10 @@ static int py_parse_token(
 			break;
 		}
 		len = b - a;
+		/*
+		 * TODO: Do these need to be malloc'd? Can node tree strs just be refs
+		 * 		 (or even just offsets?)
+		 */
 		str = malloc((len + 1) * sizeof(char));
 		if(str == NULL) {
 			fprintf(stderr, "no mem for next token\n");

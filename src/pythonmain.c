@@ -11,21 +11,21 @@
 #include <python/ceval.h>
 
 struct py_object* py_tree_run(
-		struct py_node* n, char* filename, struct py_object* globals,
-		struct py_object* locals) {
+		struct py_env* env, struct py_node* n, const char* filename,
+		struct py_object* globals, struct py_object* locals) {
 
 	if(globals == NULL) {
-		globals = py_get_globals();
-		if(locals == NULL) locals = py_get_locals();
+		globals = py_get_globals(env);
+		if(locals == NULL) locals = py_get_locals(env);
 	}
 	else if(locals == NULL) locals = globals;
 
-	return py_tree_eval(n, filename, globals, locals);
+	return py_tree_eval(env, n, filename, globals, locals);
 }
 
 struct py_object* py_tree_eval(
-		struct py_node* n, const char* filename, struct py_object* globals,
-		struct py_object* locals) {
+		struct py_env* env, struct py_node* n, const char* filename,
+		struct py_object* globals, struct py_object* locals) {
 
 	struct py_code* co;
 	struct py_object* v;
@@ -34,7 +34,7 @@ struct py_object* py_tree_eval(
 	py_tree_delete(n);
 	if(co == NULL) return NULL;
 
-	v = py_code_eval(co, globals, locals, (struct py_object*) NULL);
+	v = py_code_eval(env, co, globals, locals, (struct py_object*) NULL);
 	py_object_decref(co);
 
 	return v;

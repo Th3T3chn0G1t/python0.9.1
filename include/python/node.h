@@ -10,6 +10,8 @@
 
 #include <python/std.h>
 
+struct py_env;
+
 struct py_node {
 	int type;
 	char* str;
@@ -27,11 +29,13 @@ struct py_node* py_tree_add(struct py_node*, int, char*, unsigned);
 
 void py_tree_list(FILE*, struct py_node*);
 
-struct py_object* py_tree_eval(
-		struct py_node*, const char*, struct py_object*, struct py_object*);
-
 struct py_object* py_tree_run(
-		struct py_node*, char*, struct py_object*, struct py_object*);
+		struct py_env* env, struct py_node*, const char*, struct py_object*,
+		struct py_object*);
+
+struct py_object* py_tree_eval(
+		struct py_env* env, struct py_node*, const char*, struct py_object*,
+		struct py_object*);
 
 /* Assert that the type of node is what we expect */
 /* TODO: Handle this better. */
