@@ -24,44 +24,6 @@
 
 /* TODO: This system needs some rework to clean up import control flow. */
 
-/* TODO: Python global state. */
-struct py_object* py_path;
-
-struct py_object* py_path_new(const char* path) {
-	static const char delim = ':';
-
-	int i, n;
-	const char* p;
-	struct py_object* v, * w;
-
-	n = 1;
-	p = path;
-
-	while((p = strchr(p, delim)) != NULL) {
-		n++;
-		p++;
-	}
-
-	if(!(v = py_list_new(n))) return NULL;
-
-	for(i = 0;; i++) {
-		if(!(p = strchr(path, delim))) p = strchr(path, '\0');
-
-		w = py_string_new_size(path, (unsigned) (p - path));
-		if(w == NULL) {
-			py_object_decref(v);
-			return NULL;
-		}
-
-		py_list_set(v, i, w);
-		if(*p == '\0') break;
-
-		path = p + 1;
-	}
-
-	return v;
-}
-
 struct py_object* py_module_add(struct py_env* env, const char* name) {
 	struct py_object* m;
 
@@ -79,70 +41,51 @@ struct py_object* py_module_add(struct py_env* env, const char* name) {
 	return m;
 }
 
-/* TODO: No buffer overflow checks! */
-static FILE* py_open_module(
-		const char* name, const char* suffix, char* namebuf) {
-
-	FILE* fp;
-
-	if(py_path == NULL || !(py_path->type == PY_TYPE_LIST)) {
-		strcpy(namebuf, name);
-		strcat(namebuf, suffix);
-		fp = py_open_r(namebuf);
-	}
-	else {
-		unsigned npath = py_varobject_size(py_path);
-		unsigned i;
-
-		fp = NULL;
-		for(i = 0; i < npath; i++) {
-			struct py_object* v = py_list_get(py_path, i);
-			unsigned len;
-
-			if(!(v->type == PY_TYPE_STRING)) continue;
-
-			strcpy(namebuf, py_string_get(v));
-			len = py_varobject_size(v);
-
-			/* TODO: Play nice with Windows file separators? */
-			if(len > 0 && namebuf[len - 1] != '/') namebuf[len++] = '/';
-
-			strcpy(namebuf + len, name);
-			strcat(namebuf, suffix);
-
-			fp = py_open_r(namebuf);
-			if(fp != NULL) break;
-		}
-	}
-
-	return fp;
-}
-
 static struct py_object* py_get_module(
 		struct py_env* env, struct py_object* m, const char* name,
 		struct py_object** ret) {
 
+	static const char suffix[] = ".py";
+
+	char buf[255 + 1] = { 0 };
+	unsigned i;
+
+	FILE* fp = 0;
+
 	struct py_object* d;
 	struct py_node* n;
-	FILE* fp;
-	int err;
 
-	/* TODO: This is not playing nice with buffers. */
-	char namebuf[256];
+	enum py_result res;
 
-	if(!(fp = py_open_module(name, ".py", namebuf))) {
+	for(i = 0; env->py->path[i]; ++i) {
+		char* el = env->py->path[i];
+
+		unsigned namlen = strlen(name);
+		unsigned pathlen = strlen(el);
+		unsigned sufflen = sizeof(suffix) - 1;
+
+		if(pathlen + namlen + sufflen >= sizeof(buf)) continue;
+
+		memcpy(buf, el, pathlen);
+		memcpy(buf + pathlen, name, namlen);
+		/* Adds appropriate null terminator. */
+		memcpy(buf + pathlen + namlen, suffix, sizeof(suffix));
+
+		if((fp = py_open_r(buf))) break;
+	}
+
+	if(!fp) {
 		if(!m) py_error_set_string(py_name_error, name);
 		else py_error_set_string(py_runtime_error, "no module source file");
 
 		return NULL;
 	}
 
-	err = py_parse_file(
-			fp, namebuf, &py_grammar, PY_GRAMMAR_FILE_INPUT, 0, 0, &n);
+	res = py_parse_file(fp, buf, &py_grammar, PY_GRAMMAR_FILE_INPUT, 0, 0, &n);
 	py_close(fp);
 
-	if(err != PY_RESULT_DONE) {
-		py_error_set_input(err);
+	if(res != PY_RESULT_DONE) {
+		py_error_set_input(res);
 		return NULL;
 	}
 
@@ -157,7 +100,7 @@ static struct py_object* py_get_module(
 
 	d = ((struct py_module*) m)->attr;
 
-	return py_tree_run(env, n, namebuf, d, d);
+	return py_tree_run(env, n, buf, d, d);
 }
 
 struct py_object* py_import_module(struct py_env* env, const char* name) {

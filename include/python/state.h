@@ -15,6 +15,9 @@
 struct py {
 	/* Type info table. */
 	struct py_type_info types[PY_TYPE_MAX];
+
+	/* Module search path. Null terminated string buffer. */
+	char** path;
 };
 
 /* Current running environment. */
@@ -36,7 +39,7 @@ struct py_env {
 	struct py_object* modules;
 };
 
-enum py_result py_new(struct py*);
+enum py_result py_new(struct py*, const char*);
 enum py_result py_delete(struct py*);
 
 enum py_result py_env_new(struct py*, struct py_env*);
