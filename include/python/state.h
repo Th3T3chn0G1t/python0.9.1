@@ -24,6 +24,16 @@ struct py_env {
 
 	/* Current function frame. */
 	struct py_frame* current;
+
+	/*
+	 * NOTE: For the purposes of AGA -- we're not really expecting any
+	 * 		 Non-native shared modules to exist in the interpreter state so
+	 * 		 Having this be managed per-environment is fine.
+	 * TODO: Split lookup between per-env state and the main interpreter state
+	 * 		 For builtins.
+	 */
+	/* Modules dict. */
+	struct py_object* modules;
 };
 
 enum py_result py_new(struct py*);

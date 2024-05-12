@@ -11,7 +11,8 @@
 #include <python/object.h>
 #include <python/methodobject.h>
 
-struct py_object* py_module_new_methods(const char*, const struct py_methodlist*);
+struct py_object* py_module_new_methods(
+		struct py_env*, const char*, const struct py_methodlist*);
 
 /* TODO: There's probably a more modular way to do this. */
 int py_arg_none(struct py_object*);

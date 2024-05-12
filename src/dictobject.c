@@ -71,6 +71,7 @@ struct py_object* py_dict_new(void) {
 
 	dp->table = calloc(sizeof(struct py_dictentry), dp->size);
 	if(dp->table == NULL) {
+		/* Free instead of decref to avoid trying to free table in dealloc. */
 		free(dp);
 		return py_error_set_nomem();
 	}

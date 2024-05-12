@@ -18,27 +18,21 @@
 
 /* TODO: Better EH. */
 struct py_object* py_module_new_methods(
-		const char* name, const struct py_methodlist* methods) {
+		struct py_env* env, const char* name,
+		const struct py_methodlist* methods) {
 
 	struct py_object* m;
 	struct py_object* d;
 	struct py_object* v;
-	const struct py_methodlist* ml;
 
-	if((m = py_module_add(name)) == NULL) {
-		fprintf(stderr, "initializing module: %s\n", name);
-		py_fatal("can't create a module");
-	}
+	if(!(m = py_module_add(env, name))) return 0;
 
 	d = ((struct py_module*) m)->attr;
 
-	for(ml = methods; ml->name != NULL; ml++) {
-		v = py_method_new(ml->method, (struct py_object*) NULL);
+	for(; methods->name; methods++) {
+		v = py_method_new(methods->method, (struct py_object*) NULL);
 
-		if(v == NULL || py_dict_insert(d, ml->name, v) != 0) {
-			fprintf(stderr, "initializing module: %s\n", name);
-			py_fatal("can't initialize module");
-		}
+		if(!v || py_dict_insert(d, methods->name, v) == -1) return 0;
 
 		py_object_decref(v);
 	}

@@ -202,9 +202,9 @@ static struct py_object* py_math_randf(
 	return py_float_new((double) rand() / (double) RAND_MAX);
 }
 
-void py_math_init(void) {
+enum py_result py_math_init(struct py_env* env) {
 #define _(func) { #func, py_math_##func }
-	static const struct py_methodlist math_methods[] = {
+	static const struct py_methodlist methods[] = {
 			_(acos),
 			_(asin),
 			_(atan),
@@ -234,5 +234,7 @@ void py_math_init(void) {
 	};
 #undef _
 
-	py_module_new_methods("math", math_methods);
+	if(!(py_module_new_methods(env, "math", methods))) return PY_RESULT_ERROR;
+
+	return PY_RESULT_OK;
 }

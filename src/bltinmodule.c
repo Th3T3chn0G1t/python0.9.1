@@ -287,23 +287,31 @@ void py_errors_done(void) {
 	py_object_decref(py_system_error);
 }
 
-void py_builtin_init(void) {
+enum py_result py_builtin_init(struct py_env* env) {
 	struct py_object* m;
 
-	m = py_module_new_methods("builtin", py_builtin_methods);
+	if(!(m = py_module_new_methods(env, "builtin", py_builtin_methods))) {
+		return PY_RESULT_OOM;
+	}
+
 	py_builtin_dict = ((struct py_module*) m)->attr;
 	py_object_incref(py_builtin_dict);
 
 	if(py_dict_insert(py_builtin_dict, "true", PY_TRUE) == -1) {
-		py_fatal("could not add `true' object");
+		return PY_RESULT_ERROR;
 	}
 
 	if(py_dict_insert(py_builtin_dict, "false", PY_FALSE) == -1) {
-		py_fatal("could not add `false' object");
+		return PY_RESULT_ERROR;
+	}
+
+	if(py_dict_insert(py_builtin_dict, "none", PY_NONE) == -1) {
+		return PY_RESULT_ERROR;
 	}
 
 	initerrors();
-	(void) py_dict_insert(py_builtin_dict, "PY_NONE", PY_NONE);
+
+	return PY_RESULT_OK;
 }
 
 void py_builtin_done(void) {

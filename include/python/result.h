@@ -18,7 +18,9 @@ enum py_result {
 	PY_RESULT_TOKEN = 13, /* Bad token */
 	PY_RESULT_SYNTAX = 14, /* Syntax error */
 	PY_RESULT_OOM = 15, /* Ran out of memory */
-	PY_RESULT_DONE = 16 /* Parsing complete */
+	PY_RESULT_DONE = 16, /* Parsing complete */
+
+	PY_RESULT_ERROR = 20 /* Generic error */
 };
 
 #endif

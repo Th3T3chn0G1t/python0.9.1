@@ -5,6 +5,7 @@
 
 /* Module definition and import implementation */
 
+#include <python/state.h>
 #include <python/env.h>
 #include <python/node.h>
 #include <python/token.h>
@@ -24,7 +25,6 @@
 /* TODO: This system needs some rework to clean up import control flow. */
 
 /* TODO: Python global state. */
-static struct py_object* py_modules;
 struct py_object* py_path;
 
 struct py_object* py_path_new(const char* path) {
@@ -62,24 +62,15 @@ struct py_object* py_path_new(const char* path) {
 	return v;
 }
 
-/* Initialization */
-
-void py_import_init(void) {
-	if((py_modules = py_dict_new()) == NULL) {
-		py_fatal("no mem for dictionary of py_modules");
-	}
-}
-
-struct py_object* py_module_add(const char* name) {
+struct py_object* py_module_add(struct py_env* env, const char* name) {
 	struct py_object* m;
 
-	if((m = py_dict_lookup(py_modules, name)) && m->type == PY_TYPE_MODULE) {
-		return m;
-	}
+	/* We trust that the modules dictionary only ever holds moduleobjects. */
+	if((m = py_dict_lookup(env->modules, name))) return m;
 
 	if(!(m = py_module_new(name))) return NULL;
 
-	if(py_dict_insert(py_modules, name, m)) {
+	if(py_dict_insert(env->modules, name, m)) {
 		py_object_decref(m);
 		return NULL;
 	}
@@ -156,7 +147,7 @@ static struct py_object* py_get_module(
 	}
 
 	if(!m) {
-		if(!(m = py_module_add(name))) {
+		if(!(m = py_module_add(env, name))) {
 			py_tree_delete(n);
 			return NULL;
 		}
@@ -173,7 +164,7 @@ struct py_object* py_import_module(struct py_env* env, const char* name) {
 	struct py_object* m;
 	struct py_object* v;
 
-	if(!(m = py_dict_lookup(py_modules, name))) {
+	if(!(m = py_dict_lookup(env->modules, name))) {
 		if(!(v = py_get_module(env, NULL, name, &m))) return NULL;
 
 		py_object_decref(v);
@@ -192,8 +183,8 @@ static void py_dict_clear(struct py_object* d) {
 	}
 }
 
-void py_import_done(void) {
-	if(py_modules != NULL) {
+void py_import_done(struct py_env* env) {
+	if(env->modules != NULL) {
 		unsigned i;
 
 		/*
@@ -202,22 +193,25 @@ void py_import_done(void) {
 		 */
 
 		/* TODO: Make this more robust. */
-		for(i = 0; i < py_dict_size(py_modules); ++i) {
-			const char* k = py_dict_get_key(py_modules, i);
+		for(i = 0; i < py_dict_size(env->modules); ++i) {
+			const char* k = py_dict_get_key(env->modules, i);
 
+			/*
+			 * TODO: Are all these checks neccesary when iterating through a
+			 * 		 Dict?
+			 */
 			if(k) {
-				struct py_object* m = py_dict_lookup(py_modules, k);
+				struct py_object* m = py_dict_lookup(env->modules, k);
 
-				if(m && m->type == PY_TYPE_MODULE) {
+				if(m) {
 					struct py_object* d = ((struct py_module*) m)->attr;
 
-					if(d && d->type == PY_TYPE_DICT) py_dict_clear(d);
+					/* TODO: Can a module have a null attr dict? */
+					if(d) py_dict_clear(d);
 				}
 			}
 		}
 
-		py_dict_clear(py_modules);
+		py_dict_clear(env->modules);
 	}
-
-	py_object_decref(py_modules);
 }
