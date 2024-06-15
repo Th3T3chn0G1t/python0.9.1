@@ -171,7 +171,6 @@ extern struct py_type_info py_types[PY_TYPE_MAX];
 void* py_object_new(enum py_type);
 void py_object_delete(struct py_object*);
 int py_object_cmp(const struct py_object*, const struct py_object*);
-struct py_object* py_object_get_attr(struct py_object*, const char*);
 
 int py_is_varobject(const void*);
 unsigned py_varobject_size(const void*);

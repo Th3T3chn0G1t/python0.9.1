@@ -10,7 +10,6 @@
 #include <python/env.h>
 #include <python/evalops.h>
 #include <python/import.h>
-#include <python/opcode.h>
 #include <python/traceback.h>
 #include <python/compile.h>
 #include <python/ceval.h>
@@ -20,463 +19,14 @@
 
 #include <python/object/frame.h>
 #include <python/object/int.h>
-#include <python/object/float.h>
 #include <python/object/dict.h>
 #include <python/object/string.h>
 #include <python/object/list.h>
 #include <python/object/tuple.h>
-#include <python/object/method.h>
-#include <python/object/module.h>
 #include <python/object/class.h>
 #include <python/object/func.h>
 
 #include <apro.h>
-
-static struct py_object* py_object_mul(
-		struct py_object* v, struct py_object* w) {
-
-	if((v->type == PY_TYPE_INT) && (w->type == PY_TYPE_INT)) {
-		return py_int_new(py_int_get(v) * py_int_get(w));
-	}
-	else if((v->type == PY_TYPE_FLOAT) && (w->type == PY_TYPE_FLOAT)) {
-		return py_float_new(py_float_get(v) * py_float_get(w));
-	}
-
-	py_error_set_string(py_type_error, "bad operand type(s) for *");
-	return NULL;
-}
-
-static struct py_object* py_object_div(
-		struct py_object* v, struct py_object* w) {
-
-	if((v->type == PY_TYPE_INT) && (w->type == PY_TYPE_INT)) {
-		return py_int_new(py_int_get(v) / py_int_get(w));
-	}
-	else if((v->type == PY_TYPE_FLOAT) && (w->type == PY_TYPE_FLOAT)) {
-		return py_float_new(py_float_get(v) / py_float_get(w));
-	}
-
-	py_error_set_string(py_type_error, "bad operand type(s) for /");
-	return NULL;
-}
-
-static struct py_object* py_object_mod(
-		struct py_object* v, struct py_object* w) {
-
-	if((v->type == PY_TYPE_INT) && (w->type == PY_TYPE_INT)) {
-		return py_int_new(py_int_get(v) % py_int_get(w));
-	}
-	else if((v->type == PY_TYPE_FLOAT) && (w->type == PY_TYPE_FLOAT)) {
-		return py_float_new(fmod(py_float_get(v), py_float_get(w)));
-	}
-
-	py_error_set_string(py_type_error, "bad operand type(s) for %");
-	return NULL;
-}
-
-static struct py_object* py_object_neg(struct py_object* v) {
-	if(v->type == PY_TYPE_INT) {
-		return py_int_new(-py_int_get(v));
-	}
-	else if(v->type == PY_TYPE_FLOAT) {
-		return py_float_new(-py_float_get(v));
-	}
-
-	py_error_set_string(py_type_error, "bad operand type(s) for unary -");
-	return NULL;
-}
-
-static struct py_object* py_object_not(struct py_object* v) {
-	struct py_object* w = !py_object_truthy(v) ? PY_TRUE : PY_FALSE;
-
-	return py_object_incref(w);
-}
-
-/*
- * TODO: This can possibly be less indirected using a distinct class init
- * 		 Syntax or like `class('name')'.
- */
-static struct py_object* py_call_builtin(
-		struct py_env* env, struct py_object* func, struct py_object* args) {
-
-	if((func->type == PY_TYPE_METHOD)) {
-		py_method_t method = ((struct py_method*) func)->method;
-		struct py_object* self = ((struct py_method*) func)->self;
-
-		return (*method)(env, self, args);
-	}
-
-	if(func->type == PY_TYPE_CLASS) {
-		if(args) {
-			py_error_set_string(
-					py_type_error, "classobject() allows no arguments");
-			return NULL;
-		}
-
-		return py_class_member_new(func);
-	}
-
-	py_error_set_string(py_type_error, "call of non-function");
-	return NULL;
-}
-
-struct py_object* py_object_get_attr(struct py_object* v, const char* name) {
-	if(v->type == PY_TYPE_CLASS_MEMBER) return py_class_member_get_attr(v, name);
-	else if(v->type == PY_TYPE_CLASS) return py_class_get_attr(v, name);
-	else if(v->type == PY_TYPE_MODULE) return py_module_get_attr(v, name);
-	else {
-		py_error_set_string(
-				py_type_error,
-				"can only get attributes on class, class member or module");
-		return 0;
-	}
-}
-
-static int py_object_set_attr(
-		struct py_object* v, const char* name, struct py_object* w) {
-
-	struct py_object* attr;
-
-	if(v->type == PY_TYPE_CLASS_MEMBER) {
-		attr = ((struct py_class_member*) v)->attr;
-	}
-	else if(v->type == PY_TYPE_MODULE) attr = ((struct py_module*) v)->attr;
-	else {
-		py_error_set_string(
-				py_type_error,
-				"can only set attributes on class_member or module");
-		return -1;
-	}
-
-	if(!w) return py_dict_remove(attr, name);
-	else return py_dict_insert(attr, name, w);
-}
-
-struct py_object* py_call_function(
-		struct py_env* env, struct py_object* func, struct py_object* args) {
-
-	struct py_object* newarg = NULL;
-	struct py_object* newlocals;
-	struct py_object* newglobals;
-	struct py_object* co;
-	struct py_object* v;
-
-	apro_stamp_start(APRO_CEVAL_CALL_RISING);
-
-	if((func->type == PY_TYPE_CLASS_METHOD)) {
-		struct py_object* self = py_class_method_get_self(func);
-		func = py_class_method_get_func(func);
-
-		if(args == NULL) args = self;
-		else {
-			newarg = py_tuple_new(2);
-
-			if(newarg == NULL) return NULL;
-
-			py_tuple_set(newarg, 0, py_object_incref(self));
-			py_tuple_set(newarg, 1, py_object_incref(args));
-			args = newarg;
-		}
-	}
-	else if(!(func->type == PY_TYPE_FUNC)) {
-		py_error_set_string(py_type_error, "call of non-function");
-		return NULL;
-	}
-
-	co = ((struct py_func*) func)->code;
-
-	if(co->type != PY_TYPE_CODE) {
-		/* TODO: Proper EH. */
-		fprintf(stderr, "XXX Bad code\n");
-		abort();
-	}
-
-	if(!(newlocals = py_dict_new())) {
-		py_object_decref(newarg);
-		return 0;
-	}
-
-	newglobals = ((struct py_func*) func)->globals;
-	py_object_incref(newglobals);
-
-	apro_stamp_end(APRO_CEVAL_CALL_RISING);
-
-	apro_stamp_start(APRO_CEVAL_CALL_EVAL);
-
-	v = py_code_eval(env, (struct py_code*) co, newglobals, newlocals, args);
-
-	apro_stamp_end(APRO_CEVAL_CALL_EVAL);
-
-	py_object_decref(newlocals);
-	py_object_decref(newglobals);
-
-	py_object_decref(newarg);
-
-	return v;
-}
-
-static struct py_object* py_object_ind(
-		struct py_object* v, struct py_object* w) {
-
-	py_ind_t ind;
-
-	if((ind = py_types[v->type].ind)) {
-		if(w->type != PY_TYPE_INT) {
-			py_error_set_string(py_type_error, "sequence subscript not int");
-			return NULL;
-		}
-
-		return ind(v, (unsigned) py_int_get(w));
-	}
-	else if(v->type == PY_TYPE_DICT) return py_dict_lookup_object(v, w);
-
-	py_error_set_string(py_type_error, "unsubscriptable object");
-	return NULL;
-}
-
-static struct py_object* py_loop_subscript(
-		struct py_object* v, struct py_object* w) {
-
-	unsigned i, n;
-
-	if(!py_is_varobject(v)) {
-		py_error_set_string(py_type_error, "loop over non-sequence");
-		return NULL;
-	}
-
-	i = (unsigned) py_int_get(w);
-	n = py_varobject_size(v);
-
-	if(i >= n) return NULL; /* End of loop */
-
-	return py_types[v->type].ind(v, i);
-}
-
-static int py_slice_index(struct py_object* v, unsigned* pi) {
-	if(v != NULL) {
-		if(!(v->type == PY_TYPE_INT)) {
-			py_error_set_string(py_type_error, "slice index must be int");
-			return -1;
-		}
-
-		*pi = (unsigned) py_int_get(v);
-	}
-
-	return 0;
-}
-
-/* return u[v:w] */
-static struct py_object* py_apply_slice(
-		struct py_object* u, struct py_object* v, struct py_object* w) {
-
-	py_slice_t slice;
-	unsigned low, high;
-
-	if(!(slice = py_types[u->type].slice)) {
-		py_error_set_string(py_type_error, "only sequences can be sliced");
-		return NULL;
-	}
-
-	low = 0;
-	high = py_varobject_size(u);
-
-	if(py_slice_index(v, &low) != 0) return NULL;
-	if(py_slice_index(w, &high) != 0) return NULL;
-
-	return slice(u, low, high);
-}
-
-/* w[key] = v */
-static int assign_subscript(
-		struct py_object* w, struct py_object* key, struct py_object* v) {
-
-	if(w->type == PY_TYPE_LIST) {
-		unsigned i;
-
-		if(!(key->type == PY_TYPE_INT)) {
-			py_error_set_string(
-					py_type_error, "sequence subscript must be integer");
-			return -1;
-		}
-
-		i = (unsigned) py_int_get(key);
-		if(i >= py_varobject_size(w)) {
-			py_error_set_string(
-					PY_INDEX_ERROR, "list assignment index out of range");
-			return -1;
-		}
-
-		py_object_incref(v);
-		py_object_decref(((struct py_list*) w)->item[i]);
-		((struct py_list*) w)->item[i] = v;
-
-		return 0;
-	}
-	else if((w->type == PY_TYPE_DICT)) return py_dict_assign(w, key, v);
-	else {
-		py_error_set_string(
-				py_type_error, "can't assign to this subscripted object");
-		return -1;
-	}
-}
-
-static int py_cmp_exception(struct py_object* err, struct py_object* v) {
-	if(v->type == PY_TYPE_TUPLE) {
-		unsigned i, n;
-
-		n = py_varobject_size(v);
-		for(i = 0; i < n; i++) if(err == py_tuple_get(v, i)) return 1;
-
-		return 0;
-	}
-
-	return err == v;
-}
-
-static int py_cmp_member(struct py_object* v, struct py_object* w) {
-	struct py_object* x;
-	unsigned i, n;
-	int cmp;
-
-	/* Special case for char in string */
-	if((w->type == PY_TYPE_STRING)) {
-		const char* s;
-		char c;
-
-		if(!(v->type == PY_TYPE_STRING) || py_varobject_size(v) != 1) {
-			py_error_set_string(
-					py_type_error,
-					"string member test needs char left operand");
-			return -1;
-		}
-
-		c = py_string_get(v)[0];
-		s = py_string_get(w);
-
-		while(s < s + py_varobject_size(w)) if(c == *s++) return 1;
-
-		return 0;
-	}
-
-	if(!py_is_varobject(w)) {
-		py_error_set_string(
-				py_type_error,
-				"'in' or 'not in' needs sequence right argument");
-		return -1;
-	}
-
-	n = py_varobject_size(w);
-
-	for(i = 0; i < n; i++) {
-		x = py_types[w->type].ind(w, i);
-		cmp = py_object_cmp(v, x);
-		py_object_decref(x);
-
-		if(cmp == 0) return 1;
-	}
-
-	return 0;
-}
-
-static struct py_object* py_cmp_outcome(
-		enum py_cmp_op op, struct py_object* v, struct py_object* w) {
-
-	int cmp;
-	int res = 0;
-
-	switch(op) {
-		case PY_CMP_IS: {
-			PY_FALLTHROUGH;
-			/* FALLTHRU */
-		}
-		case PY_CMP_IS_NOT: {
-			res = (v == w);
-			if(op == PY_CMP_IS_NOT) res = !res;
-
-			break;
-		}
-
-		case PY_CMP_IN: {
-			PY_FALLTHROUGH;
-			/* FALLTHRU */
-		}
-		case PY_CMP_NOT_IN: {
-			res = py_cmp_member(v, w);
-
-			if(res < 0) return NULL;
-			if(op == PY_CMP_NOT_IN) res = !res;
-
-			break;
-		}
-
-		case PY_CMP_EXC_MATCH: {
-			res = py_cmp_exception(v, w);
-			break;
-		}
-
-		default: {
-			cmp = py_object_cmp(v, w);
-
-			switch(op) {
-				default: break;
-				case PY_CMP_LT: res = cmp < 0;
-					break;
-				case PY_CMP_LE: res = cmp <= 0;
-					break;
-				case PY_CMP_EQ: res = cmp == 0;
-					break;
-				case PY_CMP_NE: res = cmp != 0;
-					break;
-				case PY_CMP_GT: res = cmp > 0;
-					break;
-				case PY_CMP_GE: res = cmp >= 0;
-					break;
-			}
-		}
-	}
-
-	v = res ? PY_TRUE : PY_FALSE;
-	py_object_incref(v);
-
-	return v;
-}
-
-static int py_import_from(
-		struct py_object* locals, struct py_object* v, const char* name) {
-
-	struct py_object* w;
-	struct py_object* x;
-
-	w = ((struct py_module*) v)->attr;
-
-	if(name[0] == '*') {
-		unsigned i;
-		unsigned n = py_dict_size(w);
-
-		for(i = 0; i < n; i++) {
-			name = py_dict_get_key(w, i);
-
-			if(name == NULL || name[0] == '_') continue;
-
-			if(!(x = py_dict_lookup(w, name))) {
-				/* TODO: can't happen? */
-				py_error_set_string(py_name_error, name);
-				return -1;
-			}
-
-			if(py_dict_insert(locals, name, x) != 0) return -1;
-		}
-
-		return 0;
-	}
-	else {
-		if(!(x = py_dict_lookup(w, name))) {
-			py_error_set_string(py_name_error, name);
-			return -1;
-		}
-		else return py_dict_insert(locals, name, x);
-	}
-}
 
 /* Status code for main loop (reason for stack unwind) */
 
@@ -556,10 +106,7 @@ struct py_object* py_code_eval(
 			 */
 
 			case PY_OP_POP_TOP: {
-				v = *--stack_pointer;
-
-				py_object_decref(v);
-
+				py_object_decref(*--stack_pointer);
 				break;
 			}
 
@@ -596,7 +143,10 @@ struct py_object* py_code_eval(
 			case PY_OP_UNARY_NEGATIVE: {
 				v = *--stack_pointer;
 
-				*stack_pointer++ = py_object_neg(v);
+				if(!(*stack_pointer++ = py_object_neg(v))) {
+					py_error_set_evalop();
+					why = PY_WHY_EXCEPTION;
+				}
 
 				py_object_decref(v);
 
@@ -606,7 +156,23 @@ struct py_object* py_code_eval(
 			case PY_OP_UNARY_NOT: {
 				v = *--stack_pointer;
 
-				*stack_pointer++ = py_object_not(v);
+				if(!(*stack_pointer++ = py_object_not(v))) {
+					py_error_set_evalop();
+					why = PY_WHY_EXCEPTION;
+				}
+
+				py_object_decref(v);
+
+				break;
+			}
+
+			case PY_OP_BUILD_CLASS: {
+				v = *--stack_pointer;
+
+				if(!(*stack_pointer++ = py_class_new(v))) {
+					py_error_set_evalop();
+					why = PY_WHY_EXCEPTION;
+				}
 
 				py_object_decref(v);
 
@@ -616,16 +182,12 @@ struct py_object* py_code_eval(
 			case PY_OP_UNARY_CALL: {
 				v = *--stack_pointer;
 
-				/* TODO: Can these be consolidated to avoid the branch? */
-				if(v->type == PY_TYPE_CLASS_METHOD ||
-					v->type == PY_TYPE_FUNC) {
-
-					x = py_call_function(env, v, NULL);
+				if(!(*stack_pointer++ = py_call_function(env, v, 0))) {
+					if(!py_error_occurred()) py_error_set_evalop();
+					why = PY_WHY_EXCEPTION;
 				}
-				else x = py_call_builtin(env, v, NULL);
 
 				py_object_decref(v);
-				*stack_pointer++ = x;
 
 				break;
 			}
@@ -633,10 +195,14 @@ struct py_object* py_code_eval(
 			case PY_OP_BINARY_MULTIPLY: {
 				w = *--stack_pointer;
 				v = *--stack_pointer;
-				x = py_object_mul(v, w);
+
+				if(!(*stack_pointer++ = py_object_mul(v, w))) {
+					py_error_set_evalop();
+					why = PY_WHY_EXCEPTION;
+				}
+
 				py_object_decref(v);
 				py_object_decref(w);
-				*stack_pointer++ = x;
 
 				break;
 			}
@@ -644,10 +210,14 @@ struct py_object* py_code_eval(
 			case PY_OP_BINARY_DIVIDE: {
 				w = *--stack_pointer;
 				v = *--stack_pointer;
-				x = py_object_div(v, w);
+
+				if(!(*stack_pointer++ = py_object_div(v, w))) {
+					py_error_set_evalop();
+					why = PY_WHY_EXCEPTION;
+				}
+
 				py_object_decref(v);
 				py_object_decref(w);
-				*stack_pointer++ = x;
 
 				break;
 			}
@@ -655,10 +225,14 @@ struct py_object* py_code_eval(
 			case PY_OP_BINARY_MODULO: {
 				w = *--stack_pointer;
 				v = *--stack_pointer;
-				x = py_object_mod(v, w);
+
+				if(!(*stack_pointer++ = py_object_mod(v, w))) {
+					py_error_set_evalop();
+					why = PY_WHY_EXCEPTION;
+				}
+
 				py_object_decref(v);
 				py_object_decref(w);
-				*stack_pointer++ = x;
 
 				break;
 			}
@@ -696,10 +270,14 @@ struct py_object* py_code_eval(
 			case PY_OP_BINARY_SUBSCR: {
 				w = *--stack_pointer;
 				v = *--stack_pointer;
-				x = py_object_ind(v, w);
+
+				if(!(*stack_pointer++ = py_object_ind(v, w))) {
+					py_error_set_evalop();
+					why = PY_WHY_EXCEPTION;
+				}
+
 				py_object_decref(v);
 				py_object_decref(w);
-				*stack_pointer++ = x;
 
 				break;
 			}
@@ -708,16 +286,13 @@ struct py_object* py_code_eval(
 				w = *--stack_pointer;
 				v = *--stack_pointer;
 
-				if(v->type == PY_TYPE_CLASS_METHOD ||
-					v->type == PY_TYPE_FUNC) {
-
-					x = py_call_function(env, v, w);
+				if(!(*stack_pointer++ = py_call_function(env, v, w))) {
+					if(!py_error_occurred()) py_error_set_evalop();
+					why = PY_WHY_EXCEPTION;
 				}
-				else x = py_call_builtin(env, v, w);
 
 				py_object_decref(v);
 				py_object_decref(w);
-				*stack_pointer++ = x;
 
 				break;
 			}
@@ -735,18 +310,22 @@ struct py_object* py_code_eval(
 				/* FALLTHRU */
 			}
 			case PY_OP_SLICE + 3: {
-				if((opcode - PY_OP_SLICE) & 2) { w = *--stack_pointer; }
-				else { w = NULL; }
+				if((opcode - PY_OP_SLICE) & 2) w = *--stack_pointer;
+				else w = 0;
 
-				if((opcode - PY_OP_SLICE) & 1) { v = *--stack_pointer; }
-				else { v = NULL; }
+				if((opcode - PY_OP_SLICE) & 1) v = *--stack_pointer;
+				else v = 0;
 
 				u = *--stack_pointer;
-				x = py_apply_slice(u, v, w);
+
+				if(!(*stack_pointer++ = py_apply_slice(u, v, w))) {
+					py_error_set_evalop();
+					why = PY_WHY_EXCEPTION;
+				}
+
 				py_object_decref(u);
 				py_object_decref(v);
 				py_object_decref(w);
-				*stack_pointer++ = x;
 
 				break;
 			}
@@ -755,8 +334,12 @@ struct py_object* py_code_eval(
 				w = *--stack_pointer;
 				v = *--stack_pointer;
 				u = *--stack_pointer;
-				/* v[w] = u */
-				err = assign_subscript(v, w, u);
+
+				if(py_assign_subscript(v, w, u) == -1) {
+					py_error_set_evalop();
+					why = PY_WHY_EXCEPTION;
+				}
+
 				py_object_decref(u);
 				py_object_decref(v);
 				py_object_decref(w);
@@ -766,29 +349,23 @@ struct py_object* py_code_eval(
 
 			/* TODO: De-printify opcodes. */
 			case PY_OP_PRINT_EXPR: {
-				v = *--stack_pointer;
-				py_object_decref(v);
+				py_object_decref(*--stack_pointer);
 				break;
 			}
 
 			case PY_OP_BREAK_LOOP: {
 				why = PY_WHY_BREAK;
-
 				break;
 			}
 
 			case PY_OP_LOAD_LOCALS: {
-				v = f->locals;
-				py_object_incref(v);
-				*stack_pointer++ = v;
-
+				*stack_pointer++ = py_object_incref(f->locals);
 				break;
 			}
 
 			case PY_OP_RETURN_VALUE: {
 				retval = *--stack_pointer;
 				why = PY_WHY_RETURN;
-
 				break;
 			}
 
@@ -814,9 +391,10 @@ struct py_object* py_code_eval(
 
 			case PY_OP_BUILD_FUNCTION: {
 				v = *--stack_pointer;
-				x = py_func_new(v, f->globals);
+
+				*stack_pointer++ = py_func_new(v, f->globals);
+
 				py_object_decref(v);
-				*stack_pointer++ = x;
 
 				break;
 			}
@@ -839,22 +417,15 @@ struct py_object* py_code_eval(
 				break;
 			}
 
-			case PY_OP_BUILD_CLASS: {
+			case PY_OP_STORE_NAME: {
 				v = *--stack_pointer;
 
-				if(!(*stack_pointer++ = py_class_new(v))) {
-					py_error_set_nomem();
+				err = py_dict_insert(f->locals, py_code_get_name(f, oparg), v);
+				if(err == -1) {
+					py_error_set_evalop();
 					why = PY_WHY_EXCEPTION;
 				}
 
-				py_object_decref(v);
-
-				break;
-			}
-
-			case PY_OP_STORE_NAME: {
-				v = *--stack_pointer;
-				err = py_dict_insert(f->locals, py_code_get_name(f, oparg), v);
 				py_object_decref(v);
 
 				break;
@@ -914,8 +485,13 @@ struct py_object* py_code_eval(
 			case PY_OP_STORE_ATTR: {
 				v = *--stack_pointer;
 				u = *--stack_pointer;
-				/* v.name = u */
+
 				err = py_object_set_attr(v, py_code_get_name(f, oparg), u);
+				if(err == -1) {
+					py_error_set_evalop();
+					why = PY_WHY_EXCEPTION;
+				}
+
 				py_object_decref(v);
 				py_object_decref(u);
 
@@ -938,9 +514,8 @@ struct py_object* py_code_eval(
 				}
 
 				if(!x) py_error_set_string(py_name_error, name);
-				else py_object_incref(x);
 
-				*stack_pointer++ = x;
+				*stack_pointer++ = py_object_incref(x);
 
 				break;
 			}
@@ -983,11 +558,12 @@ struct py_object* py_code_eval(
 			}
 
 			case PY_OP_LOAD_ATTR: {
-				const char* key = py_code_get_name(f, oparg);
 				v = *--stack_pointer;
-				x = py_object_get_attr(v, key);
-				py_object_decref(v);
+
+				x = py_object_get_attr(v, py_code_get_name(f, oparg));
 				*stack_pointer++ = x;
+
+				py_object_decref(v);
 
 				break;
 			}
@@ -995,45 +571,53 @@ struct py_object* py_code_eval(
 			case PY_OP_COMPARE_OP: {
 				w = *--stack_pointer;
 				v = *--stack_pointer;
-				x = py_cmp_outcome((enum py_cmp_op) oparg, v, w);
+
+				if(!(*stack_pointer++ = py_cmp_outcome(oparg, v, w))) {
+					py_error_set_evalop();
+					why = PY_WHY_EXCEPTION;
+				}
 
 				py_object_decref(v);
 				py_object_decref(w);
-				*stack_pointer++ = x;
 
 				break;
 			}
 
 			case PY_OP_IMPORT_NAME: {
-				x = py_import_module(env, py_code_get_name(f, oparg));
-				py_object_incref(x);
-				*stack_pointer++ = x;
+				if(!(v = py_import_module(env, py_code_get_name(f, oparg)))) {
+					py_error_set_evalop();
+					why = PY_WHY_EXCEPTION;
+				}
+
+				*stack_pointer++ = py_object_incref(v);
 
 				break;
 			}
 
 			case PY_OP_IMPORT_FROM: {
 				v = stack_pointer[-1];
+
 				err = py_import_from(f->locals, v, py_code_get_name(f, oparg));
+				if(err == -1) {
+					py_error_set_evalop();
+					why = PY_WHY_EXCEPTION;
+				}
 
 				break;
 			}
 
 			case PY_OP_JUMP_FORWARD: {
 				next += oparg;
-
 				break;
 			}
 
 			case PY_OP_JUMP_IF_FALSE: {
 				if(!py_object_truthy(stack_pointer[-1])) next += oparg;
-
 				break;
 			}
 
 			case PY_OP_JUMP_IF_TRUE: {
 				if(py_object_truthy(stack_pointer[-1])) next += oparg;
-
 				break;
 			}
 
@@ -1042,36 +626,51 @@ struct py_object* py_code_eval(
 				break;
 			}
 
-			case PY_OP_FOR_LOOP:
-				/* for v in s: ...
-				On entry: stack contains s, i.
-				On exit: stack contains s, i+1, s[i];
-				but if loop exhausted:
-				s, i are popped, and we jump */
+			case PY_OP_FOR_LOOP: {
+				/*
+				 * for v in s: ...
+				 * On entry: stack contains s, i.
+				 * On exit: stack contains s, i+1, s[i];
+				 * but if loop exhausted:
+				 * s, i are popped, and we jump
+				 */
+
 				w = *--stack_pointer; /* Loop index */
 				v = *--stack_pointer; /* Sequence struct py_object*/
-				u = py_loop_subscript(v, w);
-				if(u != NULL) {
-					*stack_pointer++ = v;
-					x = py_int_new(py_int_get(w) + 1);
-					*stack_pointer++ = x;
-					py_object_decref(w);
-					*stack_pointer++ = (u);
+
+				if (!py_is_varobject(v)) {
+					py_error_set_string(
+							py_type_error, "loop over non-sequence");
+
+					why = PY_WHY_EXCEPTION;
+					break;
 				}
-				else {
+
+				if (!(u = py_loop_subscript(v, w))) {
 					py_object_decref(v);
 					py_object_decref(w);
-					/* A NULL can mean "s exhausted" but also an error: */
-					if(py_error_occurred()) why = PY_WHY_EXCEPTION;
-					else next += oparg;
+
+					next += oparg;
+					break;
 				}
+
+				if (!(x = py_int_new(py_int_get(w) + 1))) {
+					py_error_set_nomem();
+					why = PY_WHY_EXCEPTION;
+				}
+
+				*stack_pointer++ = v;
+				*stack_pointer++ = x;
+				py_object_decref(w);
+				*stack_pointer++ = u;
+
 				break;
+			}
 
 			case PY_OP_SETUP_LOOP: {
 				PY_FALLTHROUGH;
 				/* FALLTHRU */
 			}
-
 			case PY_OP_SETUP_EXCEPT: {
 				if(f->iblock >= f->nblocks) {
 					py_error_set_string(py_runtime_error, "stack overflow");
@@ -1088,33 +687,23 @@ struct py_object* py_code_eval(
 
 			case PY_OP_SET_LINENO: {
 				lineno = oparg;
-
 				break;
 			}
 
 			default: {
 				py_error_set_string(
 						py_system_error, "py_code_eval: unknown opcode");
-				why = PY_WHY_EXCEPTION;
 
+				why = PY_WHY_EXCEPTION;
 				break;
 			}
-		} /* switch */
-
+		}
 
 		/* Quickly continue if no error occurred */
-
-		if(why == PY_WHY_NOT) {
-			if(err == 0 && x != NULL) continue; /* Normal, fast path */
-
-			why = PY_WHY_EXCEPTION;
-			x = PY_NONE;
-			err = 0;
-		}
+		if(why == PY_WHY_NOT) continue; /* Normal, fast path */
 
 #ifndef NDEBUG
 		/* Double-check exception status */
-
 		if(why == PY_WHY_EXCEPTION) {
 			if(!py_error_occurred()) {
 				py_error_set_string(py_system_error, "ghost error");
@@ -1125,16 +714,14 @@ struct py_object* py_code_eval(
 #endif
 
 		/* Log traceback info if this is a real exception */
-
 		if(why == PY_WHY_EXCEPTION) py_traceback_new(f, lineno);
 
 		/* Unwind stacks if a (pseudo) exception occurred */
-
 		while(f->iblock > 0) {
 			struct py_block* b = py_block_pop(f);
+
 			while((stack_pointer - f->valuestack) > (int) b->level) {
-				v = *--stack_pointer;
-				py_object_decref(v);
+				py_object_decref(*--stack_pointer);
 			}
 
 			if(b->type == PY_OP_SETUP_LOOP && why == PY_WHY_BREAK) {
@@ -1142,31 +729,24 @@ struct py_object* py_code_eval(
 				next = code + b->handler;
 				break;
 			}
-		} /* unwind stack */
+		}
 
 		/* End the loop if we still have an error (or return) */
-
 		if(why != PY_WHY_NOT) break;
-	} /* main loop */
+	}
 
 	apro_stamp_end(APRO_CEVAL_CODE_EVAL);
 
 	apro_stamp_start(APRO_CEVAL_CODE_EVAL_FALLING);
 
 	/* Pop remaining stack entries */
-
-	while((stack_pointer - f->valuestack)) {
-		v = *--stack_pointer;
-		py_object_decref(v);
-	}
+	while(stack_pointer - f->valuestack) py_object_decref(*--stack_pointer);
 
 	/* Restore previous frame and release the current one */
-
 	env->current = f->back;
 	py_object_decref(f);
 
 	apro_stamp_end(APRO_CEVAL_CODE_EVAL_FALLING);
 
-	if(why == PY_WHY_RETURN) return retval;
-	else return NULL;
+	return why == PY_WHY_RETURN ? retval : 0;
 }

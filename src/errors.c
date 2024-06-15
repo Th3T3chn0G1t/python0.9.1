@@ -127,6 +127,10 @@ void py_error_set_badcall(void) {
 	py_error_set_string(py_system_error, "bad argument to internal function");
 }
 
+void py_error_set_evalop(void) {
+	py_error_set_string(py_system_error, "builtin function failed");
+}
+
 /* Set the error appropriate to the given input error code (see result.h) */
 
 void py_error_set_input(enum py_result err) {
