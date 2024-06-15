@@ -8,17 +8,17 @@
 #include <python/traceback.h>
 
 #include <python/object.h>
-#include <python/classobject.h>
-#include <python/frameobject.h>
-#include <python/funcobject.h>
-#include <python/methodobject.h>
-#include <python/moduleobject.h>
-#include <python/tupleobject.h>
-#include <python/listobject.h>
-#include <python/stringobject.h>
-#include <python/dictobject.h>
-#include <python/intobject.h>
-#include <python/floatobject.h>
+#include <python/object/class.h>
+#include <python/object/frame.h>
+#include <python/object/func.h>
+#include <python/object/method.h>
+#include <python/object/module.h>
+#include <python/object/tuple.h>
+#include <python/object/list.h>
+#include <python/object/string.h>
+#include <python/object/dict.h>
+#include <python/object/int.h>
+#include <python/object/float.h>
 
 struct py_type_info py_types[PY_TYPE_MAX] = {
 		/* Type */

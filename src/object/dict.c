@@ -23,8 +23,8 @@
 #include <python/modsupport.h>
 #include <python/errors.h>
 
-#include <python/stringobject.h>
-#include <python/dictobject.h>
+#include <python/object/string.h>
+#include <python/object/dict.h>
 
 /*
  * Table of primes suitable as keys, in ascending order.

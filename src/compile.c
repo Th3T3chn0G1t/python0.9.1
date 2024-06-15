@@ -20,10 +20,10 @@
 #include <python/compile.h>
 #include <python/errors.h>
 
-#include <python/listobject.h>
-#include <python/intobject.h>
-#include <python/floatobject.h>
-#include <python/stringobject.h>
+#include <python/object/list.h>
+#include <python/object/int.h>
+#include <python/object/float.h>
+#include <python/object/string.h>
 
 #define PY_CODE_CHUNK (1024)
 

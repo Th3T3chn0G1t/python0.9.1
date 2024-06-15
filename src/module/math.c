@@ -10,9 +10,9 @@
 #include <python/modsupport.h>
 #include <python/errors.h>
 
-#include <python/floatobject.h>
-#include <python/intobject.h>
-#include <python/tupleobject.h>
+#include <python/object/float.h>
+#include <python/object/int.h>
+#include <python/object/tuple.h>
 
 typedef double (*py_math1_t)(double);
 typedef double (*py_math2_t)(double, double);

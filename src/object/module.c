@@ -9,9 +9,9 @@
 #include <python/errors.h>
 
 #include <python/object.h>
-#include <python/dictobject.h>
-#include <python/stringobject.h>
-#include <python/moduleobject.h>
+#include <python/object/dict.h>
+#include <python/object/string.h>
+#include <python/object/module.h>
 
 struct py_object* py_module_new(const char* name) {
 	struct py_module* m = py_object_new(PY_TYPE_MODULE);

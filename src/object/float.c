@@ -8,8 +8,8 @@
 #include <python/std.h>
 #include <python/errors.h>
 
-#include <python/floatobject.h>
-#include <python/stringobject.h>
+#include <python/object/float.h>
+#include <python/object/string.h>
 
 struct py_object* py_float_new(double fval) {
 	struct py_float* op = py_object_new(PY_TYPE_FLOAT);

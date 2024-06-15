@@ -6,8 +6,7 @@
 #include <python/state.h>
 
 #include <python/types.h>
-#include <python/dictobject.h>
-
+#include <python/object/dict.h>
 
 static enum py_result py_path_new(const char* path, char*** out) {
 	enum py_result res;

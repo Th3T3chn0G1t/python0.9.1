@@ -8,7 +8,7 @@
 #ifndef PY_TRACEBACK_H
 #define PY_TRACEBACK_H
 
-#include <python/frameobject.h>
+#include <python/object/frame.h>
 
 struct py_traceback {
 	struct py_object ob;

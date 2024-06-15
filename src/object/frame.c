@@ -10,8 +10,8 @@
 #include <python/errors.h>
 #include <python/opcode.h>
 
-#include <python/frameobject.h>
-#include <python/dictobject.h>
+#include <python/object/frame.h>
+#include <python/object/dict.h>
 
 /* TODO: This function is kind of a mess for such an important component. */
 struct py_frame* py_frame_new(

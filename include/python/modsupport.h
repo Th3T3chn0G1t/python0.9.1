@@ -9,7 +9,7 @@
 #define PY_MODSUPPORT_H
 
 #include <python/object.h>
-#include <python/methodobject.h>
+#include <python/object/method.h>
 
 struct py_object* py_module_new_methods(
 		struct py_env*, const char*, const struct py_methodlist*);

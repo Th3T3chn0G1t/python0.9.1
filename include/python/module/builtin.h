@@ -8,8 +8,8 @@
 #ifndef PY_BLTINMODULE_H
 #define PY_BLTINMODULE_H
 
-#include <python/object.h>
-#include <python/result.h>
+#include "../object.h"
+#include "../result.h"
 
 enum py_result py_builtin_init(struct py_env*);
 void py_builtin_done(void);

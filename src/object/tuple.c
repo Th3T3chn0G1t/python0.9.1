@@ -8,9 +8,9 @@
 #include <python/std.h>
 #include <python/errors.h>
 
-#include <python/tupleobject.h>
-#include <python/stringobject.h>
-#include <python/intobject.h>
+#include <python/object/tuple.h>
+#include <python/object/string.h>
+#include <python/object/int.h>
 
 struct py_object* py_tuple_new(unsigned size) {
 	unsigned i;

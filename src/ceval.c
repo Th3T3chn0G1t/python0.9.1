@@ -15,19 +15,19 @@
 #include <python/ceval.h>
 #include <python/errors.h>
 
-#include <python/bltinmodule.h>
+#include <python/module/builtin.h>
 
-#include <python/frameobject.h>
-#include <python/intobject.h>
-#include <python/floatobject.h>
-#include <python/dictobject.h>
-#include <python/stringobject.h>
-#include <python/listobject.h>
-#include <python/tupleobject.h>
-#include <python/methodobject.h>
-#include <python/moduleobject.h>
-#include <python/classobject.h>
-#include <python/funcobject.h>
+#include <python/object/frame.h>
+#include <python/object/int.h>
+#include <python/object/float.h>
+#include <python/object/dict.h>
+#include <python/object/string.h>
+#include <python/object/list.h>
+#include <python/object/tuple.h>
+#include <python/object/method.h>
+#include <python/object/module.h>
+#include <python/object/class.h>
+#include <python/object/func.h>
 
 #include <apro.h>
 

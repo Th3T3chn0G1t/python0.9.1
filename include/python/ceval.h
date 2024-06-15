@@ -10,7 +10,7 @@
 
 #include <python/std.h>
 #include <python/object.h>
-#include <python/frameobject.h>
+#include <python/object/frame.h>
 
 struct py_env;
 

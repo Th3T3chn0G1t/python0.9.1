@@ -42,9 +42,9 @@
 #include <python/errors.h>
 
 #include <python/object.h>
-#include <python/stringobject.h>
-#include <python/tupleobject.h>
-#include <python/intobject.h>
+#include <python/object/string.h>
+#include <python/object/tuple.h>
+#include <python/object/int.h>
 
 /* Last exception stored by py_error_set_value() */
 

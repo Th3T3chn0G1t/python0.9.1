@@ -9,7 +9,7 @@
 #include <python/errors.h>
 
 #include <python/object.h>
-#include <python/funcobject.h>
+#include <python/object/func.h>
 
 struct py_object* py_func_new(
 		struct py_object* code, struct py_object* globals) {

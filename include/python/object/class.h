@@ -8,7 +8,7 @@
 #ifndef PY_CLASSOBJECT_H
 #define PY_CLASSOBJECT_H
 
-#include <python/object.h>
+#include "../object.h"
 
 /*
  * Classes are really hacked in at the last moment.

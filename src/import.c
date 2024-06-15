@@ -17,10 +17,10 @@
 #include <python/grammar.h>
 #include <python/pgen.h>
 
-#include <python/moduleobject.h>
-#include <python/dictobject.h>
-#include <python/listobject.h>
-#include <python/stringobject.h>
+#include <python/object/module.h>
+#include <python/object/dict.h>
+#include <python/object/list.h>
+#include <python/object/string.h>
 
 /* TODO: This system needs some rework to clean up import control flow. */
 

@@ -9,10 +9,10 @@
 #include <python/errors.h>
 
 #include <python/object.h>
-#include <python/classobject.h>
-#include <python/dictobject.h>
-#include <python/tupleobject.h>
-#include <python/funcobject.h>
+#include <python/object/class.h>
+#include <python/object/dict.h>
+#include <python/object/tuple.h>
+#include <python/object/func.h>
 
 struct py_object* py_class_new(struct py_object* methods) {
 	struct py_class* op;

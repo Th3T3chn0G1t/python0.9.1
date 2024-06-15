@@ -8,7 +8,7 @@
 #ifndef PY_FLOATOBJECT_H
 #define PY_FLOATOBJECT_H
 
-#include <python/object.h>
+#include "../object.h"
 
 /*
  * struct py_float represents a (double precision) floating point number.

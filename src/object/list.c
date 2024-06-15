@@ -8,7 +8,7 @@
 #include <python/std.h>
 #include <python/errors.h>
 
-#include <python/listobject.h>
+#include <python/object/list.h>
 
 struct py_object* py_list_new(unsigned size) {
 	unsigned i;

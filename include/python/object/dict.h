@@ -15,7 +15,7 @@
 #ifndef PY_DICTOBJECT_H
 #define PY_DICTOBJECT_H
 
-#include <python/object.h>
+#include "../object.h"
 
 /*
  * Invariant for entries: when in use, value is not NULL and key is

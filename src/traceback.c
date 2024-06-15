@@ -11,7 +11,7 @@
 #include <python/errors.h>
 #include <python/env.h>
 
-#include <python/stringobject.h>
+#include <python/object/string.h>
 
 /* TODO: Python global state. */
 static struct py_traceback* py_traceback_current = NULL;

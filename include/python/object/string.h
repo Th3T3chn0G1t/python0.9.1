@@ -8,7 +8,7 @@
 #ifndef PY_STRINGOBJECT_H
 #define PY_STRINGOBJECT_H
 
-#include <python/object.h>
+#include "../object.h"
 
 /*
  * Type struct py_string represents a character string. An extra zero byte is

@@ -6,7 +6,7 @@
 /* Method object implementation */
 
 #include <python/errors.h>
-#include <python/methodobject.h>
+#include <python/object/method.h>
 
 struct py_object* py_method_new(py_method_t method, struct py_object* self) {
 	struct py_method* op = py_object_new(PY_TYPE_METHOD);

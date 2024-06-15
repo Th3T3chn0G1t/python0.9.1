@@ -6,7 +6,7 @@
 /* String object implementation */
 
 #include <python/std.h>
-#include <python/stringobject.h>
+#include <python/object/string.h>
 #include <python/errors.h>
 
 struct py_object* py_string_new_size(const char* str, unsigned size) {

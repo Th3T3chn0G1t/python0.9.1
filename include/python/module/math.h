@@ -8,7 +8,7 @@
 #ifndef PY_MATH_H
 #define PY_MATH_H
 
-#include <python/result.h>
+#include "../result.h"
 
 struct py_env;
 

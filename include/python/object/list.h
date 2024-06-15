@@ -8,7 +8,7 @@
 #ifndef PY_LISTOBJECT_H
 #define PY_LISTOBJECT_H
 
-#include <python/object.h>
+#include "../object.h"
 
 /*
  * Another generally useful object type is an list of object pointers.

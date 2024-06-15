@@ -8,8 +8,8 @@
 #include <python/std.h>
 #include <python/errors.h>
 
-#include <python/intobject.h>
-#include <python/stringobject.h>
+#include <python/object/int.h>
+#include <python/object/string.h>
 
 /* Standard Booleans */
 struct py_int py_true_object = { { PY_TYPE_INT, 1 }, 1 };

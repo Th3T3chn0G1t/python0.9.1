@@ -9,12 +9,12 @@
 #include <python/errors.h>
 #include <python/import.h>
 
-#include <python/moduleobject.h>
-#include <python/dictobject.h>
-#include <python/tupleobject.h>
-#include <python/stringobject.h>
-#include <python/intobject.h>
-#include <python/floatobject.h>
+#include <python/object/module.h>
+#include <python/object/dict.h>
+#include <python/object/tuple.h>
+#include <python/object/string.h>
+#include <python/object/int.h>
+#include <python/object/float.h>
 
 /* TODO: Better EH. */
 struct py_object* py_module_new_methods(
