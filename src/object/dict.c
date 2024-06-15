@@ -20,8 +20,6 @@
 /* TODO: Do dict keys need to be string *objects*? */
 
 #include <python/std.h>
-#include <python/modsupport.h>
-#include <python/errors.h>
 
 #include <python/object/string.h>
 #include <python/object/dict.h>
@@ -59,21 +57,18 @@ struct py_object* py_dict_new(void) {
 	struct py_dict* dp;
 
 	/* TODO: This really doesn't need to be here. */
-	if(dummy == NULL) { /* Auto-initialize dummy */
-		dummy = py_string_new("");
-		if(dummy == NULL) return NULL;
+	if(!dummy) { /* Auto-initialize dummy */
+		if(!(dummy = py_string_new(""))) return 0;
 	}
 
-	dp = py_object_new(PY_TYPE_DICT);
-	if(dp == NULL) return NULL;
+	if(!(dp = py_object_new(PY_TYPE_DICT))) return 0;
 
 	dp->size = primes[0];
 
-	dp->table = calloc(dp->size, sizeof(struct py_dictentry));
-	if(dp->table == NULL) {
+	if(!(dp->table = calloc(dp->size, sizeof(struct py_dictentry)))) {
 		/* Free instead of decref to avoid trying to free table in dealloc. */
 		free(dp);
-		return py_error_set_nomem();
+		return 0;
 	}
 
 	dp->fill = 0;
@@ -115,11 +110,13 @@ static struct py_dictentry* py_dict_look(struct py_dict* dp, const char* key) {
 
 	for(;;) {
 		struct py_dictentry* ep = &dp->table[i];
+		const char* str;
 
-		if(ep->key == NULL) return ep;
-		else if(py_string_get(ep->key)[0] == key[0]) {
-			if(strcmp(py_string_get(ep->key), key) == 0) return ep;
-		}
+		if(!ep->key) return ep;
+
+		str = py_string_get(ep->key);
+
+		if(!strcmp(str, key)) return ep;
 
 		i = (i + incr) % dp->size;
 	}
@@ -137,7 +134,7 @@ static void py_dict_table_insert(
 
 	ep = py_dict_look(dp, py_string_get(key));
 
-	if(ep->value != NULL) {
+	if(ep->value) {
 		py_object_decref(ep->value);
 		py_object_decref(key);
 	}
@@ -172,11 +169,7 @@ static int py_dict_resize(struct py_dict* dp) {
 		}
 	}
 
-	newtable = calloc(newsize, sizeof(struct py_dictentry));
-	if(newtable == NULL) {
-		py_error_set_nomem();
-		return -1;
-	}
+	if(!(newtable = calloc(newsize, sizeof(struct py_dictentry)))) return -1;
 
 	dp->size = newsize;
 	dp->table = newtable;
@@ -184,8 +177,8 @@ static int py_dict_resize(struct py_dict* dp) {
 	dp->used = 0;
 
 	for(i = 0, ep = oldtable; i < oldsize; i++, ep++) {
-		if(ep->value != NULL) py_dict_table_insert(dp, ep->key, ep->value);
-		else if(ep->key != NULL) py_object_decref(ep->key);
+		if(ep->value) py_dict_table_insert(dp, ep->key, ep->value);
+		else if(ep->key) py_object_decref(ep->key);
 	}
 
 	free(oldtable);
@@ -193,11 +186,7 @@ static int py_dict_resize(struct py_dict* dp) {
 }
 
 struct py_object* py_dict_lookup(struct py_object* op, const char* key) {
-	if(!(op->type == PY_TYPE_DICT)) {
-		py_fatal("py_dict_lookup on non-dictionary");
-	}
-
-	return py_dict_look((struct py_dict*) op, key)->value;
+	return py_dict_look((void*) op, key)->value;
 }
 
 static int py_dict_insert_impl(
@@ -207,16 +196,10 @@ static int py_dict_insert_impl(
 	struct py_object* keyobj;
 
 	/* TODO: Non-typechecked builds. */
-	if(!(op->type == PY_TYPE_DICT)) {
-		py_error_set_badcall();
-		return -1;
-	}
+	if(op->type != PY_TYPE_DICT) return -1;
 
 	dp = (struct py_dict*) op;
-	if(!(key->type == PY_TYPE_STRING)) {
-		py_error_set_badarg();
-		return -1;
-	}
+	if(key->type != PY_TYPE_STRING) return -1;
 
 	keyobj = key;
 
@@ -240,13 +223,7 @@ int py_dict_insert(
 	struct py_object* keyobj;
 	int err;
 
-	keyobj = py_string_new(key);
-	if(keyobj == NULL) {
-		py_error_set_nomem();
-		return -1;
-	}
-
-	if(!(keyobj->type == PY_TYPE_STRING)) puts("???");
+	if(!(keyobj = py_string_new(key))) return -1;
 
 	err = py_dict_insert_impl(op, keyobj, value);
 	py_object_decref(keyobj);
@@ -258,85 +235,49 @@ int py_dict_remove(struct py_object* op, const char* key) {
 	struct py_dict* dp;
 	struct py_dictentry* ep;
 
-	if(!(op->type == PY_TYPE_DICT)) {
-		py_error_set_badcall();
-		return -1;
-	}
-
 	dp = (struct py_dict*) op;
 	ep = py_dict_look(dp, key);
 
-	if(ep->value == NULL) {
-		py_error_set_string(PY_KEY_ERROR, "key not in dictionary");
-		return -1;
-	}
+	if(!ep->value) return -1;
 
 	py_object_decref(ep->key);
-	py_object_incref(dummy);
 
-	ep->key = dummy;
+	ep->key = py_object_incref(dummy);
+
 	py_object_decref(ep->value);
-	ep->value = NULL;
+
+	ep->value = 0;
 	dp->used--;
 
 	return 0;
 }
 
 static int py_dict_remove_impl(struct py_object* op, struct py_object* key) {
-	if(!(key->type == PY_TYPE_STRING)) {
-		py_error_set_badarg();
-		return -1;
-	}
-
 	return py_dict_remove(op, py_string_get(key));
 }
 
 /* TODO: Dicts as varobjects? */
 unsigned py_dict_size(struct py_object* op) {
-	if(!(op->type == PY_TYPE_DICT)) {
-		py_error_set_badcall();
-		return UINT_MAX; /* TODO: No one seems to check this? */
-	}
-
 	return ((struct py_dict*) op)->size;
 }
 
 static struct py_object* py_dict_get_key_impl(
 		struct py_object* op, unsigned i) {
 
-	/*
-	 * XXX This can't return errors since its callers assume
-	 * that NULL means there was no key at that point
-	 */
-	/* TODO: Better EH. */
+	struct py_dict* dp = (void*) op;
 
-	struct py_dict* dp;
+	/* Not an error! */
+	if(!dp->table[i].value) return 0;
 
-	if(!(op->type == PY_TYPE_DICT)) {
-		/* py_error_set_badcall(); */
-		return NULL;
-	}
-
-	dp = (struct py_dict*) op;
-
-	if(i >= dp->size) {
-		/* py_error_set_badarg(); */
-		return NULL;
-	}
-
-	if(dp->table[i].value == NULL) {
-		/* Not an error! */
-		return NULL;
-	}
-
-	return (struct py_object*) dp->table[i].key;
+	return (void*) dp->table[i].key;
 }
 
 const char* py_dict_get_key(struct py_object* op, unsigned i) {
-	struct py_object* keyobj = py_dict_get_key_impl(op, i);
-	if(keyobj == NULL) return NULL;
+	struct py_object* key;
 
-	return py_string_get(keyobj);
+	if(!(key = py_dict_get_key_impl(op, i))) return 0;
+
+	return py_string_get(key);
 }
 
 /* Methods */
@@ -347,34 +288,29 @@ void py_dict_dealloc(struct py_object* op) {
 	unsigned i;
 
 	for(i = 0, ep = dp->table; i < dp->size; i++, ep++) {
-		if(ep->key != NULL) py_object_decref(ep->key);
-		if(ep->value != NULL) py_object_decref(ep->value);
+		if(ep->key) py_object_decref(ep->key);
+		if(ep->value) py_object_decref(ep->value);
 	}
 
-	if(dp->table != NULL) free(dp->table);
+	if(dp->table) free(dp->table);
 }
 
 struct py_object* py_dict_lookup_object(
 		struct py_object* dp, struct py_object* v) {
 
-	if(!(v->type == PY_TYPE_STRING)) {
-		py_error_set_badarg();
-		return NULL;
+	if(!(v = py_dict_look((struct py_dict*) dp, py_string_get(v))->value)) {
+		return 0;
 	}
 
-	v = py_dict_look((struct py_dict*) dp, py_string_get(v))->value;
-
-	if(v == NULL) py_error_set_string(PY_KEY_ERROR, "key not in dictionary");
-	else py_object_incref(v);
-
-	return v;
+	return py_object_incref(v);
 }
 
 int py_dict_assign(
 		struct py_object* dp, struct py_object* v, struct py_object* w) {
 
-	if(w == NULL) return py_dict_remove_impl((struct py_object*) dp, v);
-	else return py_dict_insert_impl((struct py_object*) dp, v, w);
+	if(!w) return py_dict_remove_impl((void*) dp, v);
+
+	return py_dict_insert_impl((void*) dp, v, w);
 }
 
 void py_done_dict(void) {

@@ -24,11 +24,11 @@ extern struct py_object* py_system_error;
 /* Some more planned for the future */
 
 #define PY_INDEX_ERROR py_runtime_error
-#define PY_KEY_ERROR py_runtime_error
 
 void py_error_set(struct py_object*);
 void py_error_set_value(struct py_object*, struct py_object*);
 void py_error_set_string(struct py_object*, const char*);
+int py_error_set_key(void);
 int py_error_occurred(void);
 void py_error_get(struct py_object**, struct py_object**);
 void py_error_clear(void);

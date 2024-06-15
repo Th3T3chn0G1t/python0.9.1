@@ -162,7 +162,7 @@ static struct py_object* py_call_builtin(
 	}
 
 	if(func->type == PY_TYPE_CLASS) {
-		if(args != NULL) {
+		if(args) {
 			py_error_set_string(
 					py_type_error, "classobject() allows no arguments");
 			return NULL;
@@ -203,7 +203,7 @@ static int py_object_set_attr(
 		return -1;
 	}
 
-	if(w == NULL) return py_dict_remove(attr, name);
+	if(!w) return py_dict_remove(attr, name);
 	else return py_dict_insert(attr, name, w);
 }
 
@@ -516,9 +516,7 @@ static int py_import_from(
 
 			if(name == NULL || name[0] == '_') continue;
 
-			x = py_dict_lookup(w, name);
-
-			if(x == NULL) {
+			if(!(x = py_dict_lookup(w, name))) {
 				/* TODO: can't happen? */
 				py_error_set_string(py_name_error, name);
 				return -1;
@@ -530,13 +528,11 @@ static int py_import_from(
 		return 0;
 	}
 	else {
-		x = py_dict_lookup(w, name);
-
-		if(x == NULL) {
+		if(!(x = py_dict_lookup(w, name))) {
 			py_error_set_string(py_name_error, name);
 			return -1;
 		}
-		else { return py_dict_insert(locals, name, x); }
+		else return py_dict_insert(locals, name, x);
 	}
 }
 
@@ -970,13 +966,14 @@ struct py_object* py_code_eval(
 
 			case PY_OP_LOAD_NAME: {
 				const char* name = py_code_get_name(f, oparg);
-				x = py_dict_lookup(f->locals, name);
-				if(x == NULL) {
-					x = py_dict_lookup(f->globals, name);
-					if(x == NULL) x = py_builtin_get(name);
+
+				if(!(x = py_dict_lookup(f->locals, name))) {
+					if(!(x = py_dict_lookup(f->globals, name))) {
+						x = py_builtin_get(name);
+					}
 				}
 
-				if(x == NULL) py_error_set_string(py_name_error, name);
+				if(!x) py_error_set_string(py_name_error, name);
 				else py_object_incref(x);
 
 				*stack_pointer++ = x;
@@ -1026,8 +1023,9 @@ struct py_object* py_code_eval(
 			}
 
 			case PY_OP_LOAD_ATTR: {
+				const char* key = py_code_get_name(f, oparg);
 				v = *--stack_pointer;
-				x = py_object_get_attr(v, py_code_get_name(f, oparg));
+				x = py_object_get_attr(v, key);
 				py_object_decref(v);
 				*stack_pointer++ = x;
 

@@ -72,6 +72,11 @@ void py_error_set_string(struct py_object* exception, const char* string) {
 	py_object_decref(value);
 }
 
+int py_error_set_key(void) {
+	py_error_set_string(py_name_error, "key not present in dictionary");
+	return 0;
+}
+
 int py_error_occurred(void) {
 	return last_exception != NULL;
 }

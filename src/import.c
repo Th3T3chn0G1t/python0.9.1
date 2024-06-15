@@ -122,7 +122,7 @@ static void py_dict_clear(struct py_object* d) {
 
 	for(i = 0; i < py_dict_size(d); ++i) {
 		const char* k = py_dict_get_key(d, i);
-		if(k != NULL) (void) py_dict_remove(d, k);
+		if(k) (void) py_dict_remove(d, k);
 	}
 }
 
