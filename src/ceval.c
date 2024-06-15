@@ -297,18 +297,12 @@ struct py_object* py_code_eval(
 				break;
 			}
 
-			case PY_OP_SLICE + 0: {
-				PY_FALLTHROUGH;
-				/* FALLTHRU */
-			}
-			case PY_OP_SLICE + 1: {
-				PY_FALLTHROUGH;
-				/* FALLTHRU */
-			}
-			case PY_OP_SLICE + 2: {
-				PY_FALLTHROUGH;
-				/* FALLTHRU */
-			}
+			case PY_OP_SLICE + 0:; PY_FALLTHROUGH;
+			/* FALLTHROUGH */
+			case PY_OP_SLICE + 1:; PY_FALLTHROUGH;
+			/* FALLTHROUGH */
+			case PY_OP_SLICE + 2:; PY_FALLTHROUGH;
+			/* FALLTHROUGH */
 			case PY_OP_SLICE + 3: {
 				if((opcode - PY_OP_SLICE) & 2) w = *--stack_pointer;
 				else w = 0;
@@ -667,10 +661,8 @@ struct py_object* py_code_eval(
 				break;
 			}
 
-			case PY_OP_SETUP_LOOP: {
-				PY_FALLTHROUGH;
-				/* FALLTHRU */
-			}
+			case PY_OP_SETUP_LOOP:; PY_FALLTHROUGH;
+			/* FALLTHROUGH */
 			case PY_OP_SETUP_EXCEPT: {
 				if(f->iblock >= f->nblocks) {
 					py_error_set_string(py_runtime_error, "stack overflow");

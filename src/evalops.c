@@ -239,9 +239,8 @@ struct py_object* py_call_function(
 			}
 
 			PY_FALLTHROUGH;
-			/* FALLTHRU */
 		}
-
+		/* FALLTHROUGH */
 		case PY_TYPE_FUNC: {
 			struct py_object* locals;
 			struct py_object* globals;
@@ -322,10 +321,8 @@ struct py_object* py_cmp_outcome(
 	int res = 0;
 
 	switch(op) {
-		case PY_CMP_IS: {
-			PY_FALLTHROUGH;
-			/* FALLTHRU */
-		}
+		case PY_CMP_IS:; PY_FALLTHROUGH;
+		/* FALLTHROUGH */
 		case PY_CMP_IS_NOT: {
 			res = (v == w);
 			if(op == PY_CMP_IS_NOT) res = !res;
@@ -333,10 +330,8 @@ struct py_object* py_cmp_outcome(
 			break;
 		}
 
-		case PY_CMP_IN: {
-			PY_FALLTHROUGH;
-			/* FALLTHRU */
-		}
+		case PY_CMP_IN:; PY_FALLTHROUGH;
+		/* FALLTHROUGH */
 		case PY_CMP_NOT_IN: {
 			if(!py_is_varobject(w)) return 0;
 
