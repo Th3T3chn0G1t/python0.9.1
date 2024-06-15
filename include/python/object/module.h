@@ -8,7 +8,7 @@
 #ifndef PY_MODULEOBJECT_H
 #define PY_MODULEOBJECT_H
 
-#include "../object.h"
+#include <python/object.h>
 
 struct py_module {
 	struct py_object ob;

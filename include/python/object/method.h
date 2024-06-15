@@ -8,8 +8,8 @@
 #ifndef PY_METHODOBJECT_H
 #define PY_METHODOBJECT_H
 
-#include "../state.h"
-#include "../object.h"
+#include <python/state.h>
+#include <python/object.h>
 
 /*
  * TODO: Separate selfcall CC to allow classmethods to recieve self without

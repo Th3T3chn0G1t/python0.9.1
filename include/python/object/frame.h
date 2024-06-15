@@ -8,8 +8,8 @@
 #ifndef PY_FRAMEOBJECT_H
 #define PY_FRAMEOBJECT_H
 
-#include "../object.h"
-#include "../opcode.h"
+#include <python/object.h>
+#include <python/opcode.h>
 
 struct py_block {
 	enum py_opcode type; /* what kind of block this is */
