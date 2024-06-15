@@ -238,21 +238,21 @@ static struct py_object* py_compile_parse_string(const char* s) {
 		buf[len - 1] = s[i];
 		if(s[i] != '\\') continue;
 
-#define _(c, v) case c: buf[len - 1] = v; continue
+#define py_(c, v) case c: buf[len - 1] = v; continue
 		switch(s[++i]) {
 			default: continue;
-			_('\\', '\\');
-			_('\'', '\'');
-			_('b', '\b');
-			_('f', '\014');
-			_('t', '\t');
-			_('n', '\n');
-			_('r', '\r');
-			_('v', '\013');
-			_('E', '\033');
-			_('a', '\007');
+			py_('\\', '\\');
+			py_('\'', '\'');
+			py_('b', '\b');
+			py_('f', '\014');
+			py_('t', '\t');
+			py_('n', '\n');
+			py_('r', '\r');
+			py_('v', '\013');
+			py_('E', '\033');
+			py_('a', '\007');
 		}
-#undef _
+#undef py_
 	}
 
 	return py_string_new_size(buf, len);

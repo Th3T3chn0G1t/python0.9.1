@@ -203,36 +203,36 @@ static struct py_object* py_math_randf(
 }
 
 enum py_result py_math_init(struct py_env* env) {
-#define _(func) { #func, py_math_##func }
+#define py_(func) { #func, py_math_##func }
 	static const struct py_methodlist methods[] = {
-			_(acos),
-			_(asin),
-			_(atan),
-			_(atan2),
-			_(ceil),
-			_(cos),
-			_(cosh),
-			_(exp),
-			_(fabs),
-			_(floor),
-			_(fmod),
-			_(log),
-			_(log10),
-			_(pow),
-			_(sin),
-			_(sinh),
-			_(sqrt),
-			_(tan),
-			_(tanh),
-			_(orb),
-			_(andb),
-			_(xorb),
-			_(shl),
-			_(shr),
-			_(randf),
+			py_(acos),
+			py_(asin),
+			py_(atan),
+			py_(atan2),
+			py_(ceil),
+			py_(cos),
+			py_(cosh),
+			py_(exp),
+			py_(fabs),
+			py_(floor),
+			py_(fmod),
+			py_(log),
+			py_(log10),
+			py_(pow),
+			py_(sin),
+			py_(sinh),
+			py_(sqrt),
+			py_(tan),
+			py_(tanh),
+			py_(orb),
+			py_(andb),
+			py_(xorb),
+			py_(shl),
+			py_(shr),
+			py_(randf),
 			{ NULL, NULL } /* sentinel */
 	};
-#undef _
+#undef py_
 
 	if(!(py_module_new_methods(env, "math", methods))) return PY_RESULT_ERROR;
 
