@@ -69,7 +69,7 @@ struct py_object* py_dict_new(void) {
 
 	dp->size = primes[0];
 
-	dp->table = calloc(sizeof(struct py_dictentry), dp->size);
+	dp->table = calloc(dp->size, sizeof(struct py_dictentry));
 	if(dp->table == NULL) {
 		/* Free instead of decref to avoid trying to free table in dealloc. */
 		free(dp);
@@ -172,7 +172,7 @@ static int py_dict_resize(struct py_dict* dp) {
 		}
 	}
 
-	newtable = calloc(sizeof(struct py_dictentry), newsize);
+	newtable = calloc(newsize, sizeof(struct py_dictentry));
 	if(newtable == NULL) {
 		py_error_set_nomem();
 		return -1;
