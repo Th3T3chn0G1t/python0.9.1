@@ -28,7 +28,7 @@ struct py_object* py_tuple_new(unsigned size) {
 	return (struct py_object*) op;
 }
 
-struct py_object* py_tuple_get(struct py_object* op, unsigned i) {
+struct py_object* py_tuple_get(const struct py_object* op, unsigned i) {
 	if(!(op->type == PY_TYPE_TUPLE)) {
 		py_error_set_badcall();
 		return NULL;

@@ -242,16 +242,15 @@ struct py_object* py_call_function(
 
 	co = ((struct py_func*) func)->code;
 
-	if(!(co->type == PY_TYPE_CODE)) {
+	if(co->type != PY_TYPE_CODE) {
 		/* TODO: Proper EH. */
 		fprintf(stderr, "XXX Bad code\n");
 		abort();
 	}
 
-	newlocals = py_dict_new();
-	if(newlocals == NULL) {
+	if(!(newlocals = py_dict_new())) {
 		py_object_decref(newarg);
-		return NULL;
+		return 0;
 	}
 
 	newglobals = ((struct py_func*) func)->globals;
@@ -880,8 +879,12 @@ struct py_object* py_code_eval(
 
 			case PY_OP_BUILD_CLASS: {
 				v = *--stack_pointer;
-				x = py_class_new(v);
-				*stack_pointer++ = x;
+
+				if(!(*stack_pointer++ = py_class_new(v))) {
+					py_error_set_nomem();
+					why = PY_WHY_EXCEPTION;
+				}
+
 				py_object_decref(v);
 
 				break;
@@ -1016,8 +1019,10 @@ struct py_object* py_code_eval(
 			}
 
 			case PY_OP_BUILD_MAP: {
-				x = py_dict_new();
-				*stack_pointer++ = x;
+				if(!(*stack_pointer++ = py_dict_new())) {
+					py_error_set_nomem();
+					why = PY_WHY_EXCEPTION;
+				}
 
 				break;
 			}

@@ -5,29 +5,22 @@
 
 /* Float object implementation */
 
-#include <python/std.h>
 #include <python/errors.h>
 
 #include <python/object/float.h>
-#include <python/object/string.h>
 
-struct py_object* py_float_new(double fval) {
-	struct py_float* op = py_object_new(PY_TYPE_FLOAT);
-	op->value = fval;
+struct py_object* py_float_new(double value) {
+	struct py_float* op;
 
-	return (struct py_object*) op;
+	if(!(op = py_object_new(PY_TYPE_FLOAT))) return 0;
+
+	op->value = value;
+
+	return (void*) op;
 }
 
 double py_float_get(const struct py_object* op) {
-	if(!(op->type == PY_TYPE_FLOAT)) {
-		/*
-		 * TODO: This EH mechanism just doesn't work - make caller do the
-		 * 		 Check.
-		 */
-		py_error_set_badarg();
-		return -1;
-	}
-	else return ((struct py_float*) op)->value;
+	return ((struct py_float*) op)->value;
 }
 
 /* Methods */

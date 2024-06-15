@@ -28,7 +28,7 @@ struct py_tuple {
 };
 
 struct py_object* py_tuple_new(unsigned);
-struct py_object* py_tuple_get(struct py_object*, unsigned);
+struct py_object* py_tuple_get(const struct py_object*, unsigned);
 int py_tuple_set(struct py_object*, unsigned, struct py_object*);
 
 void py_tuple_dealloc(struct py_object*);

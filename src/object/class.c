@@ -5,8 +5,6 @@
 
 /* Class object implementation */
 
-#include <python/std.h>
-
 #include <python/object.h>
 #include <python/object/class.h>
 #include <python/object/dict.h>

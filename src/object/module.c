@@ -14,23 +14,22 @@
 #include <python/object/module.h>
 
 struct py_object* py_module_new(const char* name) {
-	struct py_module* m = py_object_new(PY_TYPE_MODULE);
-	if(m == NULL) return NULL;
+	struct py_module* m;
 
-	m->name = py_string_new(name);
-	if(m->name == NULL) {
+	if(!(m = py_object_new(PY_TYPE_MODULE))) return 0;
+
+	if(!(m->name = py_string_new(name))) {
 		py_object_decref(m);
 		return NULL;
 	}
 
-	m->attr = py_dict_new();
-	if(m->attr == NULL) {
+	if(!(m->attr = py_dict_new())) {
 		py_object_decref(m->name);
 		py_object_decref(m);
-		return NULL;
+		return 0;
 	}
 
-	return (struct py_object*) m;
+	return (void*) m;
 }
 
 /* Methods */
