@@ -8,6 +8,7 @@
 #include <python/state.h>
 #include <python/std.h>
 #include <python/env.h>
+#include <python/evalops.h>
 #include <python/import.h>
 #include <python/opcode.h>
 #include <python/traceback.h>
@@ -30,62 +31,6 @@
 #include <python/object/func.h>
 
 #include <apro.h>
-
-struct py_object* py_get_locals(struct py_env* env) {
-	if(env->current == NULL) return NULL;
-	else return env->current->locals;
-}
-
-struct py_object* py_get_globals(struct py_env* env) {
-	if(env->current == NULL) return NULL;
-	else return env->current->globals;
-}
-
-/* TODO: Move all these "generalising" functions into their own place. */
-/* Test a value used as condition, e.g., in a for or if statement */
-int py_object_truthy(struct py_object* v) {
-	if(v->type == PY_TYPE_INT) return py_int_get(v) != 0;
-	else if(v->type == PY_TYPE_FLOAT) return py_float_get(v) != 0.0;
-	else if(py_is_varobject(v)) return py_varobject_size(v) != 0;
-	else if(v->type == PY_TYPE_DICT) return ((struct py_dict*) v)->used != 0;
-	else if(v == PY_NONE) return 0;
-
-	/* All other objects are 'true' */
-	return 1;
-}
-
-static struct py_object* py_object_add(
-		struct py_object* v, struct py_object* w) {
-
-	py_cat_t cat;
-
-	if(v->type == PY_TYPE_INT && w->type == PY_TYPE_INT) {
-		return py_int_new(py_int_get(v) + py_int_get(w));
-	}
-	else if(v->type == PY_TYPE_FLOAT && w->type == PY_TYPE_FLOAT) {
-		return py_float_new(py_float_get(v) + py_float_get(w));
-	}
-	else if((cat = py_types[v->type].cat)) {
-		return cat(v, w);
-	}
-
-	py_error_set_string(py_type_error, "+ not supported by operands");
-	return NULL;
-}
-
-static struct py_object* py_object_sub(
-		struct py_object* v, struct py_object* w) {
-
-	if((v->type == PY_TYPE_INT) && (w->type == PY_TYPE_INT)) {
-		return py_int_new(py_int_get(v) - py_int_get(w));
-	}
-	else if((v->type == PY_TYPE_FLOAT) && (w->type == PY_TYPE_FLOAT)) {
-		return py_float_new(py_float_get(v) - py_float_get(w));
-	}
-
-	py_error_set_string(py_type_error, "bad operand type(s) for -");
-	return NULL;
-}
 
 static struct py_object* py_object_mul(
 		struct py_object* v, struct py_object* w) {
@@ -327,20 +272,20 @@ static struct py_object* py_apply_slice(
 		struct py_object* u, struct py_object* v, struct py_object* w) {
 
 	py_slice_t slice;
-	unsigned ilow, ihigh;
+	unsigned low, high;
 
 	if(!(slice = py_types[u->type].slice)) {
 		py_error_set_string(py_type_error, "only sequences can be sliced");
 		return NULL;
 	}
 
-	ilow = 0;
-	ihigh = py_varobject_size(u);
+	low = 0;
+	high = py_varobject_size(u);
 
-	if(py_slice_index(v, &ilow) != 0) return NULL;
-	if(py_slice_index(w, &ihigh) != 0) return NULL;
+	if(py_slice_index(v, &low) != 0) return NULL;
+	if(py_slice_index(w, &high) != 0) return NULL;
 
-	return slice(u, ilow, ihigh);
+	return slice(u, low, high);
 }
 
 /* w[key] = v */
@@ -577,18 +522,17 @@ struct py_object* py_code_eval(
 	apro_stamp_start(APRO_CEVAL_CODE_EVAL_RISING);
 
 	/* TODO: Why are these constants the random defaults. */
-	f = py_frame_new(env->current, co, globals, locals, 50, 20);
-	if(f == NULL) return NULL;
+	if(!(f = py_frame_new(env->current, co, globals, locals, 50, 20))) {
+		py_error_set_nomem();
+		return 0;
+	}
 
 	env->current = f;
 	code = f->code->code;
 	next = code;
 	stack_pointer = f->valuestack;
 
-	if(args != NULL) {
-		py_object_incref(args);
-		*stack_pointer++ = args;
-	}
+	if(py_object_incref(args)) *stack_pointer++ = args;
 
 	apro_stamp_end(APRO_CEVAL_CODE_EVAL_RISING);
 
@@ -615,6 +559,7 @@ struct py_object* py_code_eval(
 
 			case PY_OP_POP_TOP: {
 				v = *--stack_pointer;
+
 				py_object_decref(v);
 
 				break;
@@ -623,8 +568,9 @@ struct py_object* py_code_eval(
 			case PY_OP_ROT_TWO: {
 				v = *--stack_pointer;
 				w = *--stack_pointer;
+
 				*stack_pointer++ = v;
-				*stack_pointer++ = (w);
+				*stack_pointer++ = w;
 
 				break;
 			}
@@ -633,16 +579,17 @@ struct py_object* py_code_eval(
 				v = *--stack_pointer;
 				w = *--stack_pointer;
 				x = *--stack_pointer;
+
 				*stack_pointer++ = v;
 				*stack_pointer++ = x;
-				*stack_pointer++ = (w);
+				*stack_pointer++ = w;
 
 				break;
 			}
 
 			case PY_OP_DUP_TOP: {
-				v = stack_pointer[-1];
-				py_object_incref(v);
+				v = py_object_incref(stack_pointer[-1]);
+
 				*stack_pointer++ = v;
 
 				break;
@@ -650,18 +597,20 @@ struct py_object* py_code_eval(
 
 			case PY_OP_UNARY_NEGATIVE: {
 				v = *--stack_pointer;
-				x = py_object_neg(v);
+
+				*stack_pointer++ = py_object_neg(v);
+
 				py_object_decref(v);
-				*stack_pointer++ = x;
 
 				break;
 			}
 
 			case PY_OP_UNARY_NOT: {
 				v = *--stack_pointer;
-				x = py_object_not(v);
+
+				*stack_pointer++ = py_object_not(v);
+
 				py_object_decref(v);
-				*stack_pointer++ = x;
 
 				break;
 			}
@@ -719,10 +668,14 @@ struct py_object* py_code_eval(
 			case PY_OP_BINARY_ADD: {
 				w = *--stack_pointer;
 				v = *--stack_pointer;
-				x = py_object_add(v, w);
+
+				if(!(*stack_pointer++ = py_object_add(v, w))) {
+					py_error_set_badcall();
+					why = PY_WHY_EXCEPTION;
+				}
+
 				py_object_decref(v);
 				py_object_decref(w);
-				*stack_pointer++ = x;
 
 				break;
 			}
@@ -730,10 +683,14 @@ struct py_object* py_code_eval(
 			case PY_OP_BINARY_SUBTRACT: {
 				w = *--stack_pointer;
 				v = *--stack_pointer;
-				x = py_object_sub(v, w);
+
+				if(!(*stack_pointer++ = py_object_sub(v, w))) {
+					py_error_set_badcall();
+					why = PY_WHY_EXCEPTION;
+				}
+
 				py_object_decref(v);
 				py_object_decref(w);
-				*stack_pointer++ = x;
 
 				break;
 			}
@@ -867,11 +824,18 @@ struct py_object* py_code_eval(
 			}
 
 			case PY_OP_POP_BLOCK: {
-				struct py_block* b = py_block_pop(f);
+				struct py_block* b;
+
+				if(!f->iblock) {
+					py_error_set_string(py_runtime_error, "stack underflow");
+					why = PY_WHY_EXCEPTION;
+					break;
+				}
+
+				b = py_block_pop(f);
 
 				while((stack_pointer - f->valuestack) > (int) b->level) {
-					v = *--stack_pointer;
-					py_object_decref(v);
+					py_object_decref(*--stack_pointer);
 				}
 
 				break;
@@ -901,7 +865,7 @@ struct py_object* py_code_eval(
 			case PY_OP_UNPACK_TUPLE: {
 				v = *--stack_pointer;
 
-				if(!(v->type == PY_TYPE_TUPLE)) {
+				if(v->type != PY_TYPE_TUPLE) {
 					py_error_set_string(py_type_error, "unpack non-tuple");
 					why = PY_WHY_EXCEPTION;
 				}
@@ -926,21 +890,23 @@ struct py_object* py_code_eval(
 			/* TODO: Consolidate list/tuple since they do the same thing? */
 			case PY_OP_UNPACK_LIST: {
 				v = *--stack_pointer;
-				if(!(v->type == PY_TYPE_LIST)) {
+
+				if(v->type != PY_TYPE_LIST) {
 					py_error_set_string(py_type_error, "unpack non-list");
 					why = PY_WHY_EXCEPTION;
+					break;
 				}
-				else if(py_varobject_size(v) != (unsigned) oparg) {
+
+				if(py_varobject_size(v) != (unsigned) oparg) {
 					py_error_set_string(
 							py_runtime_error, "unpack list of wrong size");
+
 					why = PY_WHY_EXCEPTION;
+					break;
 				}
-				else {
-					for(; --oparg >= 0;) {
-						w = py_list_get(v, oparg);
-						py_object_incref(w);
-						*stack_pointer++ = (w);
-					}
+
+				for(; --oparg >= 0;) {
+					*stack_pointer++ = py_object_incref(py_list_get(v, oparg));
 				}
 
 				py_object_decref(v);
@@ -960,10 +926,8 @@ struct py_object* py_code_eval(
 			}
 
 			case PY_OP_LOAD_CONST: {
-				x = py_list_get(f->code->consts, oparg);
-				py_object_incref(x);
+				x = py_object_incref(py_list_get(f->code->consts, oparg));
 				*stack_pointer++ = x;
-
 				break;
 			}
 
@@ -1002,18 +966,15 @@ struct py_object* py_code_eval(
 			}
 
 			case PY_OP_BUILD_LIST: {
-				x = py_list_new(oparg);
-
-				if(x != NULL) {
-					for(; --oparg >= 0;) {
-						w = *--stack_pointer;
-						err = py_list_set(x, oparg, w);
-
-						if(err != 0) break;
-					}
-
-					*stack_pointer++ = x;
+				if(!(x = py_list_new(oparg))) {
+					py_error_set_nomem();
+					why = PY_WHY_EXCEPTION;
+					break;
 				}
+
+				for(; --oparg >= 0;) py_list_set(x, oparg, *--stack_pointer);
+
+				*stack_pointer++ = x;
 
 				break;
 			}
@@ -1116,10 +1077,17 @@ struct py_object* py_code_eval(
 				PY_FALLTHROUGH;
 				/* FALLTHRU */
 			}
+
 			case PY_OP_SETUP_EXCEPT: {
+				if(f->iblock >= f->nblocks) {
+					py_error_set_string(py_runtime_error, "stack overflow");
+					why = PY_WHY_EXCEPTION;
+					break;
+				}
+
 				py_block_setup(
 						f, opcode, (next - code) + oparg,
-						(stack_pointer - f->valuestack));
+						stack_pointer - f->valuestack);
 
 				break;
 			}

@@ -5,8 +5,6 @@
 
 /* Float object implementation */
 
-#include <python/errors.h>
-
 #include <python/object/float.h>
 
 struct py_object* py_float_new(double value) {

@@ -111,29 +111,29 @@ struct py_object* py_tuple_ind(struct py_object* op, unsigned i) {
 }
 
 struct py_object* py_tuple_slice(
-		struct py_object* op, unsigned ilow, unsigned ihigh) {
+		struct py_object* op, unsigned low, unsigned high) {
 
 	struct py_tuple* np;
 	unsigned i;
 
-	if(ihigh > py_varobject_size(op)) ihigh = py_varobject_size(op);
+	if(high > py_varobject_size(op)) high = py_varobject_size(op);
 
-	if(ihigh < ilow) ihigh = ilow;
+	if(high < low) high = low;
 
-	if(ilow == 0 && ihigh == py_varobject_size(op)) {
+	if(low == 0 && high == py_varobject_size(op)) {
 		/* TODO: can only do this if tuples are immutable! */
 		py_object_incref(op);
 		return op;
 	}
 
-	np = (struct py_tuple*) py_tuple_new(ihigh - ilow);
+	np = (struct py_tuple*) py_tuple_new(high - low);
 	if(np == NULL) return NULL;
 
-	for(i = ilow; i < ihigh; i++) {
+	for(i = low; i < high; i++) {
 		struct py_object* v = ((struct py_tuple*) op)->item[i];
 
 		py_object_incref(v);
-		np->item[i - ilow] = v;
+		np->item[i - low] = v;
 	}
 
 	return (struct py_object*) np;

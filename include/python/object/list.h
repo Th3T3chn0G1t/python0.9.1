@@ -29,7 +29,7 @@ struct py_list {
 
 struct py_object* py_list_new(unsigned);
 struct py_object* py_list_get(const struct py_object*, unsigned);
-int py_list_set(struct py_object*, unsigned, struct py_object*);
+void py_list_set(struct py_object*, unsigned, struct py_object*);
 int py_list_insert(struct py_object*, unsigned, struct py_object*);
 int py_list_add(struct py_object*, struct py_object*);
 

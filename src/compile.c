@@ -47,28 +47,16 @@ static struct py_code* py_code_new(
 		struct py_object* names, const char* filename) {
 
 	struct py_code* co;
-	unsigned i;
 
-	/* Make sure the list of names contains only strings */
-	for(i = py_varobject_size(names) + 1; --i >= 1;) {
-		struct py_object* v = py_list_get(names, i - 1);
-		if(v == NULL || !(v->type == PY_TYPE_STRING)) {
-			py_error_set_badcall();
-			return NULL;
-		}
-	}
+	if(!(co = py_object_new(PY_TYPE_CODE))) return 0;
 
-	co = py_object_new(PY_TYPE_CODE);
-	if(co != NULL) {
-		co->code = code;
-		py_object_incref(consts);
-		co->consts = consts;
-		py_object_incref(names);
-		co->names = names;
-		if((co->filename = py_string_new(filename)) == NULL) {
-			py_object_decref(co);
-			co = NULL;
-		}
+	co->code = code;
+	co->consts = py_object_incref(consts);
+	co->names = py_object_incref(names);
+
+	if(!(co->filename = py_string_new(filename))) {
+		py_object_decref(co);
+		return 0;
 	}
 
 	return co;
@@ -80,8 +68,8 @@ static int py_compiler_new(struct py_compiler* c, const char* filename) {
 	c->code = 0;
 	c->len = 0;
 
-	if((c->consts = py_list_new(0)) == NULL) return 0;
-	if((c->names = py_list_new(0)) == NULL) {
+	if(!(c->consts = py_list_new(0))) return 0;
+	if(!(c->names = py_list_new(0))) {
 		py_object_decref(c->consts);
 		return 0;
 	}
@@ -173,7 +161,7 @@ static unsigned py_compile_add(struct py_object* list, struct py_object* v) {
 	}
 
 	/* TODO: Better EH. */
-	if(py_list_add(list, v) != 0) py_fatal("error traceback please");
+	if(py_list_add(list, v) == -1) py_fatal("oom");
 
 	return n;
 }
@@ -1679,7 +1667,7 @@ struct py_code* py_compile(struct py_node* n, const char* filename) {
 	struct py_code* co;
 	void* newptr;
 
-	if(!py_compiler_new(&sc, filename)) return NULL;
+	if(!py_compiler_new(&sc, filename)) return 0;
 
 	compile_node(&sc, n);
 

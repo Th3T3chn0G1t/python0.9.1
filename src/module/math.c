@@ -196,9 +196,15 @@ static struct py_object* py_math_shr(
 
 static struct py_object* py_math_randf(
 		struct py_env* env, struct py_object* self, struct py_object* args) {
+
 	(void) env;
 	(void) self;
-	(void) args;
+
+	if(args) {
+		py_error_set_badarg();
+		return 0;
+	}
+
 	return py_float_new((double) rand() / (double) RAND_MAX);
 }
 

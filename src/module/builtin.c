@@ -102,15 +102,15 @@ static struct py_object* py_builtin_range(
 	static const char errmsg[] = "range() requires 1-3 int arguments";
 
 	unsigned i, n;
-	py_value_t ilow, ihigh, istep;
+	py_value_t low, high, step;
 
 	(void) env;
 	(void) self;
 
 	if(args && (args->type == PY_TYPE_INT)) {
-		ilow = 0;
-		ihigh = py_int_get(args);
-		istep = 1;
+		low = 0;
+		high = py_int_get(args);
+		step = 1;
 	}
 	else if(!args || args->type != PY_TYPE_TUPLE) {
 		py_error_set_string(py_type_error, errmsg);
@@ -132,30 +132,30 @@ static struct py_object* py_builtin_range(
 		}
 
 		if(n == 3) {
-			istep = py_int_get(py_tuple_get(args, 2));
+			step = py_int_get(py_tuple_get(args, 2));
 			--n;
 		}
-		else istep = 1;
+		else step = 1;
 
-		ihigh = py_int_get(py_tuple_get(args, --n));
+		high = py_int_get(py_tuple_get(args, --n));
 
-		if(n > 0) ilow = py_int_get(py_tuple_get(args, 0));
-		else ilow = 0;
+		if(n > 0) low = py_int_get(py_tuple_get(args, 0));
+		else low = 0;
 	}
 
-	if(istep == 0) {
+	if(step == 0) {
 		py_error_set_string(py_runtime_error, "zero step for range()");
 		return NULL;
 	}
 
 	/* TODO: ought to check overflow of subion */
-	if(istep > 0) n = (unsigned) ((ihigh - ilow + istep - 1) / istep);
-	else n = (unsigned) ((ihigh - ilow + istep + 1) / istep);
+	if(step > 0) n = (unsigned) ((high - low + step - 1) / step);
+	else n = (unsigned) ((high - low + step + 1) / step);
 
-	if(!(args = py_list_new(n))) return 0;
+	if(!(args = py_list_new(n))) return py_error_set_nomem();
 
 	for(i = 0; i < n; i++) {
-		struct py_object* w = py_int_new(ilow);
+		struct py_object* w = py_int_new(low);
 
 		if(w == NULL) {
 			py_object_decref(args);
@@ -163,7 +163,7 @@ static struct py_object* py_builtin_range(
 		}
 
 		py_list_set(args, i, w);
-		ilow += istep;
+		low += step;
 	}
 
 	return args;
@@ -172,13 +172,22 @@ static struct py_object* py_builtin_range(
 static struct py_object* py_builtin_append(
 		struct py_env* env, struct py_object* self, struct py_object* args) {
 
-	struct py_object* lp = py_tuple_get(args, 0);
-	struct py_object* op = py_tuple_get(args, 1);
+	struct py_object* lp;
+	struct py_object* op;
 
 	(void) env;
 	(void) self;
 
-	if(!lp || !op || py_list_add(lp, op) == -1) return 0;
+	if(!args || args->type != PY_TYPE_TUPLE ||
+		(lp = py_tuple_get(args, 0))->type != PY_TYPE_LIST) {
+
+		py_error_set_badarg();
+		return 0;
+	}
+
+	op = py_tuple_get(args, 1);
+
+	if(py_list_add(lp, op) == -1) return py_error_set_nomem();
 
 	return py_object_incref(PY_NONE);
 }
@@ -193,16 +202,19 @@ static struct py_object* py_builtin_insert(
 	(void) env;
 	(void) self;
 
-	if(!args || !(args->type == PY_TYPE_TUPLE) || py_varobject_size(args) != 2 ||
-			!(lp = py_tuple_get(args, 0)) || !(lp->type == PY_TYPE_LIST) ||
-			!(ind = py_tuple_get(args, 1)) || !(ind->type == PY_TYPE_INT) ||
+	if(!args || args->type != PY_TYPE_TUPLE || py_varobject_size(args) != 2 ||
+			!(lp = py_tuple_get(args, 0)) || lp->type != PY_TYPE_LIST ||
+			!(ind = py_tuple_get(args, 1)) || ind->type != PY_TYPE_INT ||
 			!(op = py_tuple_get(args, 2))) {
 
 		py_error_set_badarg();
-		return NULL;
+		return 0;
 	}
 
-	if(py_list_insert(lp, (unsigned) py_int_get(ind), op) == -1) return NULL;
+	if(py_list_insert(lp, (unsigned) py_int_get(ind), op) == -1) {
+		py_error_set_nomem();
+		return 0;
+	}
 
 	return py_object_incref(PY_NONE);
 }

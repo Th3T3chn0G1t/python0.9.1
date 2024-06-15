@@ -27,7 +27,6 @@ struct py_frame {
 	struct py_object* locals; /* local symbol table (struct py_dict) */
 	struct py_object** valuestack; /* malloc'ed array */
 	struct py_block* blockstack; /* malloc'ed array */
-	unsigned nvalues; /* size of valuestack */
 	unsigned nblocks; /* size of blockstack */
 	unsigned iblock; /* index in blockstack */
 };

@@ -7,6 +7,7 @@
 
 #include <python/grammar.h>
 #include <python/node.h>
+#include <python/state.h>
 #include <python/compile.h>
 #include <python/ceval.h>
 
@@ -14,11 +15,11 @@ struct py_object* py_tree_run(
 		struct py_env* env, struct py_node* n, const char* filename,
 		struct py_object* globals, struct py_object* locals) {
 
-	if(globals == NULL) {
-		globals = py_get_globals(env);
-		if(locals == NULL) locals = py_get_locals(env);
+	if(!globals) {
+		globals = env->current ? env->current->globals : 0;
+		if(!locals) locals = env->current ? env->current->locals : 0;
 	}
-	else if(locals == NULL) locals = globals;
+	else if(!locals) locals = globals;
 
 	return py_tree_eval(env, n, filename, globals, locals);
 }

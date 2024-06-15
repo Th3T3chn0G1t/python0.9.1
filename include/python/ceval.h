@@ -18,12 +18,6 @@ struct py_object* py_code_eval(
 		struct py_env*, struct py_code*, struct py_object*, struct py_object*,
 		struct py_object*);
 
-struct py_object* py_get_globals(struct py_env*);
-
-struct py_object* py_get_locals(struct py_env*);
-
-int py_object_truthy(struct py_object*);
-
 struct py_object* py_call_function(
 		struct py_env*, struct py_object*, struct py_object*);
 

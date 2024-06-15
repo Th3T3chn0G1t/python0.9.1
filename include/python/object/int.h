@@ -9,6 +9,7 @@
 #define PY_INTOBJECT_H
 
 #include <python/object.h>
+#include <python/result.h>
 
 /*
  * struct py_int represents a (long) integer. This is an immutable object;

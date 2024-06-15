@@ -6,7 +6,6 @@
 /* Integer object implementation */
 
 #include <python/std.h>
-#include <python/errors.h>
 
 #include <python/object/int.h>
 #include <python/object/string.h>
@@ -37,46 +36,41 @@ static struct py_int* py_int_freelist_fill(void) {
 	struct py_int* p;
 	struct py_int* q;
 
-	p = malloc(PY_INT_COUNT * sizeof(struct py_int));
-	if(p == NULL) return (struct py_int*) py_error_set_nomem();
+	if(!(p = calloc(PY_INT_COUNT, sizeof(struct py_int)))) return 0;
 
 	q = p + PY_INT_COUNT;
 
 	while(--q > p) *(struct py_int**) q = q - 1;
 
-	*(struct py_int**) q = NULL;
+	*(struct py_int**) q = 0;
 
-	return p + PY_INT_COUNT - 1;
+	py_int_freelist = p + PY_INT_COUNT - 1;
+
+	return 0;
 }
 
-struct py_object* py_int_new(py_value_t ival) {
+struct py_object* py_int_new(py_value_t value) {
 	struct py_int* v;
 
-	if(py_int_freelist == NULL) {
-		if((py_int_freelist = py_int_freelist_fill()) == NULL) return NULL;
-	}
+	if(!py_int_freelist) py_int_freelist_fill();
 
 	v = py_int_freelist;
 	py_int_freelist = *(struct py_int**) py_int_freelist;
 	py_object_newref(v);
 
 	v->ob.type = PY_TYPE_INT;
-	v->value = ival;
+	v->value = value;
 
-	return (struct py_object*) v;
+	return (void*) v;
 }
 
 void py_int_dealloc(struct py_object* v) {
 	*(struct py_int**) v = py_int_freelist;
-	py_int_freelist = (struct py_int*) v;
+	py_int_freelist = (void*) v;
 }
 
 py_value_t py_int_get(const struct py_object* op) {
-	if(!(op->type == PY_TYPE_INT)) {
-		py_error_set_badcall();
-		return -1;
-	}
-	else return ((struct py_int*) op)->value;
+	return ((struct py_int*) op)->value;
 }
 
 /* Methods */
