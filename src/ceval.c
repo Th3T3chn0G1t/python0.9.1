@@ -173,10 +173,8 @@ struct py_object* py_call_function(
 
 			if(newarg == NULL) return NULL;
 
-			py_object_incref(self);
-			py_object_incref(args);
-			py_tuple_set(newarg, 0, self);
-			py_tuple_set(newarg, 1, args);
+			py_tuple_set(newarg, 0, py_object_incref(self));
+			py_tuple_set(newarg, 1, py_object_incref(args));
 			args = newarg;
 		}
 	}
@@ -876,9 +874,8 @@ struct py_object* py_code_eval(
 				}
 				else {
 					for(; --oparg >= 0;) {
-						w = py_tuple_get(v, oparg);
-						py_object_incref(w);
-						*stack_pointer++ = (w);
+						w = py_object_incref(py_tuple_get(v, oparg));
+						*stack_pointer++ = w;
 					}
 				}
 
@@ -949,18 +946,15 @@ struct py_object* py_code_eval(
 			}
 
 			case PY_OP_BUILD_TUPLE: {
-				x = py_tuple_new(oparg);
-
-				if(x != NULL) {
-					for(; --oparg >= 0;) {
-						w = *--stack_pointer;
-						err = py_tuple_set(x, oparg, w);
-
-						if(err != 0) break;
-					}
-
-					*stack_pointer++ = x;
+				if(!(x = py_tuple_new(oparg))) {
+					py_error_set_nomem();
+					why = PY_WHY_EXCEPTION;
+					break;
 				}
+
+				for(; --oparg >= 0;) py_tuple_set(x, oparg, *--stack_pointer);
+
+				*stack_pointer++ = x;
 
 				break;
 			}

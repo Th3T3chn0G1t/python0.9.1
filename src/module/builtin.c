@@ -8,7 +8,6 @@
 #include <python/state.h>
 #include <python/node.h>
 #include <python/import.h>
-#include <python/modsupport.h>
 #include <python/errors.h>
 
 #include <python/module/builtin.h>
@@ -271,23 +270,51 @@ struct py_object* py_builtin_get(const char* name) {
 	return py_dict_lookup(py_builtin_dict, name);
 }
 
-static struct py_object* newstdexception(char* name, char* message) {
-	struct py_object* v = py_string_new(message);
+static struct py_object* py_exception_new(
+		const char* name, const char* message) {
 
-	if(v == NULL || py_dict_insert(py_builtin_dict, name, v) != 0) {
-		py_fatal("no mem for new standard exception");
-	}
+	struct py_object* v;
+
+	if(!(v = py_string_new(message))) return 0;
+
+	if(py_dict_insert(py_builtin_dict, name, v) == -1) return 0;
 
 	return v;
 }
 
-static void initerrors(void) {
-	py_runtime_error = newstdexception("py_runtime_error", "run-time error");
-	py_eof_error = newstdexception("py_eof_error", "end-of-file read");
-	py_type_error = newstdexception("py_type_error", "type error");
-	py_memory_error = newstdexception("py_memory_error", "out of memory");
-	py_name_error = newstdexception("py_name_error", "undefined name");
-	py_system_error = newstdexception("py_system_error", "system error");
+static enum py_result py_init_exceptions(void) {
+	if(!(py_runtime_error = py_exception_new(
+			"py_runtime_error", "run-time error"))) {
+
+		return PY_RESULT_OOM;
+	}
+	if(!(py_eof_error = py_exception_new(
+			"py_eof_error", "end-of-file read"))) {
+
+		return PY_RESULT_OOM;
+	}
+	if(!(py_type_error = py_exception_new(
+			"py_type_error", "type error"))) {
+
+		return PY_RESULT_OOM;
+	}
+	if(!(py_memory_error = py_exception_new(
+			"py_memory_error", "out of memory"))) {
+
+		return PY_RESULT_OOM;
+	}
+	if(!(py_name_error = py_exception_new(
+			"py_name_error", "undefined name"))) {
+
+		return PY_RESULT_OOM;
+	}
+	if(!(py_system_error = py_exception_new(
+			"py_system_error", "system error"))) {
+
+		return PY_RESULT_OOM;
+	}
+
+	return PY_RESULT_OK;
 }
 
 void py_errors_done(void) {
@@ -306,8 +333,7 @@ enum py_result py_builtin_init(struct py_env* env) {
 		return PY_RESULT_OOM;
 	}
 
-	py_builtin_dict = ((struct py_module*) m)->attr;
-	py_object_incref(py_builtin_dict);
+	py_builtin_dict = py_object_incref(((struct py_module*) m)->attr);
 
 	if(py_dict_insert(py_builtin_dict, "true", PY_TRUE) == -1) {
 		return PY_RESULT_ERROR;
@@ -321,9 +347,7 @@ enum py_result py_builtin_init(struct py_env* env) {
 		return PY_RESULT_ERROR;
 	}
 
-	initerrors();
-
-	return PY_RESULT_OK;
+	return py_init_exceptions();
 }
 
 void py_builtin_done(void) {

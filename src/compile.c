@@ -185,7 +185,7 @@ static void py_compile_add_op_name(
 		name = n->str;
 	}
 
-	if((v = py_string_new(name)) == NULL) {
+	if(!(v = py_string_new(name))) {
 		/* TODO: Proper EH. */
 		abort();
 	}
@@ -216,6 +216,7 @@ static struct py_object* py_compile_parse_string(const char* s) {
 	char* buf = 0;
 	unsigned len = 0;
 	unsigned i;
+	struct py_object* retval;
 
 	for(i = 1; s[i] != '\''; ++i) {
 		/* TODO: Leaky realloc. */
@@ -243,7 +244,9 @@ static struct py_object* py_compile_parse_string(const char* s) {
 #undef py_
 	}
 
-	return py_string_new_size(buf, len);
+	if(!(retval = py_string_new_size(buf, len))) py_error_set_nomem();
+
+	return retval;
 }
 
 static void py_compile_list_constructor(

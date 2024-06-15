@@ -6,62 +6,31 @@
 /* Tuple object implementation */
 
 #include <python/std.h>
-#include <python/errors.h>
 
 #include <python/object/tuple.h>
-#include <python/object/string.h>
-#include <python/object/int.h>
 
 struct py_object* py_tuple_new(unsigned size) {
-	unsigned i;
 	struct py_tuple* op;
 
-	op = malloc(sizeof(struct py_tuple) + size * sizeof(struct py_object*));
-	if(op == NULL) return py_error_set_nomem();
+	op = calloc(1, sizeof(struct py_tuple) + size * sizeof(struct py_object*));
+	if(!op) return 0;
 
 	py_object_newref(op);
 	op->ob.type = PY_TYPE_TUPLE;
 	op->ob.size = size;
 
-	for(i = 0; i < size; i++) op->item[i] = NULL;
-
-	return (struct py_object*) op;
+	return (void*) op;
 }
 
 struct py_object* py_tuple_get(const struct py_object* op, unsigned i) {
-	if(!(op->type == PY_TYPE_TUPLE)) {
-		py_error_set_badcall();
-		return NULL;
-	}
-
-	if(i >= py_varobject_size(op)) {
-		py_error_set_string(PY_INDEX_ERROR, "tuple index out of range");
-		return NULL;
-	}
-
 	return ((struct py_tuple*) op)->item[i];
 }
 
-int py_tuple_set(struct py_object* op, unsigned i, struct py_object* newitem) {
-	struct py_object* olditem;
+void py_tuple_set(struct py_object* op, unsigned i, struct py_object* item) {
+	struct py_tuple* tp = (void*) op;
 
-	if(!(op->type == PY_TYPE_TUPLE)) {
-		if(newitem != NULL) py_object_decref(newitem);
-		py_error_set_badcall();
-		return -1;
-	}
-
-	if(i >= py_varobject_size(op)) {
-		if(newitem != NULL) py_object_decref(newitem);
-		py_error_set_string(
-				PY_INDEX_ERROR, "tuple assignment index out of range");
-		return -1;
-	}
-	olditem = ((struct py_tuple*) op)->item[i];
-	((struct py_tuple*) op)->item[i] = newitem;
-	if(olditem != NULL) py_object_decref(olditem);
-
-	return 0;
+	py_object_decref(tp->item[i]);
+	tp->item[i] = item;
 }
 
 /* Methods */
@@ -97,17 +66,7 @@ int py_tuple_cmp(const struct py_object* v, const struct py_object* w) {
 }
 
 struct py_object* py_tuple_ind(struct py_object* op, unsigned i) {
-	struct py_object* item;
-
-	if(i >= py_varobject_size(op)) {
-		py_error_set_string(PY_INDEX_ERROR, "tuple index out of range");
-		return NULL;
-	}
-
-	item = ((struct py_tuple*) op)->item[i];
-
-	py_object_incref(item);
-	return item;
+	return py_object_incref(((struct py_tuple*) op)->item[i]);
 }
 
 struct py_object* py_tuple_slice(
@@ -115,59 +74,42 @@ struct py_object* py_tuple_slice(
 
 	struct py_tuple* np;
 	unsigned i;
+	unsigned size = py_varobject_size(op);
 
-	if(high > py_varobject_size(op)) high = py_varobject_size(op);
-
+	if(high > size) high = size;
 	if(high < low) high = low;
 
-	if(low == 0 && high == py_varobject_size(op)) {
-		/* TODO: can only do this if tuples are immutable! */
-		py_object_incref(op);
-		return op;
-	}
+	/* TODO: can only do this if tuples are immutable! */
+	if(low == 0 && high == size) return py_object_incref(op);
 
-	np = (struct py_tuple*) py_tuple_new(high - low);
-	if(np == NULL) return NULL;
+	if(!(np = (void*) py_tuple_new(high - low))) return 0;
 
 	for(i = low; i < high; i++) {
-		struct py_object* v = ((struct py_tuple*) op)->item[i];
-
-		py_object_incref(v);
-		np->item[i - low] = v;
+		np->item[i - low] = py_object_incref(((struct py_tuple*) op)->item[i]);
 	}
 
-	return (struct py_object*) np;
+	return (void*) np;
 }
 
 struct py_object* py_tuple_cat(struct py_object* a, struct py_object* b)  {
-
-	unsigned size;
 	unsigned i;
 	struct py_tuple* np;
+	struct py_object* v;
 
-	if(!(b->type == PY_TYPE_TUPLE)) {
-		py_error_set_badarg();
-		return NULL;
+	unsigned sz_a = py_varobject_size(a);
+	unsigned sz_b = py_varobject_size(b);
+	unsigned size = sz_a + sz_b;
+
+	if(!(np = (void*) py_tuple_new(size))) return 0;
+
+	for(i = 0; i < sz_a; i++) {
+		np->item[i] = py_object_incref(((struct py_tuple*) a)->item[i]);
 	}
 
-	size = py_varobject_size(a) + py_varobject_size(b);
-
-	np = (struct py_tuple*) py_tuple_new(size);
-	if(np == NULL) return py_error_set_nomem();
-
-	for(i = 0; i < py_varobject_size(a); i++) {
-		struct py_object* v = ((struct py_tuple*) a)->item[i];
-
-		py_object_incref(v);
-		np->item[i] = v;
-	}
-
-	for(i = 0; i < py_varobject_size(b); i++) {
-		struct py_object* v = ((struct py_tuple*) b)->item[i];
-
-		py_object_incref(v);
+	for(i = 0; i < sz_b; i++) {
+		v = py_object_incref(((struct py_tuple*) b)->item[i]);
 		np->item[i + py_varobject_size(a)] = v;
 	}
 
-	return (struct py_object*) np;
+	return (void*) np;
 }

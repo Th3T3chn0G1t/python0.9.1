@@ -10,9 +10,11 @@
 
 #include <python/object.h>
 
+struct py_env;
+
 void py_import_done(struct py_env*);
 
-struct py_object* py_module_add(struct py_env* env, const char*);
-struct py_object* py_import_module(struct py_env* env, const char*);
+struct py_object* py_module_add(struct py_env*, const char*);
+struct py_object* py_import_module(struct py_env*, const char*);
 
 #endif

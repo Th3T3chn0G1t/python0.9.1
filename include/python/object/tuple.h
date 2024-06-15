@@ -8,6 +8,8 @@
 #ifndef PY_TUPLEOBJECT_H
 #define PY_TUPLEOBJECT_H
 
+#include <python/object.h>
+
 /*
  * Another generally useful object type is a tuple of object pointers.
  * This is a mutable type: the tuple items can be changed (but not their
@@ -29,7 +31,7 @@ struct py_tuple {
 
 struct py_object* py_tuple_new(unsigned);
 struct py_object* py_tuple_get(const struct py_object*, unsigned);
-int py_tuple_set(struct py_object*, unsigned, struct py_object*);
+void py_tuple_set(struct py_object*, unsigned, struct py_object*);
 
 void py_tuple_dealloc(struct py_object*);
 int py_tuple_cmp(const struct py_object*, const struct py_object*);

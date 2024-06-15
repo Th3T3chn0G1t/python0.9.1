@@ -111,16 +111,16 @@ struct py_object* py_error_set_nomem(void) {
 struct py_object* py_error_set_errno(struct py_object* exc) {
 	struct py_object* v;
 
-	v = py_tuple_new(2);
-	if(v != NULL) {
-		py_tuple_set(v, 0, py_int_new((long) errno));
-		py_tuple_set(v, 1, py_string_new(strerror(errno)));
-	}
+	/* TODO: Handle OOM. */
+	if(!(v = py_tuple_new(2))) return 0;
+
+	py_tuple_set(v, 0, py_int_new((long) errno));
+	py_tuple_set(v, 1, py_string_new(strerror(errno)));
 
 	py_error_set_value(exc, v);
 	py_object_decref(v);
 
-	return NULL;
+	return 0;
 }
 
 void py_error_set_badcall(void) {

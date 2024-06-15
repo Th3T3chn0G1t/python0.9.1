@@ -6,7 +6,6 @@
 /* Function object implementation */
 
 #include <python/std.h>
-#include <python/errors.h>
 
 #include <python/object.h>
 #include <python/object/func.h>

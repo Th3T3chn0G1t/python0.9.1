@@ -7,9 +7,9 @@
 
 #include <python/state.h>
 #include <python/std.h>
-#include <python/modsupport.h>
 #include <python/errors.h>
 
+#include <python/object/module.h>
 #include <python/object/float.h>
 #include <python/object/int.h>
 #include <python/object/tuple.h>

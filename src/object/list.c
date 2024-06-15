@@ -6,7 +6,6 @@
 /* List object implementation */
 
 #include <python/std.h>
-#include <python/errors.h>
 
 #include <python/object/list.h>
 

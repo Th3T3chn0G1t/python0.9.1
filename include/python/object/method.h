@@ -25,11 +25,6 @@ struct py_method {
 	struct py_object* self;
 };
 
-struct py_methodlist {
-	char* name;
-	py_method_t method;
-};
-
 struct py_object* py_method_new(py_method_t, struct py_object*);
 void py_method_dealloc(struct py_object*);
 
