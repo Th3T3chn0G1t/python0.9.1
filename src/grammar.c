@@ -175,7 +175,7 @@ static void py_grammar_translate_label(
 			else printf("Can't translate PY_STRING label %s\n", lb->str);
 		}
 	}
-	else printf("Can't translate label '%s'\n", py_label_repr(lb));
+	else printf("Can't translate label\n");
 }
 
 void py_grammar_translate(struct py_grammar* g) {

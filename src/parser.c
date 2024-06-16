@@ -16,6 +16,19 @@
 #include <python/parser.h>
 #include <python/result.h>
 
+struct py_dfa* py_grammar_find_dfa(struct py_grammar* g, int type) {
+	unsigned i;
+	struct py_dfa* d;
+
+	for(i = 0, d = g->dfas; i < g->count; d++) {
+		if(d->type == type) return d;
+	}
+
+	/* TODO: Better EH. */
+	abort();
+	/* NOTREACHED */
+}
+
 /* STACK DATA TYPE */
 
 static void py_stack_reset(struct py_stack* s) {

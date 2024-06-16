@@ -84,6 +84,4 @@ void py_dfa_add_arc(struct py_dfa*, unsigned, unsigned, unsigned);
 int py_labellist_add(struct py_labellist*, int, char*);
 unsigned py_labellist_find(struct py_labellist*, int, char*);
 
-char* py_label_repr(struct py_label*);
-
 #endif
