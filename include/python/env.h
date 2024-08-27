@@ -6,11 +6,9 @@
 #ifndef PY_ENV_H
 #define PY_ENV_H
 
-#include <python/std.h>
+void* py_open_r(const char* path);
 
-FILE* py_open_r(const char* path);
-
-void py_close(FILE* fp);
+void py_close(void* fp);
 
 #ifdef __has_attribute
 # if __has_attribute(fallthrough)

@@ -284,12 +284,12 @@ static struct py_object* py_exception_new(
 
 static enum py_result py_init_exceptions(void) {
 	if(!(py_runtime_error = py_exception_new(
-			"py_runtime_error", "run-time error"))) {
+			"py_runtime_error", "runtime error"))) {
 
 		return PY_RESULT_OOM;
 	}
 	if(!(py_eof_error = py_exception_new(
-			"py_eof_error", "end-of-file read"))) {
+			"py_eof_error", "unexpected EOF"))) {
 
 		return PY_RESULT_OOM;
 	}
