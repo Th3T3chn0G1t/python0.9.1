@@ -132,7 +132,7 @@ static struct py_nfa* addnfa(struct py_nfa_grammar* gr, char* name) {
 	return nf;
 }
 
-#ifdef _DEBUG
+#ifndef NDEBUG
 /* TODO: Better EH. */
 #define PY_REQUIRE_N(i, count) \
        if (i < count) { \

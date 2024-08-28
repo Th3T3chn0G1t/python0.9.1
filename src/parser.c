@@ -54,7 +54,7 @@ static int py_stack_push(
 	return 0;
 }
 
-#ifdef _DEBUG
+#ifndef NDEBUG
 static void py_stack_pop(struct py_stack* s) {
 	if(py_stack_is_empty(s)) {
 		fprintf(stderr, "py_stack_pop: parser stack underflow -- FATAL\n");
