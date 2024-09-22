@@ -30,9 +30,10 @@ static int py_parse_token(
 	}
 
 	for(;;) {
-		char* a, * b;
-		int type;
-		int len;
+		char* a;
+		char* b;
+		unsigned type;
+		unsigned len;
 		char* str;
 
 		type = py_tokenizer_get(tok, &a, &b);
@@ -40,6 +41,7 @@ static int py_parse_token(
 			ret = tok->done;
 			break;
 		}
+
 		len = b - a;
 		/*
 		 * TODO: Do these need to be malloc'd? Can node tree strs just be refs

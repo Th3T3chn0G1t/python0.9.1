@@ -13,7 +13,7 @@
 
 /* A label of an arc */
 struct py_label {
-	int type;
+	unsigned type;
 	char* str;
 };
 
@@ -39,8 +39,8 @@ struct py_state {
 	struct py_arc* arcs; /* Array of arcs */
 
 	/* Optional accelerators */
-	int lower; /* Lowest label index */
-	int upper; /* Highest label index */
+	unsigned lower; /* Lowest label index */
+	unsigned upper; /* Highest label index */
 	int* accel; /* Accelerator */
 	int accept; /* Nonzero for accepting state */
 };
@@ -78,10 +78,10 @@ void py_grammar_delete_accels(void);
 void py_grammar_print(struct py_grammar*, FILE*);
 void py_grammar_print_nonterminals(struct py_grammar*, FILE*);
 
-int py_dfa_add_state(struct py_dfa*);
+unsigned py_dfa_add_state(struct py_dfa*);
 void py_dfa_add_arc(struct py_dfa*, unsigned, unsigned, unsigned);
 
-int py_labellist_add(struct py_labellist*, int, char*);
-unsigned py_labellist_find(struct py_labellist*, int, char*);
+unsigned py_labellist_add(struct py_labellist*, unsigned, char*);
+unsigned py_labellist_find(struct py_labellist*, unsigned, char*);
 
 #endif

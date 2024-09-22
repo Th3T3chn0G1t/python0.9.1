@@ -96,10 +96,10 @@ static int py_tokenizer_next_character(struct py_tokenizer* tok) {
 
 		if(tok->inp == tok->end) {
 			void* newptr;
-			int n = tok->end - tok->buf;
+			unsigned n = tok->end - tok->buf;
 			char* new = tok->buf;
 
-			newptr = realloc(new, (n + n) * sizeof(char));
+			newptr = realloc(new, 2 * n * sizeof(char));
 			if(newptr == NULL) {
 				free(new);
 				tok->done = PY_RESULT_OOM;
@@ -181,7 +181,7 @@ int py_token_char(int c) {
 
 /* Get next token, after space stripping etc. */
 
-int py_tokenizer_get(
+unsigned py_tokenizer_get(
 		struct py_tokenizer* tok, /* In/out: tokenizer state */
 		char** p_start, /* Out: point to start/end of token */
 		char** p_end) {

@@ -6,14 +6,14 @@
 /* Dictionary object implementation; using a hash table */
 
 /*
- * XXX Note -- although this may look professional, I didn't think very hard
- * about the problem and it is possible that obvious improvements exist.
- * A similar module that I saw by Chris Torek:
- * - uses chaining instead of hashed linear probing
- * - remembers the hash value with the entry to speed up table resizing
- * - sets the table size to a power of 2
- * - uses a different hash function:
- *        h = 0; p = str; while (*p) h = (h<<5) - h + *p++;
+ * TODO: Although this may look professional, I didn't think very hard
+ *       about the problem, and it is possible that obvious improvements exist.
+ *       A similar module that I saw by Chris Torek:
+ *        - uses chaining instead of hashed linear probing
+ *        - remembers the hash value with the entry to speed up table resizing
+ *        - sets the table size to a power of 2
+ *        - uses a different hash function:
+ *               h = 0; p = str; while (*p) h = (h<<5) - h + *p++;
  */
 
 /* TODO: Fix overly fatal EH in here. */

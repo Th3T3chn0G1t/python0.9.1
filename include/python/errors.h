@@ -36,7 +36,6 @@ void py_error_clear(void);
 /* Convenience functions */
 int py_error_set_badarg(void);
 struct py_object* py_error_set_nomem(void);
-struct py_object* py_error_set_errno(struct py_object*);
 void py_error_set_input(enum py_result);
 void py_error_set_badcall(void);
 void py_error_set_evalop(void);

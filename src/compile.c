@@ -1348,8 +1348,7 @@ static void py_compile_class_definition(
 		abort();
 	}
 	else {
-		int i = py_compile_add_const(c, v);
-		py_compile_add_op_arg(c, PY_OP_LOAD_CONST, i);
+		py_compile_add_op_arg(c, PY_OP_LOAD_CONST, py_compile_add_const(c, v));
 		py_compile_add_byte(c, PY_OP_BUILD_FUNCTION);
 		py_compile_add_byte(c, PY_OP_UNARY_CALL);
 		py_compile_add_byte(c, PY_OP_BUILD_CLASS);

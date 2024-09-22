@@ -5,23 +5,15 @@
 
 /* Bitset primitives used by the parser generator */
 
-#include <python/errors.h>
 #include <python/bitset.h>
 
 py_bitset_t py_bitset_new(unsigned nbits) {
-	unsigned i;
-	unsigned nbytes = PY_NBYTES(nbits);
-	py_bitset_t ss = malloc(nbytes * sizeof(py_byte_t));
-
-	if(ss == NULL) py_fatal("no mem for bitset");
-
-	ss += nbytes;
-	for(i = 0; i < nbytes; ++i) *--ss = 0;
-
-	return ss;
+	return calloc(PY_NBYTES(nbits), sizeof(py_byte_t));
 }
 
-void py_bitset_delete(py_bitset_t ss) { free(ss); }
+void py_bitset_delete(py_bitset_t ss) {
+	free(ss);
+}
 
 int py_bitset_add(py_bitset_t ss, unsigned ibit) {
 	unsigned ibyte = ibit / CHAR_BIT;

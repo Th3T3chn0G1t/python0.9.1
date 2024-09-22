@@ -103,7 +103,7 @@ void py_parser_delete(struct py_parser* ps) {
 /* PARSER STACK OPERATIONS */
 
 static int py_parser_shift(
-		struct py_stack* s, int type, char* str, int newstate, int lineno) {
+		struct py_stack* s, int type, char* str, int newstate, unsigned lineno) {
 
 	assert(!py_stack_is_empty(s));
 
@@ -119,7 +119,7 @@ static int py_parser_shift(
 
 static int py_parser_push(
 		struct py_stack* s, int type, struct py_dfa* d, int newstate,
-		int lineno) {
+		unsigned lineno) {
 
 	struct py_node* n;
 
@@ -127,7 +127,7 @@ static int py_parser_push(
 	/* TODO: Better EH. */
 	assert(!py_stack_is_empty(s));
 
-	if(py_tree_add(n, type, NULL, lineno) == NULL) {
+	if(!py_tree_add(n, type, NULL, lineno)) {
 		fprintf(stderr, "py_parser_push: no mem in py_tree_add\n");
 		return -1;
 	}
@@ -140,27 +140,24 @@ static int py_parser_push(
 
 /* PARSER PROPER */
 
-static int py_parser_classify(struct py_grammar* g, int type, char* str) {
-	int n = g->labels.count;
+static unsigned py_parser_classify(
+		struct py_grammar* g, unsigned type, char* str) {
+
+	unsigned n = g->labels.count;
+	struct py_label* l = g->labels.label;
+	unsigned i;
 
 	if(type == PY_NAME) {
-		char* s = str;
-		struct py_label* l = g->labels.label;
-		int i;
-		for(i = n; i > 0; i--, l++) {
-			if(l->type == PY_NAME && l->str != NULL && l->str[0] == s[0] &&
-				strcmp(l->str, s) == 0) {
-				return n - i;
+		for(i = 0; i < n; ++i, ++l) {
+			if(l->type == PY_NAME && l->str && !strcmp(l->str, str)) {
+				return i;
 			}
 		}
 	}
 
-	{
-		struct py_label* l = g->labels.label;
-		int i;
-		for(i = n; i > 0; i--, l++) {
-			if(l->type == type && l->str == NULL) return n - i;
-		}
+	l = g->labels.label;
+	for(i = 0; i < n; ++i, ++l) {
+		if(l->type == type && l->str == NULL) return i;
 	}
 
 	return -1;
@@ -182,7 +179,7 @@ enum py_result py_parser_add(
 		struct py_state* s = &d->states[ps->stack.top->state];
 
 		/* Check accelerator */
-		if(s->lower <= ilabel && ilabel < s->upper) {
+		if((int) s->lower <= ilabel && ilabel < (int) s->upper) {
 			int x = s->accel[ilabel - s->lower];
 			if(x != -1) {
 				if(x & (1 << 7)) {

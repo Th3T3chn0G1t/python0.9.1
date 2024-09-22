@@ -32,11 +32,13 @@ struct py_int py_false_object = { { PY_TYPE_INT, 1 }, 0 };
 /* TODO: Python global state. */
 static struct py_int* py_int_freelist = NULL;
 
-static struct py_int* py_int_freelist_fill(void) {
+static enum py_result py_int_freelist_fill(void) {
 	struct py_int* p;
 	struct py_int* q;
 
-	if(!(p = calloc(PY_INT_COUNT, sizeof(struct py_int)))) return 0;
+	if(!(p = calloc(PY_INT_COUNT, sizeof(struct py_int)))) {
+		return PY_RESULT_OOM;
+	}
 
 	q = p + PY_INT_COUNT;
 
@@ -46,13 +48,13 @@ static struct py_int* py_int_freelist_fill(void) {
 
 	py_int_freelist = p + PY_INT_COUNT - 1;
 
-	return 0;
+	return PY_RESULT_OK;
 }
 
 struct py_object* py_int_new(py_value_t value) {
 	struct py_int* v;
 
-	if(!py_int_freelist) py_int_freelist_fill();
+	if(!py_int_freelist && (py_int_freelist_fill() != PY_RESULT_OK)) return 0;
 
 	v = py_int_freelist;
 	py_int_freelist = *(struct py_int**) py_int_freelist;

@@ -18,7 +18,4 @@ struct py_object* py_code_eval(
 		struct py_env*, struct py_code*, struct py_object*, struct py_object*,
 		struct py_object*);
 
-struct py_object* py_call_function(
-		struct py_env*, struct py_object*, struct py_object*);
-
 #endif

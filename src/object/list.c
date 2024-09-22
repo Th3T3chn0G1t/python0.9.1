@@ -40,10 +40,10 @@ void py_list_set(struct py_object* op, unsigned i, struct py_object* item) {
 static int py_list_insert_impl(
 		struct py_list* self, unsigned where, struct py_object* v) {
 
-	struct py_object** items = self->item;
+	struct py_object** items;
 
 	/* This isn't leaky -- we want to preserve original in OOM case here. */
-	items = realloc(items, (self->ob.size + 1) * sizeof(struct py_object*));
+	items = realloc(self->item, (self->ob.size + 1) * sizeof(struct py_object*));
 	if(!items) return -1;
 
 	if(where > self->ob.size) where = self->ob.size;

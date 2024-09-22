@@ -65,7 +65,7 @@ struct py_object* py_code_eval(
 
 	struct py_object* retval = 0; /* Return value if why == PY_WHY_RETURN */
 	enum py_ceval_why why = PY_WHY_NOT; /* Reason for block stack unwind */
-	int err = 0; /* Error status -- nonzero if error */
+	int err; /* Error status -- nonzero if error */
 
 	apro_stamp_start(APRO_CEVAL_CODE_EVAL_RISING);
 

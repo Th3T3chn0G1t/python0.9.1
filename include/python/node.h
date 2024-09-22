@@ -15,7 +15,7 @@ struct py_env;
 struct py_node {
 	int type;
 	char* str;
-	int lineno;
+	unsigned lineno;
 
 	unsigned count;
 	struct py_node* children;

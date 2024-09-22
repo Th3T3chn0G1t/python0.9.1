@@ -56,7 +56,7 @@ static enum py_result py_path_new(const char* path, char*** out) {
 		free(*out);
 
 		return res;
-	};
+	}
 }
 
 enum py_result py_new(struct py* py, const char* path) {

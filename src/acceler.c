@@ -23,39 +23,11 @@
 static int** freelist = 0;
 static int freelist_len = 0;
 
-/* Forward references */
-static void fixdfa(struct py_grammar*, struct py_dfa*);
-
-static void fixstate(struct py_grammar*, struct py_state*);
-
-void py_grammar_add_accels(struct py_grammar* g) {
-	struct py_dfa* d;
-	int i;
-
-	d = g->dfas;
-	for(i = g->count; --i >= 0; d++) fixdfa(g, d);
-	g->accel = 1;
-}
-
-static void fixdfa(struct py_grammar* g, struct py_dfa* d) {
-	struct py_state* s;
-	unsigned j;
-
-	s = d->states;
-	for(j = 0; j < d->count; j++, s++) fixstate(g, s);
-}
-
-void py_grammar_delete_accels(void) {
-	int i;
-	for(i = 0; i < freelist_len; ++i) free(freelist[i]);
-	free(freelist);
-}
-
 static void fixstate(struct py_grammar* g, struct py_state* s) {
 	struct py_arc* a;
-	int k;
+	unsigned k;
 	int* accel;
-	int nl = g->labels.count;
+	unsigned nl = g->labels.count;
 
 	s->accept = 0;
 	accel = malloc(nl * sizeof(int));
@@ -63,8 +35,8 @@ static void fixstate(struct py_grammar* g, struct py_state* s) {
 	for(k = 0; k < nl; k++) accel[k] = -1;
 	a = s->arcs;
 
-	for(k = s->count; --k >= 0; a++) {
-		int lbl = a->label;
+	for(k = 0; k < s->count; ++k, ++a) {
+		unsigned lbl = a->label;
 		struct py_label* l = &g->labels.label[lbl];
 		int type = l->type;
 
@@ -92,7 +64,7 @@ static void fixstate(struct py_grammar* g, struct py_state* s) {
 			}
 		}
 		else if(lbl == PY_LABEL_EMPTY) { s->accept = 1; }
-		else if(lbl >= 0 && lbl < nl) accel[lbl] = a->arrow;
+		else if(lbl < nl) accel[lbl] = a->arrow;
 	}
 
 	while(nl > 0 && accel[nl - 1] == -1) nl--;
@@ -123,4 +95,29 @@ static void fixstate(struct py_grammar* g, struct py_state* s) {
 	}
 
 	free(accel);
+}
+
+static void fixdfa(struct py_grammar* g, struct py_dfa* d) {
+	struct py_state* s;
+	unsigned j;
+
+	s = d->states;
+	for(j = 0; j < d->count; j++, s++) fixstate(g, s);
+}
+
+void py_grammar_add_accels(struct py_grammar* g) {
+	struct py_dfa* d;
+	unsigned i;
+
+	d = g->dfas;
+
+	for(i = 0; i < g->count; ++i, ++d) fixdfa(g, d);
+
+	g->accel = 1;
+}
+
+void py_grammar_delete_accels(void) {
+	int i;
+	for(i = 0; i < freelist_len; ++i) free(freelist[i]);
+	free(freelist);
 }

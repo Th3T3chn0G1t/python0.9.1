@@ -30,11 +30,11 @@ struct py_tokenizer {
 	int pendin; /* Pending indents (if > 0) or dedents (if < 0) */
 	char* prompt; /* For interactive prompting */
 	char* nextprompt;
-	int lineno; /* Current line number */
+	unsigned lineno; /* Current line number */
 };
 
 void py_tokenizer_delete(struct py_tokenizer*);
 struct py_tokenizer* py_tokenizer_setup_file(FILE*, char* ps1, char* ps2);
-int py_tokenizer_get(struct py_tokenizer*, char**, char**);
+unsigned py_tokenizer_get(struct py_tokenizer*, char**, char**);
 
 #endif

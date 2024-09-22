@@ -21,20 +21,17 @@ static struct py_traceback* py_traceback_new_frame(
 
 	struct py_traceback* tb;
 
-	if((next != NULL && !(next->ob.type == PY_TYPE_TRACEBACK)) ||
-		frame == NULL || !(frame->ob.type == PY_TYPE_FRAME)) {
+	if(!next || next->ob.type != PY_TYPE_TRACEBACK ||
+		!frame || frame->ob.type != PY_TYPE_FRAME) {
 
 		py_error_set_badcall();
 		return NULL;
 	}
 
-	tb = py_object_new(PY_TYPE_TRACEBACK);
-	if(tb == NULL) return NULL;
+	if(!(tb = py_object_new(PY_TYPE_TRACEBACK))) return NULL;
 
-	py_object_incref(next);
-	tb->next = next;
-	py_object_incref(frame);
-	tb->frame = frame;
+	tb->next = py_object_incref(next);
+	tb->frame = py_object_incref(frame);
 
 	tb->lineno = lineno;
 

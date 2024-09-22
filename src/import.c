@@ -42,8 +42,7 @@ struct py_object* py_module_add(struct py_env* env, const char* name) {
 }
 
 static struct py_object* py_get_module(
-		struct py_env* env, struct py_object* m, const char* name,
-		struct py_object** ret) {
+		struct py_env* env, const char* name, struct py_object** ret) {
 
 	static const char suffix[] = ".py";
 
@@ -75,9 +74,7 @@ static struct py_object* py_get_module(
 	}
 
 	if(!fp) {
-		if(!m) py_error_set_string(py_name_error, name);
-		else py_error_set_string(py_runtime_error, "no module source file");
-
+		py_error_set_string(py_name_error, name);
 		return NULL;
 	}
 
@@ -89,16 +86,12 @@ static struct py_object* py_get_module(
 		return NULL;
 	}
 
-	if(!m) {
-		if(!(m = py_module_add(env, name))) {
-			py_tree_delete(n);
-			return NULL;
-		}
-
-		*ret = m;
+	if(!(*ret = py_module_add(env, name))) {
+		py_tree_delete(n);
+		return NULL;
 	}
 
-	d = ((struct py_module*) m)->attr;
+	d = ((struct py_module*) *ret)->attr;
 
 	return py_tree_run(env, n, buf, d, d);
 }
@@ -108,7 +101,7 @@ struct py_object* py_import_module(struct py_env* env, const char* name) {
 	struct py_object* v;
 
 	if(!(m = py_dict_lookup(env->modules, name))) {
-		if(!(v = py_get_module(env, NULL, name, &m))) return NULL;
+		if(!(v = py_get_module(env, name, &m))) return NULL;
 
 		py_object_decref(v);
 	}

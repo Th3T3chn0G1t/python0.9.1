@@ -47,20 +47,23 @@ struct py_dfa* py_grammar_add_dfa(struct py_grammar* g, int type, char* name) {
 	return d; /* Only use while fresh! */
 }
 
-int py_dfa_add_state(struct py_dfa* d) {
+unsigned py_dfa_add_state(struct py_dfa* d) {
 	struct py_state* s;
+	void* newptr;
 
-	d->states = realloc(d->states, (d->count + 1) * sizeof(struct py_state));
-	if(d->states == NULL) {
+	newptr = realloc(d->states, (d->count + 1) * sizeof(struct py_state));
+	if(!newptr) {
+		free(d->states);
 		py_fatal("no mem to resize state in py_dfa_add_state");
 	}
+	d->states = newptr;
 
 	s = &d->states[d->count++];
 	s->count = 0;
 	s->arcs = NULL;
 	s->accel = NULL;
 
-	return s - d->states;
+	return (unsigned) (s - d->states);
 }
 
 void py_dfa_add_arc(
@@ -68,6 +71,7 @@ void py_dfa_add_arc(
 
 	struct py_state* s;
 	struct py_arc* a;
+	void* newptr;
 
 	/* TODO: Better EH. */
 	assert(from < d->count);
@@ -75,17 +79,18 @@ void py_dfa_add_arc(
 
 	s = &d->states[from];
 
-	s->arcs = realloc(s->arcs, (s->count + 1) * sizeof(struct py_arc));
-	if(s->arcs == NULL) {
+	newptr = realloc(s->arcs, (s->count + 1) * sizeof(struct py_arc));
+	if(!newptr) {
 		py_fatal("no mem to resize arc list in py_dfa_add_arc");
 	}
+	s->arcs = newptr;
 
 	a = &s->arcs[s->count++];
 	a->label = (unsigned short) lbl;
 	a->arrow = (unsigned short) to;
 }
 
-int py_labellist_add(struct py_labellist* ll, int type, char* str) {
+unsigned py_labellist_add(struct py_labellist* ll, unsigned type, char* str) {
 	unsigned i;
 	struct py_label* lb;
 	void* newptr;
@@ -113,7 +118,7 @@ int py_labellist_add(struct py_labellist* ll, int type, char* str) {
 
 /* Same, but rather dies than adds */
 
-unsigned py_labellist_find(struct py_labellist* ll, int type, char* str) {
+unsigned py_labellist_find(struct py_labellist* ll, unsigned type, char* str) {
 	unsigned i;
 
 	for(i = 0; i < ll->count; i++) {

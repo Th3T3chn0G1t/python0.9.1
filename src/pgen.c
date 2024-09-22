@@ -34,7 +34,7 @@ struct py_nfa {
 	struct py_nfa_state* states;
 
 	/* TODO: Signedness. */
-	int start, finish;
+	unsigned start, finish;
 };
 
 struct py_nfa_grammar {
@@ -43,7 +43,7 @@ struct py_nfa_grammar {
 	struct py_labellist labellist;
 };
 
-static int py_nfa_add_state(struct py_nfa* nf) {
+static unsigned py_nfa_add_state(struct py_nfa* nf) {
 	struct py_nfa_state* st;
 
 	void* newptr = realloc(
@@ -119,12 +119,17 @@ static struct py_nfa_grammar* py_nfa_grammar_new(void) {
 
 static struct py_nfa* addnfa(struct py_nfa_grammar* gr, char* name) {
 	struct py_nfa* nf;
+	void* newptr;
 
 	nf = py_nfa_new(name);
 
-	gr->nfas = realloc(gr->nfas, (gr->count + 1) * sizeof(struct py_nfa*));
+	newptr = realloc(gr->nfas, (gr->count + 1) * sizeof(struct py_nfa*));
 	/* TODO: Better EH. */
-	if(gr->nfas == NULL) py_fatal("out of mem");
+	if(!newptr) {
+		free(gr->nfas);
+		py_fatal("out of mem");
+	}
+	gr->nfas = newptr;
 
 	gr->nfas[gr->count++] = nf;
 	py_labellist_add(&gr->labellist, PY_NAME, nf->name);
@@ -135,28 +140,29 @@ static struct py_nfa* addnfa(struct py_nfa_grammar* gr, char* name) {
 #ifndef NDEBUG
 /* TODO: Better EH. */
 #define PY_REQUIRE_N(i, count) \
-       if (i < count) { \
-		   fprintf(stderr, "py_node_compile_meta: less than %d children\n", count); \
-		   abort(); \
-       }
-
+		do { \
+			if(i < count) { \
+				fprintf(stderr, "py_node_compile_meta: less than %d children\n", count); \
+				abort(); \
+			} \
+		} while(0)
 #else
-#define PY_REQUIRE_N(i, count) (void) i, (void) count;
+#define PY_REQUIRE_N(i, count) (void) i, (void) count
 #endif
 
 void py_node_compile_rule(struct py_nfa_grammar* gr, struct py_node* n);
 void py_node_compile_rhs(
-		struct py_labellist* ll, struct py_nfa* nf, struct py_node* n, int* pa,
-		int* pb);
+		struct py_labellist* ll, struct py_nfa* nf, struct py_node* n, unsigned* pa,
+		unsigned* pb);
 void py_node_compile_alt(
-		struct py_labellist* ll, struct py_nfa* nf, struct py_node* n, int* pa,
-		int* pb);
+		struct py_labellist* ll, struct py_nfa* nf, struct py_node* n, unsigned* pa,
+		unsigned* pb);
 void py_node_compile_item(
-		struct py_labellist* ll, struct py_nfa* nf, struct py_node* n, int* pa,
-		int* pb);
+		struct py_labellist* ll, struct py_nfa* nf, struct py_node* n, unsigned* pa,
+		unsigned* pb);
 void compile_atom(
-		struct py_labellist* ll, struct py_nfa* nf, struct py_node* n, int* pa,
-		int* pb);
+		struct py_labellist* ll, struct py_nfa* nf, struct py_node* n, unsigned* pa,
+		unsigned* pb);
 
 /* TODO: Signedness. */
 static struct py_nfa_grammar* py_node_compile_meta(struct py_node* n) {
@@ -192,11 +198,11 @@ void py_node_compile_rule(struct py_nfa_grammar* gr, struct py_node* n) {
 }
 
 void py_node_compile_rhs(
-		struct py_labellist* ll, struct py_nfa* nf, struct py_node* n, int* pa,
-		int* pb) {
+		struct py_labellist* ll, struct py_nfa* nf, struct py_node* n,
+		unsigned* pa, unsigned* pb) {
 
 	int i;
-	int a, b;
+	unsigned a, b;
 
 	PY_REQ(n, PY_RHS);
 	i = n->count;
@@ -228,11 +234,11 @@ void py_node_compile_rhs(
 }
 
 void py_node_compile_alt(
-		struct py_labellist* ll, struct py_nfa* nf, struct py_node* n, int* pa,
-		int* pb) {
+		struct py_labellist* ll, struct py_nfa* nf, struct py_node* n, unsigned* pa,
+		unsigned* pb) {
 
 	int i;
-	int a, b;
+	unsigned a, b;
 
 	PY_REQ(n, PY_ALT);
 	i = n->count;
@@ -257,11 +263,11 @@ void py_node_compile_alt(
 }
 
 void py_node_compile_item(
-		struct py_labellist* ll, struct py_nfa* nf, struct py_node* n, int* pa,
-		int* pb) {
+		struct py_labellist* ll, struct py_nfa* nf, struct py_node* n,
+		unsigned* pa, unsigned* pb) {
 
 	int i;
-	int a, b;
+	unsigned a, b;
 
 	PY_REQ(n, PY_ITEM);
 	i = n->count;
@@ -295,7 +301,7 @@ void py_node_compile_item(
 }
 
 void compile_atom(
-		struct py_labellist* ll, struct py_nfa* nf, struct py_node* n, int* pa, int* pb) {
+		struct py_labellist* ll, struct py_nfa* nf, struct py_node* n, unsigned* pa, unsigned* pb) {
 
 	int i;
 
@@ -321,13 +327,13 @@ void compile_atom(
 
 /* PART TWO -- CONSTRUCT DFA -- Algorithm 3.1 from [Aho&Ullman 77] */
 
-static void py_nfa_add_closure(py_bitset_t ss, struct py_nfa* nf, int istate) {
-	if(py_bitset_add(ss, istate)) {
-		struct py_nfa_state* st = &nf->states[istate];
+static void py_nfa_add_closure(py_bitset_t ss, struct py_nfa* nf, unsigned state) {
+	if(py_bitset_add(ss, state)) {
+		struct py_nfa_state* st = &nf->states[state];
 		struct py_nfa_arc* ar = st->arcs;
-		int i;
+		unsigned i;
 
-		for(i = st->count; --i >= 0;) {
+		for(i = 0; i < st->count; ++i) {
 			if(ar->label == PY_LABEL_EMPTY) {
 				py_nfa_add_closure(ss, nf, ar->arrow);
 			}
@@ -353,7 +359,7 @@ struct py_ss_state {
 
 	int deleted;
 	int finish;
-	int rename;
+	unsigned rename;
 };
 
 void py_ss_state_simplify(unsigned, struct py_ss_state*);

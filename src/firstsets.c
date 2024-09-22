@@ -35,13 +35,14 @@ static void py_grammar_calculate_first_set(
 	struct py_arc* a;
 	unsigned nbits;
 	unsigned nsyms;
-	int* sym;
+	unsigned* sym;
 	py_bitset_t result;
 	int type;
 	struct py_dfa* d1;
 	struct py_label* l0;
 
-	if(dummy == NULL) dummy = py_bitset_new(1);
+	/* TODO: This doesn't appear to get freed. */
+	if(!(dummy = py_bitset_new(1))) py_fatal("out of memory");
 
 	if(d->first == dummy) {
 		/* TODO: Better EH. */
@@ -59,7 +60,7 @@ static void py_grammar_calculate_first_set(
 	nbits = g->labels.count;
 	result = py_bitset_new(nbits);
 
-	sym = malloc(sizeof(int));
+	sym = malloc(sizeof(unsigned));
 	if(sym == NULL) {
 		/* TODO: Better EH. */
 		py_fatal("no mem for new sym in py_grammar_calculate_first_set");
@@ -78,8 +79,8 @@ static void py_grammar_calculate_first_set(
 		}
 
 		if(j >= nsyms) { /* New label */
-			void* newptr = realloc(sym, (nsyms + 1) * sizeof(int));
-			if(newptr == NULL) {
+			void* newptr;
+			if(!(newptr = realloc(sym, (nsyms + 1) * sizeof(unsigned)))) {
 				/* TODO: Better EH. */
 				free(sym);
 				py_fatal(
