@@ -204,6 +204,7 @@ int py_object_set_attr(
  * TODO: This can be less indirected using a distinct class init
  * 		 Syntax or like `class('name')'.
  */
+/* TODO: Calls to non-existent module procs causes a segfault here? */
 struct py_object* py_call_function(
 		struct py_env* env, struct py_object* func, struct py_object* args) {
 
