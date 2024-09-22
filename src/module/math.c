@@ -206,6 +206,20 @@ static struct py_object* py_math_randf(
 	return py_float_new((double) rand() / (double) RAND_MAX);
 }
 
+static struct py_object* py_math_notb(
+		struct py_env* env, struct py_object* self, struct py_object* args) {
+
+	(void) env;
+	(void) self;
+
+	if(!args || args->type != PY_TYPE_INT) {
+		py_error_set_badarg();
+		return 0;
+	}
+
+	return py_int_new(~py_int_get(args));
+}
+
 enum py_result py_math_init(struct py_env* env) {
 #define py_(func) { #func, py_math_##func }
 	static const struct py_methodlist methods[] = {
@@ -231,6 +245,7 @@ enum py_result py_math_init(struct py_env* env) {
 			py_(orb),
 			py_(andb),
 			py_(xorb),
+			py_(notb),
 			py_(shl),
 			py_(shr),
 			py_(randf),
