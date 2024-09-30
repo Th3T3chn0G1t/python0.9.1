@@ -18,6 +18,9 @@ struct py {
 
 	/* Module search path. Null terminated string buffer. */
 	char** path;
+
+	/* User data pointer. */
+	void* user;
 };
 
 /* Current running environment. */
