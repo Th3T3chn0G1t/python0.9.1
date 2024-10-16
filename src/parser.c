@@ -160,7 +160,7 @@ static unsigned py_parser_classify(
 		if(l->type == type && l->str == NULL) return i;
 	}
 
-	return -1;
+	return (unsigned) -1;
 }
 
 enum py_result py_parser_add(

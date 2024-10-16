@@ -96,7 +96,7 @@ static struct py_nfa* py_nfa_new(char* name) {
 	nf->name = name; /* TODO: strdup(name) ??? */
 	nf->count = 0;
 	nf->states = NULL;
-	nf->start = nf->finish = -1;
+	nf->start = nf->finish = (unsigned) -1;
 
 	return nf;
 }
