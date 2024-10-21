@@ -28,7 +28,12 @@
 # pragma GCC diagnostic push
 # pragma GCC diagnostic ignored "-Wlong-long"
 #endif
+
+#ifdef _WIN64
 typedef long long py_value_t;
+#else
+typedef long py_value_t;
+#endif
 
 struct py_int {
 	struct py_object ob;
