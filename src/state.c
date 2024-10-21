@@ -9,7 +9,7 @@
 #include <python/object/dict.h>
 
 static enum py_result py_path_new(const char* path, char*** out) {
-	enum py_result res;
+	enum py_result res = PY_RESULT_OK;
 
 	const char* curr = path;
 	unsigned n = 1;
@@ -36,7 +36,10 @@ static enum py_result py_path_new(const char* path, char*** out) {
 		(*s)[len] = 0;
 
 		tmp = realloc(*out, ++n * sizeof(char*));
-		if(!tmp) goto cleanup;
+		if(!tmp) {
+			res = PY_RESULT_OOM;
+			goto cleanup;
+		}
 		*out = tmp;
 		(*out)[n - 1] = 0;
 

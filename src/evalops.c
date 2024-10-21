@@ -110,7 +110,9 @@ int py_assign_subscript(
 
 		if(key->type != PY_TYPE_INT) return -1;
 
-		if((i = py_int_get(key)) >= py_varobject_size(op)) return -1;
+		if((i = (unsigned) py_int_get(key)) >= py_varobject_size(op)) {
+			return -1;
+		}
 
 		py_object_decref(lp->item[i]);
 		lp->item[i] = py_object_incref(value);
@@ -132,7 +134,7 @@ struct py_object* py_object_ind(struct py_object* v, struct py_object* w) {
 	if((ind = py_types[v->type].ind)) {
 		if(w->type != PY_TYPE_INT) return 0;
 
-		return ind(v, py_int_get(w));
+		return ind(v, (unsigned) py_int_get(w));
 	}
 	else if(v->type == PY_TYPE_DICT) return py_dict_lookup_object(v, w);
 
@@ -161,13 +163,13 @@ int py_slice_index(struct py_object* v, unsigned* pi) {
 
 	if(v->type != PY_TYPE_INT) return -1;
 
-	*pi = py_int_get(v);
+	*pi = (unsigned) py_int_get(v);
 
 	return 0;
 }
 
 struct py_object* py_loop_subscript(struct py_object* v, struct py_object* w) {
-	unsigned i = py_int_get(w);
+	unsigned i = (unsigned) py_int_get(w);
 	unsigned n = py_varobject_size(v);
 
 	if(i >= n) return 0; /* End of loop */
