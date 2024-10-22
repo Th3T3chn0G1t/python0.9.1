@@ -59,7 +59,7 @@ static unsigned py_nfa_add_state(struct py_nfa* nf) {
 	st->count = 0;
 	st->arcs = NULL;
 
-	return st - nf->states;
+	return (unsigned) (st - nf->states);
 }
 
 static void py_nfa_add_arc(

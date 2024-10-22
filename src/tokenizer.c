@@ -96,7 +96,7 @@ static int py_tokenizer_next_character(struct py_tokenizer* tok) {
 
 		if(tok->inp == tok->end) {
 			void* newptr;
-			unsigned n = tok->end - tok->buf;
+			unsigned n = (unsigned) (tok->end - tok->buf);
 			char* new = tok->buf;
 
 			newptr = realloc(new, 2 * n * sizeof(char));

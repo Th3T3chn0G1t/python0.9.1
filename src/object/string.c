@@ -26,7 +26,7 @@ struct py_object* py_string_new_size(const char* str, unsigned size) {
 }
 
 struct py_object* py_string_new(const char* str) {
-	return py_string_new_size(str, strlen(str));
+	return py_string_new_size(str, (unsigned) strlen(str));
 }
 
 const char* py_string_get(const struct py_object* op) {

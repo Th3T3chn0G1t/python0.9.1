@@ -113,7 +113,7 @@ unsigned py_labellist_add(struct py_labellist* ll, unsigned type, char* str) {
 	lb->type = type;
 	lb->str = str; /* TODO: strdup(str) ??? */
 
-	return lb - ll->label;
+	return (unsigned) (lb - ll->label);
 }
 
 /* Same, but rather dies than adds */

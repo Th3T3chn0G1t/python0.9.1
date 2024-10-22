@@ -59,8 +59,8 @@ static struct py_object* py_get_module(
 	for(i = 0; env->py->path[i]; ++i) {
 		char* el = env->py->path[i];
 
-		unsigned namlen = strlen(name);
-		unsigned pathlen = strlen(el);
+		unsigned namlen = (unsigned) strlen(name);
+		unsigned pathlen = (unsigned) strlen(el);
 		unsigned sufflen = sizeof(suffix) - 1;
 
 		if(pathlen + namlen + sufflen >= sizeof(buf)) continue;

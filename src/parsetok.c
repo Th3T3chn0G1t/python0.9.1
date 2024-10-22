@@ -42,7 +42,7 @@ static int py_parse_token(
 			break;
 		}
 
-		len = b - a;
+		len = (unsigned) (b - a);
 		/*
 		 * TODO: Do these need to be malloc'd? Can node tree strs just be refs
 		 * 		 (or even just offsets?)

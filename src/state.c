@@ -24,7 +24,7 @@ static enum py_result py_path_new(const char* path, char*** out) {
 		const char* pos = strchr(curr, ':');
 		if(!pos) pos = strchr(curr, '\0');
 
-		len = pos - path;
+		len = (unsigned) (pos - path);
 		s = &(*out)[n - 1];
 
 		if(!(*s = malloc(len + 1))) {

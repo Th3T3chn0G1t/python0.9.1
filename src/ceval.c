@@ -671,8 +671,8 @@ struct py_object* py_code_eval(
 				}
 
 				py_block_setup(
-						f, opcode, (next - code) + oparg,
-						stack_pointer - f->valuestack);
+						f, opcode, (unsigned) (next - code) + oparg,
+						(unsigned) (stack_pointer - f->valuestack));
 
 				break;
 			}
