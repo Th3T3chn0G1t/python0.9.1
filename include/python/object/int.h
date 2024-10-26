@@ -11,6 +11,8 @@
 #include <python/object.h>
 #include <python/result.h>
 
+#include <asys/base.h>
+
 /*
  * struct py_int represents a (long) integer. This is an immutable object;
  * an integer cannot change its value after creation.
@@ -24,16 +26,7 @@
  * py_true_object and py_false_object below; don't use this.
  */
 
-#ifdef __GNUC__
-# pragma GCC diagnostic push
-# pragma GCC diagnostic ignored "-Wlong-long"
-#endif
-
-#ifdef _WIN64
-typedef long long py_value_t;
-#else
-typedef long py_value_t;
-#endif
+typedef asys_native_long_t py_value_t;
 
 struct py_int {
 	struct py_object ob;
