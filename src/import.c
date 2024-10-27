@@ -44,7 +44,7 @@ struct py_object* py_module_add(struct py_env* env, const char* name) {
 static struct py_object* py_get_module(
 		struct py_env* env, const char* name, struct py_object** ret) {
 
-	static const char suffix[] = ".py";
+	static const char suffix[] = ".py.raw";
 
 	char buf[255 + 1] = { 0 };
 	unsigned i;
@@ -79,7 +79,6 @@ static struct py_object* py_get_module(
 	}
 
 	res = py_parse_file(fp, buf, &py_grammar, PY_GRAMMAR_FILE_INPUT, 0, 0, &n);
-	py_close(fp);
 
 	if(res != PY_RESULT_DONE) {
 		py_error_set_input(res);

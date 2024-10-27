@@ -19,7 +19,7 @@ struct py_traceback {
 };
 
 int py_traceback_new(struct py_frame*, unsigned);
-int py_traceback_print(struct py_object*, FILE*);
+void py_traceback_print(struct py_object*);
 void py_traceback_dealloc(struct py_object*);
 struct py_object* py_traceback_get(void);
 

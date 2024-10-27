@@ -5,47 +5,40 @@
 
 /* Traceback implementation */
 
-#include <python/std.h>
 #include <python/compile.h>
 #include <python/traceback.h>
-#include <python/errors.h>
-#include <python/env.h>
 
 #include <python/object/string.h>
 
+#include <asys/log.h>
+#include <asys/stream.h>
+
 /* TODO: Python global state. */
-static struct py_traceback* py_traceback_current = NULL;
+static struct py_traceback* py_traceback_current = 0;
 
 static struct py_traceback* py_traceback_new_frame(
-		struct py_traceback* next, struct py_frame* frame, unsigned lineno) {
+		struct py_traceback* next, struct py_frame* frame, unsigned line) {
 
-	struct py_traceback* tb;
+	struct py_traceback* traceback;
 
-	if(!next || next->ob.type != PY_TYPE_TRACEBACK ||
-		!frame || frame->ob.type != PY_TYPE_FRAME) {
+	if(!(traceback = py_object_new(PY_TYPE_TRACEBACK))) return 0;
 
-		py_error_set_badcall();
-		return NULL;
-	}
+	traceback->next = py_object_incref(next);
+	traceback->frame = py_object_incref(frame);
 
-	if(!(tb = py_object_new(PY_TYPE_TRACEBACK))) return NULL;
+	traceback->lineno = line;
 
-	tb->next = py_object_incref(next);
-	tb->frame = py_object_incref(frame);
-
-	tb->lineno = lineno;
-
-	return tb;
+	return traceback;
 }
 
-int py_traceback_new(struct py_frame* frame, unsigned lineno) {
-	struct py_traceback* tb;
+int py_traceback_new(struct py_frame* frame, unsigned line) {
+	struct py_traceback* traceback;
 
-	tb = py_traceback_new_frame(py_traceback_current, frame, lineno);
-	if(tb == NULL) return -1;
+	traceback = py_traceback_new_frame(py_traceback_current, frame, line);
+	if(!traceback) return -1;
 
 	py_object_decref(py_traceback_current);
-	py_traceback_current = tb;
+	py_traceback_current = traceback;
 
 	return 0;
 }
@@ -54,68 +47,64 @@ struct py_object* py_traceback_get(void) {
 	struct py_object* v;
 
 	v = (struct py_object*) py_traceback_current; /* TODO: decref current? */
-	py_traceback_current = NULL;
+	py_traceback_current = 0;
 
 	return v;
 }
 
-/* TODO: Questionable stream EH. */
-static void py_traceback_print_line(
-		FILE* fp, const char* filename, unsigned lineno) {
+/* TODO: Debug info to not require sources for tb. */
+static void py_traceback_print_line(const char* file, unsigned line) {
+	static asys_fixed_buffer_t buffer = { 0 };
 
-	FILE* xfp;
-	/* TODO: Suspicious buffer. */
-	char buf[1024];
-	unsigned i;
+	enum asys_result result;
 
-	/* TODO: Debug info to not require sources for tb. */
-	xfp = py_open_r(filename);
-	if(xfp == NULL) {
-		/* TODO: Better EH? */
-		fprintf(fp, "    (cannot open \"%s\")\n", filename);
-		return;
+	struct asys_stream stream;
+	unsigned i, j = 0;
+
+	result = asys_stream_new(&stream, file);
+	asys_log_result_path(__FILE__, "asys_stream_new", file, result);
+	if(result) return;
+
+	for(i = 1; i <= line;) {
+		char c;
+
+		result = asys_stream_read(&stream, 0, &c, 1);
+		asys_log_result(__FILE__, "asys_stream_read", result);
+		if(result) return;
+
+#ifndef NDEBUG
+		if(j >= ASYS_LENGTH(buffer)) {
+			asys_log_result(
+					__FILE__, "asys_stream_delete", asys_stream_delete(&stream));
+
+			return;
+		}
+#endif
+
+		if(c == '\n') i++;
+		else if(i == line) buffer[j++] = c;
 	}
 
-	for(i = 0; i < lineno; i++) {
-		if(fgets(buf, sizeof(buf), xfp) == NULL) break;
-	}
+	buffer[j] = 0;
 
-	if(i == lineno) {
-		char* p = buf;
-		while(*p == ' ' || *p == '\t') p++;
+	asys_log(__FILE__, "\t%s", buffer);
 
-		fprintf(fp, "    %s", p);
-		if(strchr(p, '\n') == NULL) fprintf(fp, "\n");
-	}
-
-	py_close(xfp); /* TODO: Reopening file every tb? */
+	asys_log_result(
+			__FILE__, "asys_stream_delete", asys_stream_delete(&stream));
 }
 
-static void py_traceback_print_impl(struct py_traceback* tb, FILE* fp) {
-	while(tb != NULL) {
-		fprintf(
-				fp, "  File \"%s\", line %d\n",
-				py_string_get(tb->frame->code->filename), tb->lineno);
+void py_traceback_print(struct py_object* object) {
+	struct py_traceback* traceback = (struct py_traceback*) object;
 
-		py_traceback_print_line(
-				fp, py_string_get(tb->frame->code->filename),
-				tb->lineno);
+	while(traceback) {
+		const char* file = py_string_get(traceback->frame->code->filename);
 
-		tb = tb->next;
+		asys_log(__FILE__, "`%s:%d':", file, traceback->lineno);
+
+		py_traceback_print_line(file, traceback->lineno);
+
+		traceback = traceback->next;
 	}
-}
-
-int py_traceback_print(struct py_object* v, FILE* fp) {
-	if(v == NULL) return 0;
-
-	if(!(v->type == PY_TYPE_TRACEBACK)) {
-		py_error_set_badcall();
-		return -1;
-	}
-
-	py_traceback_print_impl((struct py_traceback*) v, fp);
-
-	return 0;
 }
 
 void py_traceback_dealloc(struct py_object* op) {
