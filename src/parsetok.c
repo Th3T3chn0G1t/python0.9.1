@@ -75,7 +75,7 @@ static int py_parse_token(
 /* Parse input coming from a file. Return error code, print some errors. */
 
 int py_parse_file(
-		FILE* fp, const char* filename, struct py_grammar* g, int start,
+		struct asys_stream* fp, const char* filename, struct py_grammar* g, int start,
 		char* ps1, char* ps2, struct py_node** n_ret) {
 
 	struct py_tokenizer* tok = py_tokenizer_setup_file(fp, ps1, ps2);

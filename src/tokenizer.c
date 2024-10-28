@@ -14,6 +14,8 @@
 #include <python/result.h>
 #include <python/token.h>
 
+#include <asys/stream.h>
+
 #ifndef PY_TABSIZE
 # define PY_TABSIZE (8)
 #endif
@@ -50,7 +52,7 @@ static struct py_tokenizer* py_tokenizer_new(void) {
 
 /* Set up tokenizer for file */
 
-struct py_tokenizer* py_tokenizer_setup_file(FILE* fp, char* ps1, char* ps2) {
+struct py_tokenizer* py_tokenizer_setup_file(struct asys_stream* fp, char* ps1, char* ps2) {
 	struct py_tokenizer* tok = py_tokenizer_new();
 	if(tok == NULL) return NULL;
 
@@ -112,7 +114,7 @@ static int py_tokenizer_next_character(struct py_tokenizer* tok) {
 			tok->end = tok->inp + n;
 		}
 		{
-			char* res;
+			size_t size;
 
 			tok->cur = tok->inp;
 			if(tok->prompt != NULL && tok->inp == tok->buf) {
@@ -120,9 +122,26 @@ static int py_tokenizer_next_character(struct py_tokenizer* tok) {
 				tok->prompt = tok->nextprompt;
 			}
 
-			/* TODO: `ferror'/`feof' */
-			res = fgets(tok->inp, (int) (tok->end - tok->inp), tok->fp);
-			tok->done = res ? PY_RESULT_OK : PY_RESULT_EOF;
+			size = (size_t) (tok->end - tok->inp);
+
+			/* TODO: Better EH. */
+			{
+				enum asys_result result;
+				char c;
+				char* p = tok->inp;
+
+				while((result = asys_stream_read(tok->fp, 0, &c, 1)) != ASYS_RESULT_EOF) {
+					if((size_t) (p - tok->inp) == size - 1) break;
+
+					*p++ = (char) c;
+
+					if(c == '\n') break;
+				}
+
+				if(result == ASYS_RESULT_EOF) tok->done = PY_RESULT_EOF;
+
+				*p = 0;
+			}
 		}
 
 		if(tok->done != PY_RESULT_OK) {

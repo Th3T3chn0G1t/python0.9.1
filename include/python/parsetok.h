@@ -12,8 +12,10 @@
 #include <python/grammar.h>
 #include <python/node.h>
 
+struct asys_stream;
+
 int py_parse_file(
-		FILE*, const char*, struct py_grammar*, int, char*, char*,
+		struct asys_stream*, const char*, struct py_grammar*, int, char*, char*,
 		struct py_node**);
 
 #endif

@@ -49,7 +49,7 @@ static struct py_object* py_get_module(
 	char buf[255 + 1] = { 0 };
 	unsigned i;
 
-	FILE* fp = 0;
+	struct asys_stream* fp = 0;
 
 	struct py_object* d;
 	struct py_node* n;
@@ -70,7 +70,11 @@ static struct py_object* py_get_module(
 		/* Adds appropriate null terminator. */
 		memcpy(buf + pathlen + namlen, suffix, sizeof(suffix));
 
-		if((fp = py_open_r(buf))) break;
+		/* TODO: Better EH. */
+		if(py_open_r(buf, &fp)) {
+			py_error_set_string(py_system_error, buf);
+			return 0;
+		}
 	}
 
 	if(!fp) {

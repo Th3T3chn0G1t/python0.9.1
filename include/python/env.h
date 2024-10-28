@@ -6,9 +6,11 @@
 #ifndef PY_ENV_H
 #define PY_ENV_H
 
-void* py_open_r(const char* path);
+#include <asys/result.h>
 
-void py_close(void* fp);
+struct asys_stream;
+
+enum asys_result py_open_r(const char*, struct asys_stream**);
 
 #ifdef __has_attribute
 # if __has_attribute(fallthrough)
