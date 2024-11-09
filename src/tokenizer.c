@@ -130,7 +130,15 @@ static int py_tokenizer_next_character(struct py_tokenizer* tok) {
 				char c;
 				char* p = tok->inp;
 
-				while((result = asys_stream_read(tok->fp, 0, &c, 1)) != ASYS_RESULT_EOF) {
+				/*
+				 * TODO: Add readline/fgets/scanf("%s")-style functions to
+				 * 		 `stream.h' for dependencies that use them instead of
+				 * 		 Having inline solutions like this.
+				 */
+				while(1) {
+					result = asys_stream_read(tok->fp, 0, &c, 1);
+					if(result == ASYS_RESULT_EOF) break;
+
 					if((size_t) (p - tok->inp) == size - 1) break;
 
 					*p++ = (char) c;
