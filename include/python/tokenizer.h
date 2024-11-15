@@ -28,14 +28,11 @@ struct py_tokenizer {
 	int indstack[PY_MAX_INDENT]; /* Stack of indents */
 	int atbol; /* Nonzero if at begin of new line */
 	int pendin; /* Pending indents (if > 0) or dedents (if < 0) */
-	/* TODO: Remove. */
-	char* prompt; /* For interactive prompting */
-	char* nextprompt;
 	unsigned lineno; /* Current line number */
 };
 
 void py_tokenizer_delete(struct py_tokenizer*);
-struct py_tokenizer* py_tokenizer_setup_file(struct asys_stream*, char* ps1, char* ps2);
+struct py_tokenizer* py_tokenizer_setup_file(struct asys_stream*);
 unsigned py_tokenizer_get(struct py_tokenizer*, char**, char**);
 
 #endif

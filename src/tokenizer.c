@@ -15,6 +15,7 @@
 #include <python/token.h>
 
 #include <asys/stream.h>
+#include <asys/log.h>
 
 #ifndef PY_TABSIZE
 # define PY_TABSIZE (8)
@@ -44,7 +45,6 @@ static struct py_tokenizer* py_tokenizer_new(void) {
 	tok->indstack[0] = 0;
 	tok->atbol = 1;
 	tok->pendin = 0;
-	tok->prompt = tok->nextprompt = NULL;
 	tok->lineno = 0;
 
 	return tok;
@@ -52,7 +52,8 @@ static struct py_tokenizer* py_tokenizer_new(void) {
 
 /* Set up tokenizer for file */
 
-struct py_tokenizer* py_tokenizer_setup_file(struct asys_stream* fp, char* ps1, char* ps2) {
+struct py_tokenizer* py_tokenizer_setup_file(struct asys_stream* fp) {
+
 	struct py_tokenizer* tok = py_tokenizer_new();
 	if(tok == NULL) return NULL;
 
@@ -64,8 +65,6 @@ struct py_tokenizer* py_tokenizer_setup_file(struct asys_stream* fp, char* ps1, 
 	tok->cur = tok->inp = tok->buf;
 	tok->end = tok->buf + BUFSIZ;
 	tok->fp = fp;
-	tok->prompt = ps1;
-	tok->nextprompt = ps2;
 
 	return tok;
 }
@@ -117,10 +116,6 @@ static int py_tokenizer_next_character(struct py_tokenizer* tok) {
 			size_t size;
 
 			tok->cur = tok->inp;
-			if(tok->prompt != NULL && tok->inp == tok->buf) {
-				fprintf(stderr, "%s", tok->prompt);
-				tok->prompt = tok->nextprompt;
-			}
 
 			size = (size_t) (tok->end - tok->inp);
 
@@ -130,10 +125,7 @@ static int py_tokenizer_next_character(struct py_tokenizer* tok) {
 			}
 		}
 
-		if(tok->done != PY_RESULT_OK) {
-			if(tok->prompt != NULL) fprintf(stderr, "\n");
-			return EOF;
-		}
+		if(tok->done != PY_RESULT_OK) return EOF;
 
 		tok->inp = strchr(tok->inp, '\0');
 	}

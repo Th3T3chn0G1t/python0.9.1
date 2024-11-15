@@ -74,7 +74,7 @@ struct py_grammar* py_load_grammar(const char* filename) {
 	n = NULL;
 	/* TODO: Better EH and cleanups. */
 	asys_stream_new(&stream, filename);
-	py_parse_file(&stream, filename, g0, g0->start, NULL, NULL, &n);
+	py_parse_file(&stream, filename, g0, g0->start, &n);
 	fclose(fp);
 	if(n == NULL) {
 		fprintf(stderr, "Parsing error.\n");

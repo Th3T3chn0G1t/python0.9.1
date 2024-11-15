@@ -82,7 +82,7 @@ static struct py_object* py_get_module(
 		return NULL;
 	}
 
-	res = py_parse_file(fp, buf, &py_grammar, PY_GRAMMAR_FILE_INPUT, 0, 0, &n);
+	res = py_parse_file(fp, buf, &py_grammar, PY_GRAMMAR_FILE_INPUT, &n);
 
 	if(res != PY_RESULT_DONE) {
 		py_error_set_input(res);

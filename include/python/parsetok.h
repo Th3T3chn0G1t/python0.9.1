@@ -15,7 +15,7 @@
 struct asys_stream;
 
 int py_parse_file(
-		struct asys_stream*, const char*, struct py_grammar*, int, char*, char*,
+		struct asys_stream*, const char*, struct py_grammar*, int,
 		struct py_node**);
 
 #endif
