@@ -78,6 +78,8 @@ void py_list_dealloc(struct py_object* op) {
 	for(i = 0; i < lp->ob.size; i++) py_object_decref(lp->item[i]);
 
 	free(lp->item);
+
+	free(op);
 }
 
 int py_list_cmp(const struct py_object* v, const struct py_object* w) {

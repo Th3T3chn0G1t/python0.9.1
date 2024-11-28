@@ -61,7 +61,7 @@ struct py_type_info py_types[PY_TYPE_MAX] = {
 		/* String */
 		{
 				sizeof(struct py_string),
-				py_object_delete, py_string_cmp,
+				py_string_dealloc, py_string_cmp,
 				py_string_cat, py_string_ind, py_string_slice
 		},
 
@@ -79,7 +79,7 @@ struct py_type_info py_types[PY_TYPE_MAX] = {
 		/* Float */
 		{
 				sizeof(struct py_float),
-				py_object_delete, py_float_cmp, 0, 0, 0
+				py_float_dealloc, py_float_cmp, 0, 0, 0
 		},
 };
 

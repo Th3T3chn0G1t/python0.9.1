@@ -71,4 +71,6 @@ void py_frame_dealloc(struct py_object* op) {
 
 	free(f->valuestack);
 	free(f->blockstack);
+
+	free(op);
 }

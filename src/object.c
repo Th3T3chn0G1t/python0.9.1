@@ -8,6 +8,8 @@
 #include <python/std.h>
 #include <python/errors.h>
 
+#include <asys/log.h>
+
 /*
  * Object allocation routines used by the NEWOBJ macro.
  * These are used by the individual routines for object creation.
@@ -53,15 +55,14 @@ unsigned py_varobject_size(const void* op) {
 
 struct py_object py_none_object = { PY_TYPE_NONE, 1 };
 
-void py_object_delete(struct py_object* p) { (void) p; }
-
 #ifdef PY_REF_TRACE
 /* TODO: Python global state. */
 static object py_refchain = { &py_refchain, &py_refchain };
 #endif
 
 #ifdef PY_REF_DEBUG
-long py_ref_total;
+long py_ref_total = 0;
+long py_object_total = 0;
 #endif
 
 void* py_object_incref(void* p) {
@@ -73,10 +74,14 @@ void* py_object_incref(void* p) {
 	py_ref_total++;
 #endif
 
-#ifdef PY_REF_TRACE
-#endif
-
 	op->refcount++;
+
+	/* TODO: Formalise this. */
+	if(op->refcount > 10000) {
+		asys_log(
+				__FILE__, "Suspicious refcount `%u' on object `%p'",
+				op->refcount, p);
+	}
 
 	return op;
 }
@@ -86,17 +91,22 @@ void* py_object_decref(void* p) {
 
 	if(!p) return 0;
 
+#ifndef NDEBUG
+	if(!op->refcount) {
+		asys_log(__FILE__, "Possible double free on object `%p'", p);
+		return 0;
+	}
+#endif
+
 #ifdef PY_REF_DEBUG
 	py_ref_total--;
 #endif
 
-#ifdef PY_REF_TRACE
-#endif
+	if(--op->refcount <= 0) {
+		py_object_total--;
 
-	if(op->refcount-- <= 0) {
 		py_object_unref(op);
 		py_types[op->type].dealloc(op);
-		free(op);
 	}
 
 	return op;
@@ -109,6 +119,7 @@ void* py_object_newref(void* p) {
 
 #ifdef PY_REF_DEBUG
 	py_ref_total++;
+	py_object_total++;
 #endif
 
 #ifdef PY_REF_TRACE

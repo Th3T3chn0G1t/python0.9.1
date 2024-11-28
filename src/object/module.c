@@ -66,6 +66,8 @@ void py_module_dealloc(struct py_object* op) {
 
 	py_object_decref(m->name);
 	py_object_decref(m->attr);
+
+	free(op);
 }
 
 struct py_object* py_module_get_attr(struct py_object* op, const char* name) {

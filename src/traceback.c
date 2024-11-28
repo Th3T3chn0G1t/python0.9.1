@@ -112,4 +112,6 @@ void py_traceback_dealloc(struct py_object* op) {
 
 	py_object_decref(tb->next);
 	py_object_decref(tb->frame);
+
+	free(op);
 }

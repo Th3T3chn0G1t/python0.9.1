@@ -293,6 +293,8 @@ void py_dict_dealloc(struct py_object* op) {
 	}
 
 	if(dp->table) free(dp->table);
+
+	free(op);
 }
 
 struct py_object* py_dict_lookup_object(

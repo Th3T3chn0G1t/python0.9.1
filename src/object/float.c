@@ -17,6 +17,10 @@ struct py_object* py_float_new(double value) {
 	return (void*) op;
 }
 
+void py_float_dealloc(struct py_object* op) {
+	free(op);
+}
+
 double py_float_get(const struct py_object* op) {
 	return ((struct py_float*) op)->value;
 }

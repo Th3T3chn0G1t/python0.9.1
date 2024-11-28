@@ -23,6 +23,8 @@ struct py_object* py_class_new(struct py_object* methods) {
 
 void py_class_dealloc(struct py_object* op) {
 	py_object_decref(((struct py_class*) op)->attr);
+
+	free(op);
 }
 
 struct py_object* py_class_get_attr(struct py_object* op, const char* name) {
@@ -59,6 +61,8 @@ void py_class_member_dealloc(struct py_object* op) {
 
 	py_object_decref(cm->class);
 	py_object_decref(cm->attr);
+
+	free(op);
 }
 
 struct py_object* py_class_member_get_attr(
@@ -91,7 +95,7 @@ struct py_object* py_class_method_new(
 
 	if(!(cm = py_object_new(PY_TYPE_CLASS_METHOD))) return 0;
 
-	cm->func =py_object_incref(func);
+	cm->func = py_object_incref(func);
 	cm->self = py_object_incref(self);
 
 	return (void*) cm;
@@ -112,4 +116,6 @@ void py_class_method_dealloc(struct py_object* op) {
 
 	py_object_decref(cm->func);
 	py_object_decref(cm->self);
+
+	free(op);
 }

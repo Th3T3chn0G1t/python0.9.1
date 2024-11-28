@@ -1685,4 +1685,6 @@ void py_code_dealloc(struct py_object* op) {
 	py_object_decref(co->consts);
 	py_object_decref(co->names);
 	py_object_decref(co->filename);
+
+	free(op);
 }

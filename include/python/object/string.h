@@ -34,6 +34,7 @@ struct py_string {
 
 struct py_object* py_string_new_size(const char*, unsigned);
 struct py_object* py_string_new(const char*);
+void py_string_dealloc(struct py_object*);
 const char* py_string_get(const struct py_object*);
 
 struct py_object* py_string_cat(struct py_object*, struct py_object*);

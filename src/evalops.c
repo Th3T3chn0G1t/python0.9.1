@@ -17,6 +17,8 @@
 #include <python/object/list.h>
 #include <python/object/class.h>
 
+#include <asys/log.h>
+
 /* Test a value used as condition, e.g., in a for or if statement */
 int py_object_truthy(struct py_object* v) {
 	if(v->type == PY_TYPE_INT) return py_int_get(v) != 0;

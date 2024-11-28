@@ -29,6 +29,10 @@ struct py_object* py_string_new(const char* str) {
 	return py_string_new_size(str, (unsigned) strlen(str));
 }
 
+void py_string_dealloc(struct py_object* op) {
+	free(op);
+}
+
 const char* py_string_get(const struct py_object* op) {
 	return ((struct py_string*) op)->value;
 }

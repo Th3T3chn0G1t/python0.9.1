@@ -66,9 +66,9 @@ struct py_object* py_int_new(py_value_t value) {
 	return (void*) v;
 }
 
-void py_int_dealloc(struct py_object* v) {
-	*(struct py_int**) v = py_int_freelist;
-	py_int_freelist = (void*) v;
+void py_int_dealloc(struct py_object* op) {
+	*(struct py_int**) op = py_int_freelist;
+	py_int_freelist = (void*) op;
 }
 
 py_value_t py_int_get(const struct py_object* op) {
